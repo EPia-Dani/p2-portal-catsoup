@@ -3,26 +3,54 @@
 public class PortalRenderer : MonoBehaviour {
 	[SerializeField] public PortalRenderer pair;
 	[SerializeField] private Camera cam;
+	[SerializeField] private int recursionLimit = 5;
+
+
+	private Camera mainCam;
+
+	private void Awake() {
+		mainCam = Camera.main;
+	}
 
 	private void LateUpdate() {
-		// Build portal camera transformation matrix
-		Matrix4x4 m = pair.transform.localToWorldMatrix // Transform portal to world space from pair's local space
-		              * Matrix4x4.Scale(new Vector3(-1f, 1f, -1f)) // Flip the portal to face player
-		              * transform.worldToLocalMatrix
-		              * CameraManager.MainCamera.transform.localToWorldMatrix;
+		// Store camera positions and rotations for each recursion level
+		Vector3[] renderPositions = new Vector3[recursionLimit];
+		Quaternion[] renderRotations = new Quaternion[recursionLimit];
 
-		// Set portal camera position and rotation from matrix
-		cam.transform.SetPositionAndRotation(m.GetPosition(),
-			Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1)));
-
-		// Transform portal plane to camera space for oblique projection
+		// Start with the main camera's transform
+		Matrix4x4 localToWorldMatrix = mainCam.transform.localToWorldMatrix;
 		
-		Vector3 normal = -cam.worldToCameraMatrix.MultiplyVector(pair.transform.forward).normalized;
+		// Calculate transformations for each recursion level
+		for (int i = 0; i < recursionLimit; i++) {
+			// Build portal camera transformation matrix through both portals
+			localToWorldMatrix = pair.transform.localToWorldMatrix // Transform to pair portal's space
+			                     * Matrix4x4.Scale(new Vector3(-1f, 1f, -1f)) // Flip to face player
+			                     * transform.worldToLocalMatrix // Transform through this portal
+			                     * localToWorldMatrix; // From previous camera position
 
-		// Create clip plane and apply oblique projection
-		Vector4 clipPlane = new Vector4(normal.x, normal.y, normal.z, 
-			-Vector3.Dot(cam.worldToCameraMatrix.MultiplyPoint(pair.transform.position), normal));
-		cam.projectionMatrix = CameraManager.MainCamera.CalculateObliqueMatrix(clipPlane);
-		cam.Render();
+			// Store in reverse order (furthest recursion first)
+			int renderOrderIndex = recursionLimit - i - 1;
+			renderPositions[renderOrderIndex] = localToWorldMatrix.GetPosition();
+			renderRotations[renderOrderIndex] = Quaternion.LookRotation(
+				localToWorldMatrix.GetColumn(2), 
+				localToWorldMatrix.GetColumn(1)
+			);
+		}
+
+		// Render from furthest to nearest recursion
+		for (int i = 0; i < recursionLimit; i++) {
+			// Set portal camera position and rotation
+			cam.transform.SetPositionAndRotation(renderPositions[i], renderRotations[i]);
+
+			// Transform portal plane to camera space for oblique projection
+			Vector3 normal = -cam.worldToCameraMatrix.MultiplyVector(pair.transform.forward).normalized;
+
+			// Create clip plane and apply oblique projection
+			Vector4 clipPlane = new Vector4(normal.x, normal.y, normal.z, 
+				-Vector3.Dot(cam.worldToCameraMatrix.MultiplyPoint(pair.transform.position), normal));
+			
+			cam.projectionMatrix = mainCam.CalculateObliqueMatrix(clipPlane);
+			cam.Render();
+		}
 	}
 }

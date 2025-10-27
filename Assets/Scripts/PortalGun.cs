@@ -47,9 +47,8 @@ public class PortalGun : MonoBehaviour
         }
     }
 
-    private void FirePortal(int index)
-    {
-        Camera cam = CameraManager.MainCamera;
+    private void FirePortal(int index) {
+        Camera cam = Camera.main;
         if (cam == null || index < 0 || index >= portals.Length) return;
 
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
