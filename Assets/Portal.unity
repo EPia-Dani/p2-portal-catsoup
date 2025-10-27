@@ -4058,6 +4058,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  portalHalfSize: {x: 0.7, y: 0.9}
+  wallOffset: 0.001
+  surfaceSkin: 0.01
 --- !u!1 &2042437990
 GameObject:
   m_ObjectHideFlags: 0
