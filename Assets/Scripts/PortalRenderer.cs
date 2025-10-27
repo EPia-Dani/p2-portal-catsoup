@@ -5,11 +5,25 @@ public class PortalRenderer : MonoBehaviour {
 	[SerializeField] private Camera cam;
 	[SerializeField] private int recursionLimit = 5;
 
+	[SerializeField] private MeshRenderer portalMeshRenderer;
+	private MaterialPropertyBlock propertyBlock;
+	private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 
 	private Camera mainCam;
 
 	private void Awake() {
 		mainCam = Camera.main;
+		if (portalMeshRenderer == null) {
+			portalMeshRenderer = GetComponentInChildren<MeshRenderer>(true);
+		}
+		propertyBlock = new MaterialPropertyBlock();
+	}
+
+	public void SetCircleRadius(float radius) {
+		if (portalMeshRenderer == null) return;
+		portalMeshRenderer.GetPropertyBlock(propertyBlock);
+		propertyBlock.SetFloat(CircleRadiusId, radius);
+		portalMeshRenderer.SetPropertyBlock(propertyBlock);
 	}
 
 	private void LateUpdate() {

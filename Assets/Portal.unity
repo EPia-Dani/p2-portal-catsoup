@@ -172,6 +172,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pair: {fileID: 1593175739}
   cam: {fileID: 803321365}
+  recursionLimit: 5
+  portalMeshRenderer: {fileID: 0}
 --- !u!4 &12456627
 Transform:
   m_ObjectHideFlags: 0
@@ -1132,8 +1134,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 434b94af1939b3a4c8f40818f574c58a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  shouldClone: 1
-  debugMode: 0
 --- !u!54 &165274163
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3162,7 +3162,7 @@ Transform:
   m_GameObject: {fileID: 1506261003}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.185, z: 0}
   m_LocalScale: {x: 0.7990327, y: 1.3787309, z: 0.7990327}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3285,6 +3285,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pair: {fileID: 12456626}
   cam: {fileID: 1401694645}
+  recursionLimit: 5
+  portalMeshRenderer: {fileID: 0}
 --- !u!4 &1593175740
 Transform:
   m_ObjectHideFlags: 0
@@ -4012,6 +4014,50 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   shootDistance: 1000.9
+  portalAppearDuration: 0.4
+  portalTargetRadius: 0.4
+  portalAppearCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.45299253
+      value: 0.2626095
+      inSlope: 1.0476515
+      outSlope: 1.0476515
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 0.8710241
+      value: 0.8920087
+      inSlope: 1.4024124
+      outSlope: 1.4024124
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.10834576
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 1.0023804
+      inSlope: -0.022872161
+      outSlope: -0.022872161
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 1
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &2042437990
 GameObject:
   m_ObjectHideFlags: 0
