@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// Portal - camera transform calculation and rendering.
 /// </summary>
+[DisallowMultipleComponent]
 public class Portal : MonoBehaviour {
 	[Header("Portal Link")] [Tooltip("El otro portal al que este está conectado")] [SerializeField]
 	public Portal linkedPortal;
@@ -32,45 +31,36 @@ public class Portal : MonoBehaviour {
 	private void Awake() {_mainCamera = Camera.main;}
 
 	private void LateUpdate() {
-		Matrix4x4 m = linkedPortal.transform.localToWorldMatrix
-		              * Yaw180
-		              * transform.worldToLocalMatrix
-		              * _mainCamera.transform.localToWorldMatrix;
+		if (linkedPortal == null || portalCamera == null || _mainCamera == null) return;
+		Matrix4x4 m = BuildPortalCameraMatrix();
 
-		// Extract position and rotation from the matrix
-		Vector3 pos = m.MultiplyPoint3x4(Vector3.zero);
-		Vector3 fwd = m.MultiplyVector(Vector3.forward);
-		Vector3 up = m.MultiplyVector(Vector3.up);
-		portalCamera.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, up));
-
-		// Copy camera properties from main camera
-		portalCamera.usePhysicalProperties = _mainCamera.usePhysicalProperties;
-		portalCamera.sensorSize = _mainCamera.sensorSize;
-		portalCamera.focalLength = _mainCamera.focalLength;
-		portalCamera.gateFit = _mainCamera.gateFit;
-		portalCamera.lensShift = _mainCamera.lensShift;
-
-		portalCamera.orthographic = _mainCamera.orthographic;
-		portalCamera.orthographicSize = _mainCamera.orthographicSize;
-		portalCamera.aspect = _mainCamera.aspect;
+		// Extract position and rotation directly from matrix columns
+		Vector3 pos = m.GetColumn(3);
+		Quaternion rot = Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
+		portalCamera.transform.SetPositionAndRotation(pos, rot);
 
 		// Set up oblique projection for proper clipping at the portal plane
-		SetupObliqueProjection(_mainCamera);
+		SetupObliqueProjection();
 		portalCamera.Render();
 	}
+	private Matrix4x4 BuildPortalCameraMatrix() {
+		return linkedPortal.transform.localToWorldMatrix
+		       * Yaw180
+		       * transform.worldToLocalMatrix
+		       * _mainCamera.transform.localToWorldMatrix;
+	}
 
-
-	private void SetupObliqueProjection(Camera mainCamera) {
+	private void SetupObliqueProjection() {
 		// Get the portal plane in world space
-		// The plane is defined by the linked portal's position and its forward direction
-		Vector3 planePos = linkedPortal.transform.position;
-		Vector3 planeNormal = linkedPortal.transform.forward;
+		Transform linkedTransform = linkedPortal.transform;
+		
 		// Transform plane to camera space
-		Vector3 camSpacePos = portalCamera.worldToCameraMatrix.MultiplyPoint(planePos);
-		Vector3 camSpaceNormal = portalCamera.worldToCameraMatrix.MultiplyVector(planeNormal).normalized;
-		// Ensure the normal points away from the camera
-		float dot = Vector3.Dot(camSpaceNormal, Vector3.forward);
-		if (dot > 0) {
+		Matrix4x4 worldToCam = portalCamera.worldToCameraMatrix;
+		Vector3 camSpacePos = worldToCam.MultiplyPoint(linkedTransform.position);
+		Vector3 camSpaceNormal = worldToCam.MultiplyVector(linkedTransform.forward).normalized;
+		
+		// Ensure the normal points away from the camera (flip if pointing toward camera)
+		if (Vector3.Dot(camSpaceNormal, Vector3.forward) > 0) {
 			camSpaceNormal = -camSpaceNormal;
 		}
 
@@ -81,16 +71,14 @@ public class Portal : MonoBehaviour {
 			camSpaceNormal.z,
 			-Vector3.Dot(camSpacePos, camSpaceNormal)
 		);
-		// Calculate oblique projection matrix
-		Matrix4x4 projection = mainCamera.projectionMatrix;
-		Matrix4x4 obliqueProjection = CalculateObliqueMatrix(projection, clipPlane);
-
+		
+		// Calculate and apply oblique projection matrix
+		Matrix4x4 obliqueProjection = CalculateObliqueMatrix(_mainCamera.projectionMatrix, clipPlane);
 		portalCamera.projectionMatrix = obliqueProjection;
 		portalCamera.nonJitteredProjectionMatrix = obliqueProjection;
 	}
 
-
-	private Matrix4x4 CalculateObliqueMatrix(Matrix4x4 projection, Vector4 clipPlane) {
+	private static Matrix4x4 CalculateObliqueMatrix(Matrix4x4 projection, Vector4 clipPlane) {
 		Vector4 q = projection.inverse * new Vector4(
 			Mathf.Sign(clipPlane.x),
 			Mathf.Sign(clipPlane.y),
@@ -108,9 +96,11 @@ public class Portal : MonoBehaviour {
 		return projection;
 	}
 
+
 	public void PlaceOn(RaycastHit hit){
-	transform.position = hit.point + hit.normal * 0.02f;
-	Vector3 f = -hit.normal, u = Vector3.Normalize(Vector3.Cross(f, Vector3.ProjectOnPlane(Camera.main.transform.right, f)));
-	transform.rotation = Quaternion.LookRotation(f, u);
-}
+		transform.position = hit.point + hit.normal * 0.02f;
+		Vector3 f = -hit.normal;
+		Vector3 u = Vector3.Normalize(Vector3.Cross(f, Vector3.ProjectOnPlane(Camera.main.transform.right, f)));
+		transform.rotation = Quaternion.LookRotation(f, u);
+	}
 }
