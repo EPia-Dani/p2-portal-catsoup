@@ -25,8 +25,6 @@ public class Portal : MonoBehaviour
 
 	static readonly Matrix4x4 Yaw180 = Matrix4x4.Rotate(Quaternion.Euler(0f, 180f, 0f));
 
-	// Track objects currently traversing this portal
-	private List<PortalTraveller> travellers = new List<PortalTraveller>();
 
 	private void Start()
 	{
@@ -45,9 +43,7 @@ public class Portal : MonoBehaviour
 		// Update THIS portal's camera to show the view from the LINKED portal
 		UpdatePortalCamera(main);
 
-		// Update all objects currently traversing this portal
-		UpdateTravellers();
-
+		
 		// Render this portal's view
 		if (renderTexture && renderTexture.IsCreated())
 		{
@@ -55,19 +51,6 @@ public class Portal : MonoBehaviour
 		}
 	}
 
-	private void UpdateTravellers()
-	{
-		for (int i = travellers.Count - 1; i >= 0; i--)
-		{
-			if (travellers[i] == null)
-			{
-				travellers.RemoveAt(i);
-				continue;
-			}
-
-			travellers[i].UpdateTraveller(this);
-		}
-	}
 
 #if UNITY_EDITOR
 	private void OnValidate()
@@ -183,87 +166,15 @@ public class Portal : MonoBehaviour
 		
 		// Calcular orientación del portal basada en la normal de la superficie
 		Vector3 portalForward = -hit.normal;
-		Vector3 portalUp;
+	
+		Vector3 portalUp = Vector3.Cross(portalForward, hit.normal);
 		
-		// Si la superficie es casi horizontal (suelo/techo)
-		if (Mathf.Abs(hit.normal.y) > 0.9f)
-		{
-			// En suelo/techo, usar la dirección forward de la cámara como referencia
-			Camera cam = Camera.main;
-			if (cam != null)
-			{
-				Vector3 camForward = cam.transform.forward;
-				// Proyectar la dirección de la cámara en el plano de la superficie
-				portalUp = Vector3.ProjectOnPlane(camForward, hit.normal).normalized;
-				
-				// Si la proyección es muy pequeña, usar otro vector
-				if (portalUp.sqrMagnitude < 0.1f)
-				{
-					portalUp = Vector3.ProjectOnPlane(cam.transform.right, hit.normal).normalized;
-				}
-			}
-			else
-			{
-				portalUp = Vector3.ProjectOnPlane(Vector3.forward, hit.normal).normalized;
-			}
-		}
-		else
-		{
-			// En paredes verticales, mantener el portal vertical
-			// Usar el vector up mundial pero proyectado en el plano de la pared
-			portalUp = Vector3.ProjectOnPlane(Vector3.up, hit.normal).normalized;
-			
-			// Si el resultado es cero (pared perfectamente horizontal, caso raro), usar un fallback
-			if (portalUp.sqrMagnitude < 0.1f)
-			{
-				portalUp = Vector3.ProjectOnPlane(Vector3.forward, hit.normal).normalized;
-			}
-		}
+		
 		
 		transform.rotation = Quaternion.LookRotation(portalForward, portalUp);
 	}
 
-	private void OnTriggerEnter(Collider other)
-	{
-		if (!linkedPortal) return;
+	
 
-		// Try to get PortalTraveller component
-		PortalTraveller traveller = other.GetComponent<PortalTraveller>();
-		if (!traveller)
-		{
-			// If no PortalTraveller, try to add one automatically to Rigidbodies
-			Rigidbody rb = other.attachedRigidbody;
-			if (rb)
-			{
-				traveller = rb.gameObject.AddComponent<PortalTraveller>();
-			}
-		}
 
-		if (traveller && !travellers.Contains(traveller))
-		{
-			travellers.Add(traveller);
-			traveller.EnterPortal(this);
-		}
-	}
-
-	private void OnTriggerStay(Collider other)
-	{
-		// Ensure traveller stays registered while in trigger
-		PortalTraveller traveller = other.GetComponent<PortalTraveller>();
-		if (traveller && !travellers.Contains(traveller))
-		{
-			travellers.Add(traveller);
-			traveller.EnterPortal(this);
-		}
-	}
-
-	private void OnTriggerExit(Collider other)
-	{
-		PortalTraveller traveller = other.GetComponent<PortalTraveller>();
-		if (traveller)
-		{
-			traveller.ExitPortal(this);
-			travellers.Remove(traveller);
-		}
-	}
 }
