@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
-public class FPSController : MonoBehaviour {
+public class FPSController : MonoBehaviour
+{
     [SerializeField] private CharacterController characterController;
     [SerializeField] private Transform yawTransform;
     [SerializeField] private Transform pitchTransform;
@@ -162,5 +163,36 @@ public class FPSController : MonoBehaviour {
 		return Physics.SphereCast(centerWorld, Mathf.Max(0.01f, radius * 0.9f), Vector3.down, out _, checkDist, groundMask, QueryTriggerInteraction.Ignore);
 	}
 
+	/// <summary>
+	/// Called by PortalTraveller to transform velocity when passing through a portal
+	/// </summary>
+	public void TransformVelocity(Matrix4x4 transformMatrix)
+	{
+		// Transform horizontal velocity
+		_horizontalVelocity = transformMatrix.MultiplyVector(_horizontalVelocity);
+		
+		// Transform vertical velocity
+		Vector3 verticalVel = Vector3.up * _verticalSpeed;
+		verticalVel = transformMatrix.MultiplyVector(verticalVel);
+		_verticalSpeed = verticalVel.y;
+		
+		// Update internal look angles to match the new rotation
+		// The PortalTraveller has already rotated the transform, so we just need to
+		// read the new angles and update our internal state
+		if (yawTransform != null)
+		{
+			_currentYaw = yawTransform.eulerAngles.y;
+		}
+		else
+		{
+			_currentYaw = transform.eulerAngles.y;
+		}
+		
+		if (pitchTransform != null)
+		{
+			float rawX = pitchTransform.localEulerAngles.x;
+			_currentPitch = Mathf.DeltaAngle(0f, rawX);
+		}
+	}
     
 }
