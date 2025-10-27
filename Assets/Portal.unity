@@ -171,7 +171,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   linkedPortal: {fileID: 1593175739}
-  viewCamera: {fileID: 803321365}
+  portalCamera: {fileID: 803321365}
   cullingMask:
     serializedVersion: 2
     m_Bits: 119
@@ -3262,7 +3262,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   linkedPortal: {fileID: 12456626}
-  viewCamera: {fileID: 1401694645}
+  portalCamera: {fileID: 1401694645}
   cullingMask:
     serializedVersion: 2
     m_Bits: 119
