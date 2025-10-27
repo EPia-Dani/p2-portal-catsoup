@@ -6,7 +6,7 @@ using Input;
 /// </summary>
 public class PortalGun : MonoBehaviour
 {
-    [SerializeField] private Portal[] portals = new Portal[2];
+    [SerializeField] private PortalRenderer[] portals = new PortalRenderer[2];
     [SerializeField] private LayerMask shootMask = ~0;
     [SerializeField] private float shootDistance = 1000f;
 
