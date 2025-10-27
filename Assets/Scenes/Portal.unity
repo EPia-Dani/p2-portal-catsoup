@@ -148,11 +148,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cd615a5027b05e438f621c71df1988c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedPortal: {fileID: 1593175739}
-  portalCamera: {fileID: 803321365}
-  renderTexture: {fileID: 8400000, guid: e79cd8f2eac983649845aa1f800dd7a9, type: 2}
-  portalMaterial: {fileID: 2100000, guid: 6bead8be86f8fd44f9607724b2d7e9b1, type: 2}
-  mainCamera: {fileID: 37313535}
+  pair: {fileID: 1593175739}
+  cam: {fileID: 803321365}
 --- !u!4 &12456627
 Transform:
   m_ObjectHideFlags: 0
@@ -534,7 +531,7 @@ GameObject:
   - component: {fileID: 37313535}
   - component: {fileID: 37313534}
   - component: {fileID: 37313533}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -971,7 +968,7 @@ GameObject:
   - component: {fileID: 165274160}
   - component: {fileID: 165274159}
   - component: {fileID: 165274163}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3277,7 +3274,7 @@ GameObject:
   - component: {fileID: 1506261004}
   - component: {fileID: 1506261006}
   - component: {fileID: 1506261005}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3361,7 +3358,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1580168255}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: PitchController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -3413,11 +3410,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9cd615a5027b05e438f621c71df1988c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  linkedPortal: {fileID: 12456626}
-  portalCamera: {fileID: 1401694645}
-  renderTexture: {fileID: 8400000, guid: fc599718af08d9c48b271e70298be8b9, type: 2}
-  portalMaterial: {fileID: 2100000, guid: 28ea1af2b34755148bc0ed699ebaace6, type: 2}
-  mainCamera: {fileID: 37313535}
+  pair: {fileID: 12456626}
+  cam: {fileID: 1401694645}
 --- !u!4 &1593175740
 Transform:
   m_ObjectHideFlags: 0
@@ -4083,7 +4077,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2041440867}
   - component: {fileID: 2041440868}
-  m_Layer: 6
+  m_Layer: 0
   m_Name: PortalGun
   m_TagString: Untagged
   m_Icon: {fileID: 0}

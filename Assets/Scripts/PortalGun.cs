@@ -49,7 +49,7 @@ public class PortalGun : MonoBehaviour
 
     private void FirePortal(int index)
     {
-        Camera cam = Camera.main;
+        Camera cam = CameraManager.MainCamera;
         if (cam == null || index < 0 || index >= portals.Length) return;
 
         Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
@@ -63,7 +63,12 @@ public class PortalGun : MonoBehaviour
                 return;
             }
 
-            portals[index].PlaceOn(hit);
+            Transform portalTransform = portals[index].transform;
+            portalTransform.position = hit.point + hit.normal * 0.02f;
+            Vector3 forward = -hit.normal;
+            Vector3 up = Vector3.Cross(forward, Vector3.ProjectOnPlane(cam.transform.right, forward)).normalized;
+            portalTransform.rotation = Quaternion.LookRotation(forward, up);
+            
             portals[index].gameObject.SetActive(true);
         }
     }
