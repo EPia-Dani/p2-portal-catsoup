@@ -152,9 +152,7 @@ MonoBehaviour:
   portalCamera: {fileID: 803321365}
   renderTexture: {fileID: 8400000, guid: e79cd8f2eac983649845aa1f800dd7a9, type: 2}
   portalMaterial: {fileID: 2100000, guid: 6bead8be86f8fd44f9607724b2d7e9b1, type: 2}
-  cullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
+  mainCamera: {fileID: 37313535}
 --- !u!4 &12456627
 Transform:
   m_ObjectHideFlags: 0
@@ -3419,9 +3417,7 @@ MonoBehaviour:
   portalCamera: {fileID: 1401694645}
   renderTexture: {fileID: 8400000, guid: fc599718af08d9c48b271e70298be8b9, type: 2}
   portalMaterial: {fileID: 2100000, guid: 28ea1af2b34755148bc0ed699ebaace6, type: 2}
-  cullingMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
+  mainCamera: {fileID: 37313535}
 --- !u!4 &1593175740
 Transform:
   m_ObjectHideFlags: 0
