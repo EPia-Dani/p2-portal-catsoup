@@ -42,8 +42,6 @@ public class Portal : MonoBehaviour
 
 		// Update THIS portal's camera to show the view from the LINKED portal
 		UpdatePortalCamera(main);
-
-		
 		// Render this portal's view
 		if (renderTexture && renderTexture.IsCreated())
 		{
@@ -52,26 +50,9 @@ public class Portal : MonoBehaviour
 	}
 
 
-#if UNITY_EDITOR
-	private void OnValidate()
-	{
-		// Sincronizar la RenderTexture con la cámara cuando cambies valores en el editor
-		if (portalCamera && renderTexture)
-		{
-			portalCamera.targetTexture = renderTexture;
-		}
-	}
-#endif
-
-	/// <summary>
-	/// Positions this portal's camera at the linked portal, mirroring the main camera's relative position
-	/// </summary>
 	private void UpdatePortalCamera(Camera mainCamera)
 	{
-		// Transform chain: 
-		// 1. Get main camera position relative to THIS portal
-		// 2. Flip 180 degrees (portal reversal)
-		// 3. Apply that relative transform from the LINKED portal's position
+		
 		Matrix4x4 m = linkedPortal.transform.localToWorldMatrix
 		            * Yaw180
 		            * transform.worldToLocalMatrix
@@ -98,10 +79,7 @@ public class Portal : MonoBehaviour
 		SetupObliqueProjection(mainCamera);
 	}
 
-	/// <summary>
-	/// Sets up an oblique projection matrix that clips at the linked portal's plane.
-	/// This prevents rendering objects behind the portal surface.
-	/// </summary>
+	
 	private void SetupObliqueProjection(Camera mainCamera)
 	{
 		// Get the portal plane in world space
@@ -136,10 +114,7 @@ public class Portal : MonoBehaviour
 		portalCamera.nonJitteredProjectionMatrix = obliqueProjection;
 	}
 
-	/// <summary>
-	/// Calculates an oblique projection matrix for a given clip plane.
-	/// Based on: http://www.terathon.com/lengyel/Lengyel-Oblique.pdf
-	/// </summary>
+	
 	private Matrix4x4 CalculateObliqueMatrix(Matrix4x4 projection, Vector4 clipPlane)
 	{
 		Vector4 q = projection.inverse * new Vector4(
@@ -160,21 +135,11 @@ public class Portal : MonoBehaviour
 		return projection;
 	}
 
-	public void PlaceOn(RaycastHit hit)
-	{
+	public void PlaceOn(RaycastHit hit){
 		transform.position = hit.point + hit.normal * 0.02f;
-		
-		// Calcular orientación del portal basada en la normal de la superficie
-		Vector3 portalForward = -hit.normal;
-	
-		Vector3 portalUp = Vector3.Cross(portalForward, hit.normal);
-		
-		
-		
-		transform.rotation = Quaternion.LookRotation(portalForward, portalUp);
+		transform.rotation = 
+			Quaternion.LookRotation(-hit.normal, 
+				Vector3.ProjectOnPlane(Vector3.up, -hit.normal));
 	}
-
-	
-
 
 }
