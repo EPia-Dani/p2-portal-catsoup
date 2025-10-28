@@ -1,153 +1,245 @@
 using System.Collections;
-using UnityEngine;
 using Input;
+using UnityEngine;
 
-public class PortalGun : MonoBehaviour
-{
-    [SerializeField] private PortalRenderer[] portals = new PortalRenderer[2];
-    [SerializeField] private LayerMask shootMask = ~0;
-    [SerializeField] private float shootDistance = 1000f;
-    [SerializeField] private Camera shootCamera;
+public enum PortalColor { Blue, Orange }
 
-    [SerializeField] private float portalAppearDuration = 0.3f;
-    [SerializeField] private float portalTargetRadius = 0.4f;
-    [SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+public class PortalGun : MonoBehaviour {
+	[SerializeField] private PortalRenderer bluePortal;
+	[SerializeField] private PortalRenderer orangePortal;
 
-    [SerializeField] private Vector2 portalHalfSize = new(0.45f, 0.45f);
-    [SerializeField] private float wallOffset = 0.02f;
-    [SerializeField] private float surfaceSkin = 0.01f;
+	[SerializeField] private LayerMask shootMask = ~0;
+	[SerializeField] private float shootDistance = 1000f;
+	[SerializeField] private Camera shootCamera;
 
-    private PlayerInput _controls;
+	[SerializeField] private float portalAppearDuration = 0.3f;
+	[SerializeField] private float portalTargetRadius = 0.4f;
+	[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-    private void Awake() { _controls = new PlayerInput(); shootCamera ??= Camera.main; }
-    private void OnEnable() { _controls?.Enable(); shootCamera ??= Camera.main; }
-    private void OnDisable() { _controls?.Disable(); }
-    private void OnDestroy() { _controls?.Dispose(); _controls = null; }
+	[SerializeField] private Vector2 portalHalfSize = new(0.45f, 0.45f);
+	[SerializeField] private float wallOffset = 0.02f;
+	[SerializeField] private float clampSkin = 0.01f;
+	
+	private readonly PortalRenderer[] _portals = new PortalRenderer[2];
+	private readonly int[] _portalLayers = new int[2];
 
-    private void Update()
-    {
-        if (_controls.Player.ShootBlue.WasPerformedThisFrame()) FirePortal(0);
-        if (_controls.Player.ShootOrange.WasPerformedThisFrame()) FirePortal(1);
-    }
+	private PlayerInput _controls;
 
-    private void FirePortal(int index)
-    {
-        var cam = shootCamera ? shootCamera : (shootCamera = Camera.main);
-        if (!cam || index < 0 || index >= portals.Length) return;
-        Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-        if (!Physics.Raycast(ray, out var hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
+	// support data of the wall plane each portal is mounted on
+	private struct Support {
+		public Collider col;
+		public Vector3 n;         // plane normal (points out of surface)
+		public Vector3 planePoint;// a point on plane (usually where we placed)
+	}
+	private readonly Support[] _support = new Support[2];
 
-        Vector3 forward = -hit.normal;
-        Vector3 up = Vector3.Cross(forward, Vector3.ProjectOnPlane(cam.transform.right, forward)).normalized;
-        Quaternion rot = Quaternion.LookRotation(forward, up);
+	private void Awake() {
+		_controls = new PlayerInput();
+		if (!shootCamera) shootCamera = Camera.main;
 
-        Vector3 pos;
-        bool ok = hit.collider is BoxCollider box
-            ? TryClampOnBoxFace(box, hit, portalHalfSize, surfaceSkin, out pos)
-            : TryClampOnBoundsFallback(hit.collider, hit, portalHalfSize, surfaceSkin, out pos);
-        if (!ok) return;
-        pos += hit.normal * wallOffset;
+		_portals[0] = bluePortal;
+		_portals[1] = orangePortal;
 
-        var portal = portals[index];
-        if (!portal) return;
-        var t = portal.transform;
-        t.SetPositionAndRotation(pos, rot);
-        StartCoroutine(AppearPortal(portal));
-    }
+		_portalLayers[0] = LayerMask.NameToLayer("Blue");
+		_portalLayers[1] = LayerMask.NameToLayer("Orange");
+	}
 
-    private static bool TryClampOnBoxFace(BoxCollider box, RaycastHit hit, Vector2 halfSize, float skin, out Vector3 posW)
-    {
-        var tr = box.transform;
-        Vector3 half = Vector3.Scale(box.size * 0.5f, tr.lossyScale);
-        float hx = Mathf.Abs(half.x);
-        float hy = Mathf.Abs(half.y);
-        float hz = Mathf.Abs(half.z);
-        Vector3 n = hit.normal.normalized;
-        float dx = Mathf.Abs(Vector3.Dot(n, tr.right));
-        float dy = Mathf.Abs(Vector3.Dot(n, tr.up));
-        float dz = Mathf.Abs(Vector3.Dot(n, tr.forward));
-        Vector3 faceN, uDir, vDir;
-        float uMax, vMax, faceHalf;
-        Vector3 c = tr.TransformPoint(box.center);
-        if (dx >= dy && dx >= dz)
-        {
-            faceN = Mathf.Sign(Vector3.Dot(n, tr.right)) * tr.right;
-            uDir = tr.up;    uMax = hy;
-            vDir = tr.forward; vMax = hz;
-            faceHalf = hx;
-        }
-        else if (dy >= dz)
-        {
-            faceN = Mathf.Sign(Vector3.Dot(n, tr.up)) * tr.up;
-            uDir = tr.right;  uMax = hx;
-            vDir = tr.forward; vMax = hz;
-            faceHalf = hy;
-        }
-        else
-        {
-            faceN = Mathf.Sign(Vector3.Dot(n, tr.forward)) * tr.forward;
-            uDir = tr.right;  uMax = hx;
-            vDir = tr.up;     vMax = hy;
-            faceHalf = hz;
-        }
-        if (uMax <= halfSize.x + skin || vMax <= halfSize.y + skin)
-        {
-            posW = hit.point;
-            return false;
-        }
-        Vector3 faceCenter = c + faceN * faceHalf;
-        Vector3 d = hit.point - faceCenter;
-        Vector3 uN = uDir.normalized;
-        Vector3 vN = vDir.normalized;
-        float uLimit = (uMax - halfSize.x - skin);
-        float vLimit = (vMax - halfSize.y - skin);
-        float u = Mathf.Clamp(Vector3.Dot(d, uN), -uLimit, uLimit);
-        float v = Mathf.Clamp(Vector3.Dot(d, vN), -vLimit, vLimit);
-        posW = faceCenter + uN * u + vN * v;
-        return true;
-    }
+	private void OnEnable() => _controls?.Enable();
+	private void OnDisable() => _controls?.Disable();
+	private void OnDestroy() => _controls?.Dispose();
 
-    private static bool TryClampOnBoundsFallback(Collider col, RaycastHit hit, Vector2 halfSize, float skin, out Vector3 posW)
-    {
-        Bounds b = col.bounds;
-        Vector3 n = hit.normal.normalized;
-        Vector3 uDir = Vector3.Cross(n, Mathf.Abs(Vector3.Dot(n, Vector3.up)) < 0.9f ? Vector3.up : Vector3.right).normalized;
-        Vector3 vDir = Vector3.Cross(n, uDir);
-        Vector3 e = b.extents;
-        float uMax = Mathf.Abs(e.x * uDir.x) + Mathf.Abs(e.y * uDir.y) + Mathf.Abs(e.z * uDir.z);
-        float vMax = Mathf.Abs(e.x * vDir.x) + Mathf.Abs(e.y * vDir.y) + Mathf.Abs(e.z * vDir.z);
-        if (uMax <= halfSize.x + skin || vMax <= halfSize.y + skin)
-        {
-            posW = hit.point;
-            return false;
-        }
-        Vector3 faceCenter = b.center + n * Vector3.Dot(hit.point - b.center, n);
-        Vector3 d = hit.point - faceCenter;
-        float uLimit = (uMax - halfSize.x - skin);
-        float vLimit = (vMax - halfSize.y - skin);
-        float u = Mathf.Clamp(Vector3.Dot(d, uDir), -uLimit, uLimit);
-        float v = Mathf.Clamp(Vector3.Dot(d, vDir), -vLimit, vLimit);
-        posW = faceCenter + uDir * u + vDir * v;
-        return true;
-    }
+	private void Update() {
+		if (_controls.Player.ShootBlue.WasPerformedThisFrame()) FirePortal(PortalColor.Blue);
+		if (_controls.Player.ShootOrange.WasPerformedThisFrame()) FirePortal(PortalColor.Orange);
+	}
 
-    private IEnumerator AppearPortal(PortalRenderer portal)
-    {
-        portal.gameObject.SetActive(true);
-        portal.SetCircleRadius(0f);
-        float elapsed = 0f;
-        float invDur = portalAppearDuration > 0f ? 1f / portalAppearDuration : 0f;
-        bool hasCurve = portalAppearCurve != null;
-        float targetRadius = portalTargetRadius;
-        while (elapsed < portalAppearDuration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed * invDur);
-            float curvedT = hasCurve ? portalAppearCurve.Evaluate(t) : t;
-            float radius = Mathf.LerpUnclamped(0f, targetRadius, curvedT);
-            portal.SetCircleRadius(radius);
-            yield return null;
-        }
-        portal.SetCircleRadius(targetRadius);
-    }
+	private void FirePortal(PortalColor color) {
+		int portalIndex = (int)color;
+		int otherIndex = 1 - portalIndex;
+		
+		if (!shootCamera) return;
+		
+		Ray ray = shootCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f));
+		if (!Physics.Raycast(ray, out RaycastHit hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
+		if (!hit.collider || !hit.collider.enabled) return;
+
+		int hitLayer = hit.collider.gameObject.layer;
+		if (hitLayer == _portalLayers[portalIndex]) return;
+
+		bool snapToWall = hitLayer == _portalLayers[otherIndex];
+		if (snapToWall && _support[otherIndex].col == null) return;
+
+		if (!GetPlacementData(ray, hit, snapToWall, otherIndex, out Vector3 normal, out Vector3 targetPoint, out Collider surfaceCollider))
+			return;
+
+		ComputePlaneBasis(normal, shootCamera.transform, out Vector3 right, out Vector3 up);
+
+		if (!TryClampOnBounds(surfaceCollider, targetPoint, normal, right, up, 
+			portalHalfSize, clampSkin, _portals[otherIndex], portalHalfSize,
+			out Vector3 finalPoint, out Vector3 planeCenter))
+			return;
+
+		PlacePortal(portalIndex, finalPoint, normal, up, surfaceCollider, planeCenter);
+	}
+
+	private bool GetPlacementData(Ray ray, RaycastHit hit, bool snapToWall, int otherIndex,
+		out Vector3 normal, out Vector3 targetPoint, out Collider surfaceCollider) {
+		
+		if (snapToWall) {
+			Support otherSupport = _support[otherIndex];
+			normal = otherSupport.n;
+			Plane wallPlane = new Plane(normal, otherSupport.planePoint);
+			if (!wallPlane.Raycast(ray, out float distance)) {
+				targetPoint = Vector3.zero;
+				surfaceCollider = null;
+				return false;
+			}
+			targetPoint = ray.GetPoint(distance);
+			surfaceCollider = otherSupport.col;
+		} else {
+			normal = hit.normal;
+			targetPoint = hit.point;
+			surfaceCollider = hit.collider;
+		}
+		
+		return true;
+	}
+
+	private void PlacePortal(int portalIndex, Vector3 position, Vector3 normal, Vector3 up, Collider surface, Vector3 planeCenter) {
+		_portals[portalIndex].transform.SetPositionAndRotation(
+			position + normal * wallOffset,
+			Quaternion.LookRotation(-normal, up)
+		);
+
+		_support[portalIndex] = new Support { 
+			col = surface, 
+			n = normal, 
+			planePoint = planeCenter 
+		};
+
+		StartCoroutine(AppearPortal(_portals[portalIndex]));
+	}
+
+	private static void ComputePlaneBasis(Vector3 normal, Transform cam, out Vector3 right, out Vector3 up) {
+		Vector3 camRight = cam ? cam.right : Vector3.right;
+		Vector3 projected = Vector3.ProjectOnPlane(camRight, normal);
+		
+		right = projected.sqrMagnitude > 1e-8f ? projected.normalized : Vector3.Cross(normal, Vector3.up).normalized;
+		up = Vector3.Cross(normal, right).normalized;
+	}
+
+	private static float ProjectAABBExtent(Vector3 extents, Vector3 direction) {
+		return Mathf.Abs(direction.x) * extents.x + 
+		       Mathf.Abs(direction.y) * extents.y + 
+		       Mathf.Abs(direction.z) * extents.z;
+	}
+
+	private static bool EllipsesOverlap(
+		float u1, float v1, Vector2 size1,
+		float u2, float v2, Vector2 size2,
+		Vector3 planeRight, Vector3 planeUp,
+		Vector3 ellipse2Right, Vector3 ellipse2Up)
+	{
+		float du = u2 - u1;
+		float dv = v2 - v1;
+		float centerDistSq = du * du + dv * dv;
+		
+		float maxRadius = Mathf.Max(size1.x, size1.y, size2.x, size2.y);
+		if (centerDistSq > (maxRadius * 4) * (maxRadius * 4)) return false;
+		if (centerDistSq < 0.0001f) return true;
+		
+		float centerDist = Mathf.Sqrt(centerDistSq);
+		float dirU = du / centerDist;
+		float dirV = dv / centerDist;
+		
+		float radius1 = GetEllipseRadiusInDirection(size1.x, size1.y, dirU, dirV);
+		
+		// Transform direction to ellipse 2's local space
+		float e2RightU = Vector3.Dot(ellipse2Right, planeRight);
+		float e2RightV = Vector3.Dot(ellipse2Right, planeUp);
+		float e2UpU = Vector3.Dot(ellipse2Up, planeRight);
+		float e2UpV = Vector3.Dot(ellipse2Up, planeUp);
+		
+		float localDirX = -(dirU * e2RightU + dirV * e2RightV);
+		float localDirY = -(dirU * e2UpU + dirV * e2UpV);
+		float localDirLen = Mathf.Sqrt(localDirX * localDirX + localDirY * localDirY);
+		
+		if (localDirLen > 0.001f) {
+			localDirX /= localDirLen;
+			localDirY /= localDirLen;
+		}
+		
+		float radius2 = GetEllipseRadiusInDirection(size2.x, size2.y, localDirX, localDirY);
+		
+		return centerDist < (radius1 + radius2);
+	}
+	
+	private static float GetEllipseRadiusInDirection(float a, float b, float dirX, float dirY) {
+		return Mathf.Sqrt((a * dirX) * (a * dirX) + (b * dirY) * (b * dirY));
+	}
+
+	private static bool TryClampOnBounds(
+		Collider collider, Vector3 hitPoint,
+		Vector3 normal, Vector3 right, Vector3 up,
+		Vector2 portalSize, float margin,
+		PortalRenderer otherPortal, Vector2 otherSize,
+		out Vector3 clampedPoint, out Vector3 planeCenter)
+	{
+		Bounds bounds = collider.bounds;
+		float maxRight = ProjectAABBExtent(bounds.extents, right);
+		float maxUp = ProjectAABBExtent(bounds.extents, up);
+
+		if (maxRight <= portalSize.x + margin || maxUp <= portalSize.y + margin) {
+			clampedPoint = hitPoint;
+			planeCenter = bounds.center;
+			return false;
+		}
+
+		planeCenter = bounds.center + normal * Vector3.Dot(normal, hitPoint - bounds.center);
+		Vector3 offset = hitPoint - planeCenter;
+		float u = Vector3.Dot(offset, right);
+		float v = Vector3.Dot(offset, up);
+
+		float clampRange = maxRight - portalSize.x - margin;
+		u = Mathf.Clamp(u, -clampRange, clampRange);
+		clampRange = maxUp - portalSize.y - margin;
+		v = Mathf.Clamp(v, -clampRange, clampRange);
+
+		if (otherPortal && otherPortal.gameObject.activeInHierarchy) {
+			Transform other = otherPortal.transform;
+			Vector3 otherNormal = -other.forward;
+			
+			if (Mathf.Abs(Vector3.Dot(otherNormal, normal)) > 0.995f) {
+				float dist = Vector3.Dot(other.position - planeCenter, normal);
+				if (Mathf.Abs(dist) < 0.05f) {
+					Vector3 otherOnPlane = other.position - normal * dist;
+					float otherU = Vector3.Dot(otherOnPlane - planeCenter, right);
+					float otherV = Vector3.Dot(otherOnPlane - planeCenter, up);
+					
+					if (EllipsesOverlap(u, v, portalSize, otherU, otherV, otherSize, 
+					                    right, up, other.right, other.up)) {
+						clampedPoint = hitPoint;
+						return false;
+					}
+				}
+			}
+		}
+
+		clampedPoint = planeCenter + right * u + up * v;
+		return true;
+	}
+
+	private IEnumerator AppearPortal(PortalRenderer portal) {
+		portal.gameObject.SetActive(true);
+		portal.SetCircleRadius(0f);
+		
+		for (float t = 0; t < portalAppearDuration; t += Time.deltaTime) {
+			float progress = t / portalAppearDuration;
+			if (portalAppearCurve != null) progress = portalAppearCurve.Evaluate(progress);
+			portal.SetCircleRadius(portalTargetRadius * progress);
+			yield return null;
+		}
+		
+		portal.SetCircleRadius(portalTargetRadius);
+	}
 }
