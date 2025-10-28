@@ -3847,7 +3847,7 @@ MonoBehaviour:
     m_Bits: 64
   shootDistance: 1000.9
   shootCamera: {fileID: 37313535}
-  portalAppearDuration: 0.3
+  portalAppearDuration: 0.5
   portalTargetRadius: 0.4
   portalAppearCurve:
     serializedVersion: 2
@@ -3873,11 +3873,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  portalHalfSize: {x: 0.6, y: 0.9}
+  portalHalfSize: {x: 0.62, y: 0.9}
   wallOffset: 0.02
   clampSkin: 0.01
-  showPortalBounds: 1
-  showPlacementPreview: 1
 --- !u!1 &2042437990
 GameObject:
   m_ObjectHideFlags: 0

@@ -74,12 +74,22 @@ public class PortalGun : MonoBehaviour {
 
 		ComputePlaneBasis(normal, shootCamera.transform, out Vector3 right, out Vector3 up);
 
-		if (!TryClampOnBounds(surfaceCollider, targetPoint, normal, right, up, 
-			portalHalfSize, clampSkin, _portals[otherIndex], portalHalfSize,
-			out Vector3 finalPoint, out Vector3 planeCenter))
-			return;
+		// Calculate plane center for both placement attempts
+		Bounds bounds = surfaceCollider.bounds;
+		Vector3 planeCenter = bounds.center + normal * Vector3.Dot(normal, targetPoint - bounds.center);
 
-		PlacePortal(portalIndex, finalPoint, normal, up, surfaceCollider, planeCenter);
+		// Try normal placement first
+		if (TryClampOnBounds(surfaceCollider, targetPoint, normal, right, up, 
+			portalHalfSize, clampSkin, _portals[otherIndex], portalHalfSize,
+			out Vector3 finalPoint, out Vector3 _)) {
+			// Normal placement succeeded
+			PlacePortal(portalIndex, finalPoint, normal, up, surfaceCollider, planeCenter);
+		} else if (_portals[otherIndex].gameObject.activeInHierarchy) {
+			// Normal placement failed - try smart adjacent placement if other portal exists
+			if (TrySmartPlacement(targetPoint, right, up, portalIndex, otherIndex, surfaceCollider, normal, planeCenter, out Vector3 smartPosition)) {
+				PlacePortal(portalIndex, smartPosition, normal, up, surfaceCollider, planeCenter);
+			}
+		}
 	}
 
 	private bool GetPlacementData(Ray ray, RaycastHit hit, bool snapToWall, int otherIndex,
@@ -103,6 +113,102 @@ public class PortalGun : MonoBehaviour {
 		}
 		
 		return true;
+	}
+
+	private bool TrySmartPlacement(Vector3 targetPoint, Vector3 right, Vector3 up, int newPortalIndex, int existingPortalIndex, 
+		Collider surfaceCollider, Vector3 normal, Vector3 planeCenter, out Vector3 finalPosition) {
+		
+		Transform existingPortal = _portals[existingPortalIndex].transform;
+		Vector3 existingPos = existingPortal.position;
+		
+		// Get surface bounds in UV space
+		Bounds bounds = surfaceCollider.bounds;
+		float maxRight = ProjectAABBExtent(bounds.extents, right);
+		float maxUp = ProjectAABBExtent(bounds.extents, up);
+		float clampRangeRight = maxRight - portalHalfSize.x - clampSkin;
+		float clampRangeUp = maxUp - portalHalfSize.y - clampSkin;
+		
+		// Get existing portal position in UV space
+		Vector3 existingOffset = existingPos - planeCenter;
+		float existingU = Vector3.Dot(existingOffset, right);
+		float existingV = Vector3.Dot(existingOffset, up);
+		
+		// Calculate desired direction from existing portal to target point in UV space
+		Vector3 offset = targetPoint - existingPos;
+		float offsetU = Vector3.Dot(offset, right);
+		float offsetV = Vector3.Dot(offset, up);
+		float offsetMagnitude = Mathf.Sqrt(offsetU * offsetU + offsetV * offsetV);
+		
+		if (offsetMagnitude < 0.001f) {
+			// Aiming at existing portal center - default to camera right direction
+			offsetU = 1f;
+			offsetV = 0f;
+			offsetMagnitude = 1f;
+		}
+		
+		float dirU = offsetU / offsetMagnitude;
+		float dirV = offsetV / offsetMagnitude;
+		
+		// Calculate minimum separation distance in this direction
+		// Both portals are same size, so we use the same halfSize for both
+		float radiusInDirection = GetEllipseRadiusInDirection(portalHalfSize.x, portalHalfSize.y, dirU, dirV);
+		float minSeparation = radiusInDirection * 2f + clampSkin * 2f;
+		
+		// Calculate ideal position: existing portal + minimum separation in aim direction
+		float idealU = existingU + dirU * minSeparation;
+		float idealV = existingV + dirV * minSeparation;
+		
+		// Check if ideal position is within bounds
+		if (Mathf.Abs(idealU) <= clampRangeRight && Mathf.Abs(idealV) <= clampRangeUp) {
+			// Ideal position fits within surface
+			finalPosition = planeCenter + right * idealU + up * idealV;
+			return true;
+		}
+		
+		// Ideal position is out of bounds - need to find closest valid position on surface edge
+		// Clamp to surface bounds
+		float clampedU = Mathf.Clamp(idealU, -clampRangeRight, clampRangeRight);
+		float clampedV = Mathf.Clamp(idealV, -clampRangeUp, clampRangeUp);
+		
+		// Check if clamped position maintains minimum separation
+		float distU = clampedU - existingU;
+		float distV = clampedV - existingV;
+		float distToExisting = Mathf.Sqrt(distU * distU + distV * distV);
+		
+		if (distToExisting >= minSeparation) {
+			// Clamped position is far enough from existing portal
+			finalPosition = planeCenter + right * clampedU + up * clampedV;
+			return true;
+		}
+		
+		// Clamped position is too close - find valid position along surface edge
+		// Move along the direction but clamp to stay within bounds
+		float maxDistInDirection = Mathf.Min(
+			clampRangeRight / Mathf.Max(Mathf.Abs(dirU), 0.001f),
+			clampRangeUp / Mathf.Max(Mathf.Abs(dirV), 0.001f)
+		);
+		
+		float safeDistance = Mathf.Max(minSeparation, 0f);
+		float testU = existingU + dirU * safeDistance;
+		float testV = existingV + dirV * safeDistance;
+		
+		// Clamp again to ensure we're within bounds
+		testU = Mathf.Clamp(testU, -clampRangeRight, clampRangeRight);
+		testV = Mathf.Clamp(testV, -clampRangeUp, clampRangeUp);
+		
+		// Final check: verify this position doesn't overlap
+		distU = testU - existingU;
+		distV = testV - existingV;
+		float finalDist = Mathf.Sqrt(distU * distU + distV * distV);
+		
+		if (finalDist >= minSeparation * 0.95f) { // Allow 5% tolerance
+			finalPosition = planeCenter + right * testU + up * testV;
+			return true;
+		}
+		
+		// No valid position found
+		finalPosition = Vector3.zero;
+		return false;
 	}
 
 	private void PlacePortal(int portalIndex, Vector3 position, Vector3 normal, Vector3 up, Collider surface, Vector3 planeCenter) {

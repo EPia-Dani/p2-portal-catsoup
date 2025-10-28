@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5710452782233508911}
   - component: {fileID: 6168494325452377824}
   - component: {fileID: 1747989178731558886}
-  m_Layer: 7
+  m_Layer: 9
   m_Name: Screen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -96,7 +96,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5365184601484988808}
   - component: {fileID: 2069985398768331543}
-  m_Layer: 7
+  m_Layer: 9
   m_Name: Orange
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -146,7 +146,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8148096731430981535}
-  m_Layer: 7
+  m_Layer: 9
   m_Name: PortalGunCol
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -179,7 +179,7 @@ GameObject:
   - component: {fileID: 2174037429720672709}
   - component: {fileID: 8899481713528778775}
   - component: {fileID: 5243277814455024888}
-  m_Layer: 7
+  m_Layer: 9
   m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
