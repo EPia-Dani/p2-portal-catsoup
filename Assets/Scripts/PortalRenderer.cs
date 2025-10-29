@@ -24,6 +24,8 @@ public class PortalRenderer : MonoBehaviour {
 
 	private void Awake() {
 		mainCam = Camera.main;
+		if (!cam) cam = GetComponentInChildren<Camera>(true);
+		if (!portalMeshRenderer) portalMeshRenderer = GetComponentInChildren<MeshRenderer>(true);
 		propertyBlock = new MaterialPropertyBlock();
 		matrices = new Stack<Matrix4x4>(recursionLimit);
 		scaleMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
@@ -32,6 +34,7 @@ public class PortalRenderer : MonoBehaviour {
 	public void SetPair(PortalRenderer pairPortal) => pair = pairPortal;
 
 	public void SetCircleRadius(float radius) {
+		if (!portalMeshRenderer) return;
 		portalMeshRenderer.GetPropertyBlock(propertyBlock);
 		propertyBlock.SetFloat(CircleRadiusId, radius);
 		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
@@ -47,6 +50,12 @@ public class PortalRenderer : MonoBehaviour {
 	public bool IsOpening => isOpening;
 
 	private void LateUpdate() {
+		if (!mainCam) {
+			mainCam = Camera.main;
+			if (!mainCam) return;
+		}
+
+		if (!cam) return;
 		if (ShouldRender()) {
 			RenderPortal();
 		}
@@ -74,6 +83,7 @@ public class PortalRenderer : MonoBehaviour {
 	}
 
 	private void UpdatePortalShader() {
+		if (!portalMeshRenderer) return;
 		portalMeshRenderer.GetPropertyBlock(propertyBlock);
 		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
 		portalMeshRenderer.SetPropertyBlock(propertyBlock);

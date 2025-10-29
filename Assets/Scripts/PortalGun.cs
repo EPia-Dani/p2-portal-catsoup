@@ -199,19 +199,15 @@ public class PortalGun : MonoBehaviour {
 	}
 
 	private void CheckAndStartOpening() {
-		if (AreAllPortalsReadyToOpen()) {
-			_portals[0].StartOpening();
-			_portals[1].StartOpening();
-		}
+		if (!_portals[0].gameObject.activeInHierarchy || !_portals[1].gameObject.activeInHierarchy) return;
+		TryStartOpening(_portals[0]);
+		TryStartOpening(_portals[1]);
 	}
 
-	private bool AreAllPortalsReadyToOpen() {
-		return _portals[0].gameObject.activeInHierarchy &&
-		       _portals[1].gameObject.activeInHierarchy &&
-		       !_portals[0].IsFullyOpen &&
-		       !_portals[1].IsFullyOpen &&
-		       !_portals[0].IsOpening &&
-		       !_portals[1].IsOpening;
+	private static void TryStartOpening(PortalRenderer portal) {
+		if (!portal.IsOpening && !portal.IsFullyOpen) {
+			portal.StartOpening();
+		}
 	}
 
 	private readonly struct PortalPlane {
