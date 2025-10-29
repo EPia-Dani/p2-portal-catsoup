@@ -31,7 +31,6 @@ public class PortalRenderer : MonoBehaviour {
 		scaleMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 	}
 
-	public void SetPair(PortalRenderer pairPortal) => pair = pairPortal;
 
 	public void SetCircleRadius(float radius) {
 		if (!portalMeshRenderer) return;

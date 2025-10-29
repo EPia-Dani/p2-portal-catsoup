@@ -2,17 +2,11 @@ using System.Collections;
 using Input;
 using UnityEngine;
 
-public enum PortalColor {
-	Blue,
-	Orange
-}
 
 public class PortalGun : MonoBehaviour {
-	[SerializeField] private PortalRenderer bluePortal;
-	[SerializeField] private PortalRenderer orangePortal;
-
+	
+	[SerializeField] private PortalRenderer[] _portals = new PortalRenderer[2];
 	[SerializeField] private LayerMask shootMask = ~0;
-	[SerializeField] private LayerMask placeableLayers = ~0;
 	[SerializeField] private float shootDistance = 1000f;
 	[SerializeField] private Camera shootCamera;
 
@@ -25,17 +19,15 @@ public class PortalGun : MonoBehaviour {
 	[SerializeField] private float clampSkin = 0.01f;
 
 	// Constants
-	private const float EPSILON = 1e-6f;
-	private const float OVERLAP_TOLERANCE = 0.95f;
-	private const int DIRECTION_ATTEMPTS = 4;
-	private const float SURFACE_NORMAL_THRESHOLD = 0.995f;
+	private const float Epsilon = 1e-6f;
+	private const float OverlapTolerance = 0.95f;
+	private const int DirectionAttempts = 4;
+	private const float SurfaceNormalThreshold = 0.995f;
 
-	private readonly PortalRenderer[] _portals = new PortalRenderer[2];
-	private readonly int[] _portalLayers = new int[2];
+	
 	private readonly Support[] _support = new Support[2];
 
 	private PlayerInput _controls;
-	private Vector3 _screenCenter = new(0.5f, 0.5f);
 
 	private struct Support {
 		public PortalPlane Plane;
@@ -43,71 +35,41 @@ public class PortalGun : MonoBehaviour {
 		public bool IsValid => Plane.IsValid;
 	}
 
-	private void Awake() {
-		_controls = new PlayerInput();
-		if (!shootCamera) shootCamera = Camera.main;
-
-		_portals[0] = bluePortal;
-		_portals[1] = orangePortal;
-
-		_portalLayers[0] = LayerMask.NameToLayer("PortalBlue");
-		_portalLayers[1] = LayerMask.NameToLayer("PortalOrange");
-		
-		InitializePortals();
-	}
-
-	private void InitializePortals() {
-		for (int i = 0; i < 2; i++) {
-			_portals[i].gameObject.SetActive(false);
-		}
-		
-		bluePortal.SetPair(orangePortal);
-		orangePortal.SetPair(bluePortal);
-	}
-
-	private void OnEnable() => _controls?.Enable();
-	private void OnDisable() => _controls?.Disable();
-	private void OnDestroy() => _controls?.Dispose();
-
+	private void Awake() { _controls = new PlayerInput(); }
+	
+	private void OnEnable() { _controls.Enable(); }
+	
 	private void Update() {
-		if (_controls.Player.ShootBlue.WasPerformedThisFrame()) FirePortal(PortalColor.Blue);
-		if (_controls.Player.ShootOrange.WasPerformedThisFrame()) FirePortal(PortalColor.Orange);
+		if (_controls.Player.ShootBlue.WasPerformedThisFrame()) FirePortal(0);
+		if (_controls.Player.ShootOrange.WasPerformedThisFrame()) FirePortal(1);
 	}
 
-	private void FirePortal(PortalColor color) {
-		if (!shootCamera) return;
-
-		int portalIndex = (int)color;
+	private void FirePortal(int portalIndex) {
+		
 		int otherIndex = 1 - portalIndex;
 
-		Ray ray = shootCamera.ViewportPointToRay(_screenCenter);
+		Ray ray = shootCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 		if (!Physics.Raycast(ray, out RaycastHit hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
 		if (!hit.collider || !hit.collider.enabled) return;
 
-		if (!ValidateHit(hit, portalIndex, otherIndex)) return;
 
-		bool hitsOtherPortal = hit.collider.gameObject.layer == _portalLayers[otherIndex];
 		Support other = _support[otherIndex];
 
-		if (hitsOtherPortal && !other.IsValid) return;
-		if (!hitsOtherPortal && (placeableLayers.value & (1 << hit.collider.gameObject.layer)) == 0) return;
 
-		if (!TryBuildPlane(hitsOtherPortal ? other : default, hit, ray, shootCamera.transform, out PortalPlane plane, out Vector3 targetPoint))
+		if (!TryBuildPlane(default, hit, ray, shootCamera.transform, out PortalPlane plane, out Vector3 targetPoint))
 			return;
 
 		Vector2 uv = plane.Clamp(plane.ToUV(targetPoint));
-		bool sharePlane = hitsOtherPortal || (other.IsValid && plane.SameSurface(other.Plane));
+		
+		bool sharePlane = (other.IsValid && plane.SameSurface(other.Plane));
+		
 		if (sharePlane && !ResolveOverlap(other, plane, ref uv)) return;
 
 		Vector3 worldPoint = plane.FromUV(uv);
 		PlacePortal(portalIndex, plane, worldPoint);
 	}
 
-	private bool ValidateHit(RaycastHit hit, int portalIndex, int otherIndex) {
-		int hitLayer = hit.collider.gameObject.layer;
-		int ownLayer = _portalLayers[portalIndex];
-		return hitLayer != ownLayer;
-	}
+
 
 	private bool TryBuildPlane(Support other, RaycastHit hit, Ray ray, Transform reference, out PortalPlane plane, out Vector3 targetPoint) {
 		if (other.IsValid) {
@@ -127,7 +89,7 @@ public class PortalGun : MonoBehaviour {
 		float spacing = MinSpacing(delta, other, plane);
 		if (delta.sqrMagnitude >= spacing * spacing) return true;
 
-		Vector2 primary = delta.sqrMagnitude > EPSILON ? delta.normalized : Vector2.right;
+		Vector2 primary = delta.sqrMagnitude > Epsilon ? delta.normalized : Vector2.right;
 		Vector2 orthogonal = new Vector2(-primary.y, primary.x);
 
 		return TryDirection(primary, otherUV, other, plane, ref uv)
@@ -137,19 +99,19 @@ public class PortalGun : MonoBehaviour {
 	}
 
 	private bool TryDirection(Vector2 dir, Vector2 origin, Support other, PortalPlane plane, ref Vector2 uv) {
-		if (dir.sqrMagnitude < EPSILON) return false;
+		if (dir.sqrMagnitude < Epsilon) return false;
 		dir.Normalize();
 
 		float required = MinSpacing(dir, other, plane);
 		float step = Mathf.Max(portalHalfSize.x, portalHalfSize.y);
 
-		for (int i = 0; i < DIRECTION_ATTEMPTS; i++) {
+		for (int i = 0; i < DirectionAttempts; i++) {
 			Vector2 candidate = plane.Clamp(origin + dir * (required + step * i));
 			Vector2 offset = candidate - origin;
-			if (offset.sqrMagnitude < EPSILON) continue;
+			if (offset.sqrMagnitude < Epsilon) continue;
 
 			float needed = MinSpacing(offset, other, plane);
-			if (offset.sqrMagnitude >= needed * needed * OVERLAP_TOLERANCE) {
+			if (offset.sqrMagnitude >= needed * needed * OverlapTolerance) {
 				uv = candidate;
 				return true;
 			}
@@ -159,12 +121,12 @@ public class PortalGun : MonoBehaviour {
 	}
 
 	private float MinSpacing(Vector2 direction, Support other, PortalPlane plane) {
-		if (direction.sqrMagnitude < EPSILON) direction = Vector2.right;
+		if (direction.sqrMagnitude < Epsilon) direction = Vector2.right;
 		direction.Normalize();
 
 		float radiusA = RadiusInDirection(direction);
 		Vector3 worldDir = plane.Direction(direction);
-		if (worldDir.sqrMagnitude < EPSILON) worldDir = plane.Right;
+		if (worldDir.sqrMagnitude < Epsilon) worldDir = plane.Right;
 		else worldDir.Normalize();
 
 		Vector2 otherDir = other.Plane.ToPlaneVector(worldDir);
@@ -173,7 +135,7 @@ public class PortalGun : MonoBehaviour {
 	}
 
 	private float RadiusInDirection(Vector2 dir) {
-		if (dir.sqrMagnitude < EPSILON) return Mathf.Max(portalHalfSize.x, portalHalfSize.y);
+		if (dir.sqrMagnitude < Epsilon) return Mathf.Max(portalHalfSize.x, portalHalfSize.y);
 		dir.Normalize();
 		float x = portalHalfSize.x * dir.x;
 		float y = portalHalfSize.y * dir.y;
@@ -275,12 +237,12 @@ public class PortalGun : MonoBehaviour {
 
 		public Vector3 Direction(Vector2 dir) => Right * dir.x + Up * dir.y;
 		public Vector2 ToPlaneVector(Vector3 dir) => new Vector2(Vector3.Dot(dir, Right), Vector3.Dot(dir, Up));
-		public bool SameSurface(PortalPlane other) => Surface == other.Surface && Mathf.Abs(Vector3.Dot(Normal, other.Normal)) > SURFACE_NORMAL_THRESHOLD;
+		public bool SameSurface(PortalPlane other) => Surface == other.Surface && Mathf.Abs(Vector3.Dot(Normal, other.Normal)) > SurfaceNormalThreshold;
 
 		private static void ComputeBasis(Vector3 normal, Transform reference, out Vector3 right, out Vector3 up) {
 			Vector3 camRight = reference ? reference.right : Vector3.right;
 			Vector3 projected = Vector3.ProjectOnPlane(camRight, normal);
-			right = projected.sqrMagnitude > EPSILON ? projected.normalized : Vector3.Cross(normal, Vector3.up).normalized;
+			right = projected.sqrMagnitude > Epsilon ? projected.normalized : Vector3.Cross(normal, Vector3.up).normalized;
 			up = Vector3.Cross(normal, right).normalized;
 		}
 
