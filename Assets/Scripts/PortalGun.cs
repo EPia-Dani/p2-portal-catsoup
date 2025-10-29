@@ -55,15 +55,8 @@ public class PortalGun : MonoBehaviour {
 
 		Support other = _support[otherIndex];
 		
-		if (!PortalPlane.TryCreate(
-			hit.collider,
-			hit.normal,
-			hit.point,
-			shootCamera.transform,
-			portalHalfSize,
-			clampSkin,
-			out PortalPlane plane
-		)) return;
+		if (!PortalPlane.TryCreate(hit.collider, hit.normal, hit.point,
+			shootCamera.transform, portalHalfSize, clampSkin, out PortalPlane plane)) return;
 
 		Vector2 uv = plane.Clamp(plane.ToUV(hit.point));
 		
@@ -74,13 +67,7 @@ public class PortalGun : MonoBehaviour {
 		Vector3 worldPoint = plane.FromUV(uv);
 		PlacePortal(portalIndex, plane, worldPoint);
 	}
-
-
-	/// <summary>
-	///
-	/// </summary>
 	
-
 	private bool ResolveOverlap(Support other, PortalPlane plane, ref Vector2 uv) {
 		if (!other.IsValid || !plane.SameSurface(other.Plane)) return true;
 
@@ -191,11 +178,6 @@ public class PortalGun : MonoBehaviour {
 		}
 
 		public static bool TryCreate(Collider surface, Vector3 normal, Vector3 anchor, Transform reference, Vector2 halfSize, float margin, out PortalPlane plane) {
-			if (!surface) {
-				plane = default;
-				return false;
-			}
-
 			ComputeBasis(normal, reference, out Vector3 right, out Vector3 up);
 
 			Bounds bounds = surface.bounds;
@@ -210,16 +192,6 @@ public class PortalGun : MonoBehaviour {
 			}
 
 			plane = new PortalPlane(surface, center, normal, right, up, clamp);
-			return true;
-		}
-
-		public static bool TryProject(PortalPlane plane, Ray ray, out Vector3 point) {
-			Plane wall = new Plane(plane.Normal, plane.Center);
-			if (!wall.Raycast(ray, out float distance)) {
-				point = default;
-				return false;
-			}
-			point = ray.GetPoint(distance);
 			return true;
 		}
 
