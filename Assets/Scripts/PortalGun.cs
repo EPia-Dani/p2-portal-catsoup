@@ -54,12 +54,18 @@ public class PortalGun : MonoBehaviour {
 
 
 		Support other = _support[otherIndex];
+		
+		if (!PortalPlane.TryCreate(
+			hit.collider,
+			hit.normal,
+			hit.point,
+			shootCamera.transform,
+			portalHalfSize,
+			clampSkin,
+			out PortalPlane plane
+		)) return;
 
-
-		if (!TryBuildPlane(default, hit, ray, shootCamera.transform, out PortalPlane plane, out Vector3 targetPoint))
-			return;
-
-		Vector2 uv = plane.Clamp(plane.ToUV(targetPoint));
+		Vector2 uv = plane.Clamp(plane.ToUV(hit.point));
 		
 		bool sharePlane = (other.IsValid && plane.SameSurface(other.Plane));
 		
@@ -70,16 +76,10 @@ public class PortalGun : MonoBehaviour {
 	}
 
 
-
-	private bool TryBuildPlane(Support other, RaycastHit hit, Ray ray, Transform reference, out PortalPlane plane, out Vector3 targetPoint) {
-		if (other.IsValid) {
-			plane = other.Plane;
-			return PortalPlane.TryProject(plane, ray, out targetPoint);
-		}
-
-		targetPoint = hit.point;
-		return PortalPlane.TryCreate(hit.collider, hit.normal, targetPoint, reference, portalHalfSize, clampSkin, out plane);
-	}
+	/// <summary>
+	///
+	/// </summary>
+	
 
 	private bool ResolveOverlap(Support other, PortalPlane plane, ref Vector2 uv) {
 		if (!other.IsValid || !plane.SameSurface(other.Plane)) return true;
