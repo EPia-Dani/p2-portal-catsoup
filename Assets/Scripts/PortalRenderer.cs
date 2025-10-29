@@ -1,70 +1,127 @@
 ﻿using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class PortalRenderer : MonoBehaviour {
 	[SerializeField] public PortalRenderer pair;
 	[SerializeField] private Camera cam;
 	[SerializeField] private int recursionLimit = 5;
-
 	[SerializeField] private MeshRenderer portalMeshRenderer;
-	private MaterialPropertyBlock propertyBlock;
-	private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
+	[SerializeField] private float portalOpenDuration = 1f;
+	[SerializeField] private AnimationCurve portalOpenCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
+	private MaterialPropertyBlock propertyBlock;
 	private Camera mainCam;
+	private Stack<Matrix4x4> matrices;
+	private Matrix4x4 scaleMatrix;
+
+	private float portalOpenProgress = 0f;
+	private bool isOpening = false;
+	private Coroutine openingCoroutine;
+
+	private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
+	private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
 
 	private void Awake() {
 		mainCam = Camera.main;
-		if (portalMeshRenderer == null) {
-			portalMeshRenderer = GetComponentInChildren<MeshRenderer>(true);
-		}
 		propertyBlock = new MaterialPropertyBlock();
+		matrices = new Stack<Matrix4x4>(recursionLimit);
+		scaleMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 	}
 
+	public void SetPair(PortalRenderer pairPortal) => pair = pairPortal;
+
 	public void SetCircleRadius(float radius) {
-		if (portalMeshRenderer == null) return;
 		portalMeshRenderer.GetPropertyBlock(propertyBlock);
 		propertyBlock.SetFloat(CircleRadiusId, radius);
+		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
 		portalMeshRenderer.SetPropertyBlock(propertyBlock);
 	}
 
+	public void StartOpening() {
+		if (openingCoroutine != null) StopCoroutine(openingCoroutine);
+		openingCoroutine = StartCoroutine(OpeningAnimation());
+	}
+
+	public bool IsFullyOpen => portalOpenProgress >= 0.8f;
+	public bool IsOpening => isOpening;
+
 	private void LateUpdate() {
-		// Store camera positions and rotations for each recursion level
-		Vector3[] renderPositions = new Vector3[recursionLimit];
-		Quaternion[] renderRotations = new Quaternion[recursionLimit];
-
-		// Start with the main camera's transform
-		Matrix4x4 localToWorldMatrix = mainCam.transform.localToWorldMatrix;
-		
-		// Calculate transformations for each recursion level
-		for (int i = 0; i < recursionLimit; i++) {
-			// Build portal camera transformation matrix through both portals
-			localToWorldMatrix = pair.transform.localToWorldMatrix // Transform to pair portal's space
-			                     * Matrix4x4.Scale(new Vector3(-1f, 1f, -1f)) // Flip to face player
-			                     * transform.worldToLocalMatrix // Transform through this portal
-			                     * localToWorldMatrix; // From previous camera position
-
-			// Store in reverse order (furthest recursion first)
-			int renderOrderIndex = recursionLimit - i - 1;
-			renderPositions[renderOrderIndex] = localToWorldMatrix.GetPosition();
-			renderRotations[renderOrderIndex] = Quaternion.LookRotation(
-				localToWorldMatrix.GetColumn(2), 
-				localToWorldMatrix.GetColumn(1)
-			);
+		if (ShouldRender()) {
+			RenderPortal();
 		}
+	}
 
-		// Render from furthest to nearest recursion
-		for (int i = 0; i < recursionLimit; i++) {
-			// Set portal camera position and rotation
-			cam.transform.SetPositionAndRotation(renderPositions[i], renderRotations[i]);
+	private IEnumerator OpeningAnimation() {
+		isOpening = true;
+		portalOpenProgress = 0f;
+		float elapsed = 0f;
+		const float targetProgress = 0.8f;
 
-			// Transform portal plane to camera space for oblique projection
-			Vector3 normal = -cam.worldToCameraMatrix.MultiplyVector(pair.transform.forward).normalized;
-
-			// Create clip plane and apply oblique projection
-			Vector4 clipPlane = new Vector4(normal.x, normal.y, normal.z, 
-				-Vector3.Dot(cam.worldToCameraMatrix.MultiplyPoint(pair.transform.position), normal));
+		while (elapsed < portalOpenDuration) {
+			elapsed += Time.deltaTime;
+			float normalizedTime = elapsed / portalOpenDuration;
+			float curvedTime = portalOpenCurve.Evaluate(normalizedTime);
+			portalOpenProgress = Mathf.Clamp01(curvedTime * targetProgress);
 			
-			cam.projectionMatrix = mainCam.CalculateObliqueMatrix(clipPlane);
-			cam.Render();
+			UpdatePortalShader();
+			yield return null;
 		}
+
+		portalOpenProgress = targetProgress;
+		isOpening = false;
+		openingCoroutine = null;
+	}
+
+	private void UpdatePortalShader() {
+		portalMeshRenderer.GetPropertyBlock(propertyBlock);
+		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
+		portalMeshRenderer.SetPropertyBlock(propertyBlock);
+	}
+
+	private bool ShouldRender() {
+		if (!pair) return false;
+		bool thisCanRender = isOpening || IsFullyOpen;
+		bool pairCanRender = pair.IsOpening || pair.IsFullyOpen;
+		return thisCanRender && pairCanRender;
+	}
+
+	private void RenderPortal() {
+		BuildMatrices();
+		var pairForward = pair.transform.forward;
+		var pairPosition = pair.transform.position;
+
+		while (matrices.Count > 0) {
+			RenderLevel(matrices.Pop(), pairForward, pairPosition);
+		}
+	}
+
+	private void BuildMatrices() {
+		matrices.Clear();
+		var pairLocalToWorld = pair.transform.localToWorldMatrix;
+		var thisWorldToLocal = transform.worldToLocalMatrix;
+		var localToWorldMatrix = mainCam.transform.localToWorldMatrix;
+
+		for (var i = 0; i < recursionLimit; i++) {
+			localToWorldMatrix = pairLocalToWorld * scaleMatrix * thisWorldToLocal * localToWorldMatrix;
+			matrices.Push(localToWorldMatrix);
+		}
+	}
+
+	private void RenderLevel(Matrix4x4 matrix, Vector3 pairForward, Vector3 pairPosition) {
+		cam.transform.SetPositionAndRotation(
+			matrix.GetPosition(),
+			Quaternion.LookRotation(matrix.GetColumn(2), matrix.GetColumn(1))
+		);
+
+		var worldToCameraMatrix = cam.worldToCameraMatrix;
+		Vector3 normal = -worldToCameraMatrix.MultiplyVector(pairForward).normalized;
+		Vector4 clipPlane = new Vector4(
+			normal.x, normal.y, normal.z,
+			-Vector3.Dot(worldToCameraMatrix.MultiplyPoint(pairPosition), normal)
+		);
+
+		cam.projectionMatrix = mainCam.CalculateObliqueMatrix(clipPlane);
+		cam.Render();
 	}
 }

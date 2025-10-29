@@ -173,7 +173,41 @@ MonoBehaviour:
   pair: {fileID: 1593175739}
   cam: {fileID: 803321365}
   recursionLimit: 5
-  portalMeshRenderer: {fileID: 0}
+  portalMeshRenderer: {fileID: 541318418}
+  portalOpenDuration: 0.5
+  portalOpenCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.49551168
+      value: 0.49326771
+      inSlope: 3.1367466
+      outSlope: 3.1367466
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.07497037
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!4 &12456627
 Transform:
   m_ObjectHideFlags: 0
@@ -3152,7 +3186,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1506261004
 Transform:
   m_ObjectHideFlags: 0
@@ -3286,7 +3320,41 @@ MonoBehaviour:
   pair: {fileID: 12456626}
   cam: {fileID: 1401694645}
   recursionLimit: 5
-  portalMeshRenderer: {fileID: 0}
+  portalMeshRenderer: {fileID: 236522453}
+  portalOpenDuration: 0.5
+  portalOpenCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.49551168
+      value: 0.49326771
+      inSlope: 3.1367466
+      outSlope: 3.1367466
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.07497037
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!4 &1593175740
 Transform:
   m_ObjectHideFlags: 0
@@ -4007,14 +4075,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f942616de4e66c8409885a92144f0eab, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portals:
-  - {fileID: 1593175739}
-  - {fileID: 12456626}
+  bluePortal: {fileID: 1593175739}
+  orangePortal: {fileID: 12456626}
   shootMask:
     serializedVersion: 2
     m_Bits: 64
+  placeableLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
   shootDistance: 1000.9
-  portalAppearDuration: 0.4
+  shootCamera: {fileID: 0}
+  portalAppearDuration: 0.3
   portalTargetRadius: 0.4
   portalAppearCurve:
     serializedVersion: 2
@@ -4058,9 +4129,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  portalHalfSize: {x: 0.7, y: 0.9}
+  portalHalfSize: {x: 0.6, y: 0.9}
   wallOffset: 0.001
-  surfaceSkin: 0.01
+  clampSkin: 0.01
 --- !u!1 &2042437990
 GameObject:
   m_ObjectHideFlags: 0
