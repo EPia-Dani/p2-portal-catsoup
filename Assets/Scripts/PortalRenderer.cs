@@ -13,7 +13,6 @@ public class PortalRenderer : MonoBehaviour {
 	[SerializeField] private float portalAppearDuration = 0.3f;
 	[SerializeField] private float portalTargetRadius = 0.4f;
 	[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-	private float portalTargetFPS = 60f;
 
 	private MaterialPropertyBlock propertyBlock;
 	private Stack<Matrix4x4> matrices;
@@ -36,8 +35,10 @@ public class PortalRenderer : MonoBehaviour {
 	private float cachedCircleRadius = -1f;
 	private float cachedPortalOpen = -1f;
 
-	// Temporal rendering: frame skip interval calculated based on target FPS
+	// Temporal rendering: frame skip interval (directly set by PortalManager)
 	private int frameSkipInterval = 1;
+	private int renderOffset = 0; // Stagger portal renders to avoid both rendering same frame
+	private int portalRefreshRatePercent = 50; // Percentage of main camera FPS
 
 	private void Awake() {
 		if (!cam) cam = GetComponentInChildren<Camera>(true);
@@ -45,13 +46,6 @@ public class PortalRenderer : MonoBehaviour {
 		propertyBlock = new MaterialPropertyBlock();
 		matrices = new Stack<Matrix4x4>(recursionLimit);
 		scaleMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
-		
-		// Calculate frame skip interval dynamically based on actual game FPS
-		// Example: if game runs at 90 FPS and we want 60 FPS portals: 90/60 = 1.5 → skip 1 frame
-		if (Time.deltaTime > 0) {
-			float detectedGameFPS = 1f / Time.deltaTime;
-			frameSkipInterval = Mathf.Max(1, Mathf.RoundToInt(detectedGameFPS / portalTargetFPS));
-		}
 	}
 
 	/// <summary>
@@ -101,16 +95,33 @@ public class PortalRenderer : MonoBehaviour {
 	}
 
 	/// <summary>
-	/// Sets the target FPS for temporal portal rendering (managed by PortalManager).
+	/// Sets the frame skip interval for temporal portal rendering (managed by PortalManager).
+	/// 1 = every frame, 2 = every other frame, 3 = every 3rd frame, etc.
 	/// </summary>
-	public void SetTargetFPS(float fps)
+	public void SetFrameSkipInterval(int interval)
 	{
-		portalTargetFPS = Mathf.Max(10f, fps); // Minimum 10 FPS to avoid extreme slowdowns
-		// Recalculate frame skip interval
-		if (Time.deltaTime > 0) {
-			float detectedGameFPS = 1f / Time.deltaTime;
-			frameSkipInterval = Mathf.Max(1, Mathf.RoundToInt(detectedGameFPS / portalTargetFPS));
-		}
+		frameSkipInterval = Mathf.Max(1, interval);
+	}
+
+	/// <summary>
+	/// Sets the portal refresh rate as a percentage of main camera FPS (managed by PortalManager).
+	/// 100% = render at same FPS as main camera
+	/// 50% = render at half the FPS of main camera
+	/// 25% = render at quarter the FPS of main camera
+	/// Dynamically calculates frame skip based on actual game FPS.
+	/// </summary>
+	public void SetPortalRefreshRatePercent(int percent)
+	{
+		portalRefreshRatePercent = Mathf.Clamp(percent, 10, 100);
+	}
+
+	/// <summary>
+	/// Sets render frame offset for staggering portal renders (managed by PortalManager).
+	/// Prevents both portals from rendering on the same frames.
+	/// </summary>
+	public void SetRenderOffset(int offset)
+	{
+		renderOffset = offset;
 	}
 
 	public void StartOpening() {
@@ -124,8 +135,17 @@ public class PortalRenderer : MonoBehaviour {
 	private void LateUpdate() {
 		if (!mainCam || !cam) return;
 		
-		// Temporal rendering: skip frames based on target FPS
-		// frameSkipInterval automatically calculated from detected game FPS vs portalTargetFPS
+		// Calculate frame skip interval dynamically based on main camera FPS and portal refresh rate percent
+		// Example: at 144 FPS main camera with 50% portal refresh:
+		//   Target portal FPS = 144 * 0.5 = 72 FPS
+		//   frameSkipInterval = 144 / 72 = 2
+		if (Time.deltaTime > 0) {
+			float mainCameraFPS = 1f / Time.deltaTime;
+			float targetPortalFPS = mainCameraFPS * (portalRefreshRatePercent / 100f);
+			frameSkipInterval = Mathf.Max(1, Mathf.RoundToInt(mainCameraFPS / targetPortalFPS));
+		}
+		
+		// Temporal rendering: skip frames based on calculated interval
 		// Motion blur on portal cameras makes this imperceptible to players
 		if ((Time.frameCount % frameSkipInterval) == 0) {
 			if (ShouldRender()) {

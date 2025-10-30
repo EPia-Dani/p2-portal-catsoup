@@ -3699,9 +3699,9 @@ MonoBehaviour:
   shootDistance: 1000.9
   shootCamera: {fileID: 37313535}
   portalManager: {fileID: 2079793665}
-  portalHalfSize: {x: 0.62, y: 0.9}
-  wallOffset: 0.02
-  clampSkin: 0.01
+  portalHalfSize: {x: 0.6, y: 0.9}
+  wallOffset: 0.01
+  clampSkin: 0
 --- !u!1 &2042437990
 GameObject:
   m_ObjectHideFlags: 0
@@ -4251,8 +4251,8 @@ MonoBehaviour:
   portalPrefabs:
   - {fileID: 263069781}
   - {fileID: 1138623419}
-  recursionLimit: 5
-  portalTargetFPS: 60
+  recursionLimit: 4
+  portalRefreshRatePercent: 65
 --- !u!4 &2079793666
 Transform:
   m_ObjectHideFlags: 0
