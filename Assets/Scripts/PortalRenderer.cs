@@ -5,25 +5,28 @@ using System.Collections.Generic;
 public class PortalRenderer : MonoBehaviour {
 	[SerializeField] public PortalRenderer pair;
 	[SerializeField] private Camera cam;
+	[SerializeField] private Camera mainCam;
 	[SerializeField] private int recursionLimit = 5;
 	[SerializeField] private MeshRenderer portalMeshRenderer;
 	[SerializeField] private float portalOpenDuration = 1f;
 	[SerializeField] private AnimationCurve portalOpenCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+	[SerializeField] private float portalAppearDuration = 0.3f;
+	[SerializeField] private float portalTargetRadius = 0.4f;
+	[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
 	private MaterialPropertyBlock propertyBlock;
-	private Camera mainCam;
 	private Stack<Matrix4x4> matrices;
 	private Matrix4x4 scaleMatrix;
 
 	private float portalOpenProgress = 0f;
 	private bool isOpening = false;
 	private Coroutine openingCoroutine;
+	private Coroutine appearCoroutine;
 
 	private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 	private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
 
 	private void Awake() {
-		mainCam = Camera.main;
 		if (!cam) cam = GetComponentInChildren<Camera>(true);
 		if (!portalMeshRenderer) portalMeshRenderer = GetComponentInChildren<MeshRenderer>(true);
 		propertyBlock = new MaterialPropertyBlock();
@@ -31,6 +34,17 @@ public class PortalRenderer : MonoBehaviour {
 		scaleMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 	}
 
+	/// <summary>
+	/// Plays the appearance animation (growing from 0 to target radius).
+	/// </summary>
+	public void PlayAppear()
+	{
+		// Must activate before starting coroutine on inactive GameObject
+		gameObject.SetActive(true);
+		
+		if (appearCoroutine != null) StopCoroutine(appearCoroutine);
+		appearCoroutine = StartCoroutine(AppearCoroutine());
+	}
 
 	public void SetCircleRadius(float radius) {
 		if (!portalMeshRenderer) return;
@@ -49,15 +63,26 @@ public class PortalRenderer : MonoBehaviour {
 	public bool IsOpening => isOpening;
 
 	private void LateUpdate() {
-		if (!mainCam) {
-			mainCam = Camera.main;
-			if (!mainCam) return;
-		}
-
-		if (!cam) return;
+		if (!mainCam || !cam) return;
 		if (ShouldRender()) {
 			RenderPortal();
 		}
+	}
+
+	private IEnumerator AppearCoroutine()
+	{
+		SetCircleRadius(0f);
+
+		float t = 0f;
+		while (t < portalAppearDuration)
+		{
+			t += Time.deltaTime;
+			float a = Mathf.Clamp01(t / portalAppearDuration);
+			SetCircleRadius(portalTargetRadius * portalAppearCurve.Evaluate(a));
+			yield return null;
+		}
+		SetCircleRadius(portalTargetRadius);
+		appearCoroutine = null;
 	}
 
 	private IEnumerator OpeningAnimation() {
@@ -97,8 +122,8 @@ public class PortalRenderer : MonoBehaviour {
 
 	private void RenderPortal() {
 		BuildMatrices();
-		var pairForward = pair.transform.forward;
-		var pairPosition = pair.transform.position;
+		Vector3 pairForward = pair.transform.forward;
+		Vector3 pairPosition = pair.transform.position;
 
 		while (matrices.Count > 0) {
 			RenderLevel(matrices.Pop(), pairForward, pairPosition);
@@ -107,9 +132,9 @@ public class PortalRenderer : MonoBehaviour {
 
 	private void BuildMatrices() {
 		matrices.Clear();
-		var pairLocalToWorld = pair.transform.localToWorldMatrix;
-		var thisWorldToLocal = transform.worldToLocalMatrix;
-		var localToWorldMatrix = mainCam.transform.localToWorldMatrix;
+		Matrix4x4 pairLocalToWorld = pair.transform.localToWorldMatrix;
+		Matrix4x4 thisWorldToLocal = transform.worldToLocalMatrix;
+		Matrix4x4 localToWorldMatrix = mainCam.transform.localToWorldMatrix;
 
 		for (var i = 0; i < recursionLimit; i++) {
 			localToWorldMatrix = pairLocalToWorld * scaleMatrix * thisWorldToLocal * localToWorldMatrix;

@@ -1,241 +1,166 @@
-using System.Collections;
-using Input;
 using UnityEngine;
 
-
-public class PortalGun : MonoBehaviour {
-	
-	[SerializeField] private PortalRenderer[] _portals = new PortalRenderer[2];
+public class PortalGun : MonoBehaviour
+{
 	[SerializeField] private LayerMask shootMask = ~0;
 	[SerializeField] private float shootDistance = 1000f;
 	[SerializeField] private Camera shootCamera;
-
-	[SerializeField] private float portalAppearDuration = 0.3f;
-	[SerializeField] private float portalTargetRadius = 0.4f;
-	[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-
+	[SerializeField] private PortalManager portalManager;
 	[SerializeField] private Vector2 portalHalfSize = new(0.45f, 0.45f);
 	[SerializeField] private float wallOffset = 0.02f;
 	[SerializeField] private float clampSkin = 0.01f;
 
-	// Constants
-	private const float Epsilon = 1e-6f;
-	private const float OverlapTolerance = 0.95f;
-	private const int DirectionAttempts = 4;
-	private const float SurfaceNormalThreshold = 0.995f;
+	const float EPS = 1e-6f;
+	const float SURF_DOT = 0.995f;
+	const float OVERLAP_TOL = 0.95f;
+	private static readonly Vector3 VIEWPORT_CENTER = new Vector3(0.5f, 0.5f, 0f);
 
-	
-	private readonly Support[] _support = new Support[2];
+	private Input.PlayerInput _controls;
+	private Transform _cameraTransform;
 
-	private PlayerInput _controls;
-
-	private struct Support {
-		public PortalPlane Plane;
-		public Vector3 PortalCenter;
-		public bool IsValid => Plane.IsValid;
-	}
-
-	private void Awake() { _controls = new PlayerInput(); }
-	
-	private void OnEnable() { _controls.Enable(); }
-	
-	private void Update() {
-		if (_controls.Player.ShootBlue.WasPerformedThisFrame()) FirePortal(0);
-		if (_controls.Player.ShootOrange.WasPerformedThisFrame()) FirePortal(1);
-	}
-
-	private void FirePortal(int portalIndex) {
+	private void Awake()
+	{
+		// Get shared input instance from InputManager
+		_controls = InputManager.PlayerInput;
 		
-		int otherIndex = 1 - portalIndex;
+		// Cache camera transform to avoid per-frame lookups
+		if (shootCamera)
+			_cameraTransform = shootCamera.transform;
+		
+		// Auto-find PortalManager if not assigned
+		if (!portalManager)
+			portalManager = GetComponent<PortalManager>();
+		
+		if (!portalManager)
+			Debug.LogError("PortalManager not found! Assign it in the inspector or add it to the same GameObject as PortalGun.", gameObject);
+	}
 
-		Ray ray = shootCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
-		if (!Physics.Raycast(ray, out RaycastHit hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
+	private void Update()
+	{
+		// Poll for input in Update (frame-synchronized, like FPSController)
+		if (_controls.Player.ShootBlue.WasPerformedThisFrame()) Fire(0);
+		if (_controls.Player.ShootOrange.WasPerformedThisFrame()) Fire(1);
+	}
+
+	private void Fire(int i)
+	{
+		if (!shootCamera || !portalManager) return;
+
+		Ray ray = shootCamera.ViewportPointToRay(VIEWPORT_CENTER);
+		if (!Physics.Raycast(ray, out var hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
 		if (!hit.collider || !hit.collider.enabled) return;
 
+		// Build plane basis at hit
+		Vector3 normal = hit.normal.normalized;
+		ComputeBasis(normal, _cameraTransform.right, out Vector3 right, out Vector3 up);
 
-		Support other = _support[otherIndex];
-		
-		if (!PortalPlane.TryCreate(hit.collider, hit.normal, hit.point,
-			shootCamera.transform, portalHalfSize, clampSkin, out PortalPlane plane)) return;
+		// Plane center: project collider bounds center onto plane along its normal
+		Bounds b = hit.collider.bounds;
+		Vector3 center = b.center + normal * Vector3.Dot(normal, hit.point - b.center);
 
-		Vector2 uv = plane.Clamp(plane.ToUV(hit.point));
-		
-		bool sharePlane = (other.IsValid && plane.SameSurface(other.Plane));
-		
-		if (sharePlane && !ResolveOverlap(other, plane, ref uv)) return;
+		// Compute clamp extents and check if there's room
+		Vector2 clamp = ComputeClampExtents(b, right, up);
+		if (clamp.x <= 0f || clamp.y <= 0f) return;
 
-		Vector3 worldPoint = plane.FromUV(uv);
-		PlacePortal(portalIndex, plane, worldPoint);
+		// Get initial UV position clamped to surface bounds
+		Vector2 uv = GetInitialUVClamped(hit.point, center, right, up, clamp);
+
+		// Try to resolve overlap with other portal
+		if (!TryResolveOverlapWithOtherPortal(i, ref uv, clamp, center, right, up, normal, hit.collider)) return;
+
+		// Notify portal manager to place the portal
+		Vector3 pos = center + right * uv.x + up * uv.y;
+		portalManager.PlacePortal(i, pos, normal, right, up, hit.collider, wallOffset);
 	}
-	
-	private bool ResolveOverlap(Support other, PortalPlane plane, ref Vector2 uv) {
-		if (!other.IsValid || !plane.SameSurface(other.Plane)) return true;
 
-		Vector2 otherUV = plane.ToUV(other.PortalCenter);
+	private Vector2 ComputeClampExtents(Bounds b, Vector3 right, Vector3 up)
+	{
+		return new Vector2(
+			ProjectExtent(b.extents, right) - portalHalfSize.x - clampSkin,
+			ProjectExtent(b.extents, up) - portalHalfSize.y - clampSkin
+		);
+	}
+
+	private Vector2 GetInitialUVClamped(Vector3 hitPoint, Vector3 center, Vector3 right, Vector3 up, Vector2 clamp)
+	{
+		Vector2 uv = new Vector2(Vector3.Dot(hitPoint - center, right), Vector3.Dot(hitPoint - center, up));
+		uv.x = Mathf.Clamp(uv.x, -clamp.x, clamp.x);
+		uv.y = Mathf.Clamp(uv.y, -clamp.y, clamp.y);
+		return uv;
+	}
+
+	private bool TryResolveOverlapWithOtherPortal(int i, ref Vector2 uv, Vector2 clamp, Vector3 center, Vector3 right, Vector3 up, Vector3 normal, Collider collider)
+	{
+		PortalManager.PortalState? otherPortalOpt = portalManager.GetPortalState(1 - i);
+		if (!otherPortalOpt.HasValue) return true;
+		
+		PortalManager.PortalState otherPortal = otherPortalOpt.Value;
+		if (collider != otherPortal.surface || !AreOnSameSurface(normal, otherPortal.normal)) return true;
+
+		Vector2 otherUV = new Vector2(Vector3.Dot(otherPortal.worldCenter - center, right), Vector3.Dot(otherPortal.worldCenter - center, up));
 		Vector2 delta = uv - otherUV;
-		float spacing = MinSpacing(delta, other, plane);
-		if (delta.sqrMagnitude >= spacing * spacing) return true;
 
-		Vector2 primary = delta.sqrMagnitude > Epsilon ? delta.normalized : Vector2.right;
-		Vector2 orthogonal = new Vector2(-primary.y, primary.x);
+		float need = MinSpacing(delta, right, up, otherPortal.right, otherPortal.up);
+		if (delta.sqrMagnitude >= need * need) return true; // No overlap, position is valid
 
-		return TryDirection(primary, otherUV, other, plane, ref uv)
-		    || TryDirection(-primary, otherUV, other, plane, ref uv)
-		    || TryDirection(orthogonal, otherUV, other, plane, ref uv)
-		    || TryDirection(-orthogonal, otherUV, other, plane, ref uv);
-	}
-
-	private bool TryDirection(Vector2 dir, Vector2 origin, Support other, PortalPlane plane, ref Vector2 uv) {
-		if (dir.sqrMagnitude < Epsilon) return false;
-		dir.Normalize();
-
-		float required = MinSpacing(dir, other, plane);
+		// Try to find alternative position
+		Vector2 dir = delta.sqrMagnitude > EPS ? delta.normalized : new Vector2(1f, 0f);
 		float step = Mathf.Max(portalHalfSize.x, portalHalfSize.y);
 
-		for (int i = 0; i < DirectionAttempts; i++) {
-			Vector2 candidate = plane.Clamp(origin + dir * (required + step * i));
-			Vector2 offset = candidate - origin;
-			if (offset.sqrMagnitude < Epsilon) continue;
+		for (int k = 0; k < 3; k++)
+		{
+			Vector2 cand = otherUV + dir * (need + step * k);
+			cand.x = Mathf.Clamp(cand.x, -clamp.x, clamp.x);
+			cand.y = Mathf.Clamp(cand.y, -clamp.y, clamp.y);
 
-			float needed = MinSpacing(offset, other, plane);
-			if (offset.sqrMagnitude >= needed * needed * OverlapTolerance) {
-				uv = candidate;
+			// Skip if candidate hasn't moved from other portal due to clamping
+			Vector2 off = cand - otherUV;
+			if (off.sqrMagnitude < EPS) continue;
+
+			float req = MinSpacing(off, right, up, otherPortal.right, otherPortal.up);
+			if (off.sqrMagnitude >= req * req * OVERLAP_TOL)
+			{
+				uv = cand;
 				return true;
 			}
 		}
 
-		return false;
+		return false; // No valid position found
 	}
 
-	private float MinSpacing(Vector2 direction, Support other, PortalPlane plane) {
-		if (direction.sqrMagnitude < Epsilon) direction = Vector2.right;
-		direction.Normalize();
+	private bool AreOnSameSurface(Vector3 normalA, Vector3 normalB)
+		=> Mathf.Abs(Vector3.Dot(normalA, normalB)) > SURF_DOT;
 
-		float radiusA = RadiusInDirection(direction);
-		Vector3 worldDir = plane.Direction(direction);
-		if (worldDir.sqrMagnitude < Epsilon) worldDir = plane.Right;
-		else worldDir.Normalize();
-
-		Vector2 otherDir = other.Plane.ToPlaneVector(worldDir);
-		float radiusB = RadiusInDirection(otherDir);
-		return radiusA + radiusB + clampSkin * 2f;
+	// ---- tiny helpers ----
+	static void ComputeBasis(in Vector3 normal, in Vector3 refRight, out Vector3 right, out Vector3 up)
+	{
+		Vector3 proj = Vector3.ProjectOnPlane(refRight, normal);
+		right = proj.sqrMagnitude > EPS ? proj.normalized : Vector3.Cross(normal, Vector3.up).normalized;
+		up = Vector3.Cross(normal, right).normalized;
 	}
 
-	private float RadiusInDirection(Vector2 dir) {
-		if (dir.sqrMagnitude < Epsilon) return Mathf.Max(portalHalfSize.x, portalHalfSize.y);
-		dir.Normalize();
-		float x = portalHalfSize.x * dir.x;
-		float y = portalHalfSize.y * dir.y;
-		return Mathf.Sqrt(x * x + y * y);
+	static float ProjectExtent(in Vector3 e, in Vector3 axis)
+		=> Mathf.Abs(axis.x) * e.x + Mathf.Abs(axis.y) * e.y + Mathf.Abs(axis.z) * e.z;
+
+	// Ellipse support distance along dir for both portals
+	float MinSpacing(in Vector2 dirUV, in Vector3 rightA, in Vector3 upA, in Vector3 rightB, in Vector3 upB)
+	{
+		Vector2 d = dirUV.sqrMagnitude > EPS ? dirUV.normalized : new Vector2(1f, 0f);
+		float ra = GetEllipseRadius(d);
+
+		Vector3 worldDir = rightA * d.x + upA * d.y;
+		worldDir = worldDir.sqrMagnitude > EPS ? worldDir.normalized : rightA;
+		Vector2 dOther = new Vector2(Vector3.Dot(worldDir, rightB), Vector3.Dot(worldDir, upB));
+		dOther = dOther.sqrMagnitude > EPS ? dOther.normalized : new Vector2(1f, 0f);
+
+		float rb = GetEllipseRadius(dOther);
+		return ra + rb + clampSkin * 2f;
 	}
 
-	private void PlacePortal(int index, PortalPlane plane, Vector3 position) {
-		Transform portalTransform = _portals[index].transform;
-		portalTransform.SetPositionAndRotation(
-			position + plane.Normal * wallOffset,
-			Quaternion.LookRotation(-plane.Normal, plane.Up)
-		);
-
-		_support[index] = new Support {
-			Plane = plane,
-			PortalCenter = position
-		};
-
-		StartCoroutine(AppearPortal(_portals[index]));
-		
-		// Verificar si ambos portales están colocados para iniciar apertura
-		CheckAndStartOpening();
-	}
-
-	private void CheckAndStartOpening() {
-		if (!_portals[0].gameObject.activeInHierarchy || !_portals[1].gameObject.activeInHierarchy) return;
-		TryStartOpening(_portals[0]);
-		TryStartOpening(_portals[1]);
-	}
-
-	private static void TryStartOpening(PortalRenderer portal) {
-		if (!portal.IsOpening && !portal.IsFullyOpen) {
-			portal.StartOpening();
-		}
-	}
-
-	private readonly struct PortalPlane {
-		public Collider Surface { get; }
-		public Vector3 Center { get; }
-		public Vector3 Normal { get; }
-		public Vector3 Right { get; }
-		public Vector3 Up { get; }
-		public Vector2 ClampExtents { get; }
-		public bool IsValid => Surface != null;
-
-		private PortalPlane(Collider surface, Vector3 center, Vector3 normal, Vector3 right, Vector3 up, Vector2 clampExtents) {
-			Surface = surface;
-			Center = center;
-			Normal = normal;
-			Right = right;
-			Up = up;
-			ClampExtents = clampExtents;
-		}
-
-		public static bool TryCreate(Collider surface, Vector3 normal, Vector3 anchor, Transform reference, Vector2 halfSize, float margin, out PortalPlane plane) {
-			ComputeBasis(normal, reference, out Vector3 right, out Vector3 up);
-
-			Bounds bounds = surface.bounds;
-			Vector3 center = bounds.center + normal * Vector3.Dot(normal, anchor - bounds.center);
-			float maxRight = ProjectExtent(bounds.extents, right);
-			float maxUp = ProjectExtent(bounds.extents, up);
-
-			Vector2 clamp = new Vector2(maxRight - halfSize.x - margin, maxUp - halfSize.y - margin);
-			if (clamp.x <= 0f || clamp.y <= 0f) {
-				plane = default;
-				return false;
-			}
-
-			plane = new PortalPlane(surface, center, normal, right, up, clamp);
-			return true;
-		}
-
-		public Vector2 ToUV(Vector3 world) {
-			Vector3 offset = world - Center;
-			return new Vector2(Vector3.Dot(offset, Right), Vector3.Dot(offset, Up));
-		}
-
-		public Vector3 FromUV(Vector2 uv) => Center + Right * uv.x + Up * uv.y;
-
-		public Vector2 Clamp(Vector2 uv) => new Vector2(
-			Mathf.Clamp(uv.x, -ClampExtents.x, ClampExtents.x),
-			Mathf.Clamp(uv.y, -ClampExtents.y, ClampExtents.y)
-		);
-
-		public Vector3 Direction(Vector2 dir) => Right * dir.x + Up * dir.y;
-		public Vector2 ToPlaneVector(Vector3 dir) => new Vector2(Vector3.Dot(dir, Right), Vector3.Dot(dir, Up));
-		public bool SameSurface(PortalPlane other) => Surface == other.Surface && Mathf.Abs(Vector3.Dot(Normal, other.Normal)) > SurfaceNormalThreshold;
-
-		private static void ComputeBasis(Vector3 normal, Transform reference, out Vector3 right, out Vector3 up) {
-			Vector3 camRight = reference ? reference.right : Vector3.right;
-			Vector3 projected = Vector3.ProjectOnPlane(camRight, normal);
-			right = projected.sqrMagnitude > Epsilon ? projected.normalized : Vector3.Cross(normal, Vector3.up).normalized;
-			up = Vector3.Cross(normal, right).normalized;
-		}
-
-		private static float ProjectExtent(Vector3 extents, Vector3 axis) {
-			return Mathf.Abs(axis.x) * extents.x + Mathf.Abs(axis.y) * extents.y + Mathf.Abs(axis.z) * extents.z;
-		}
-	}
-
-	private IEnumerator AppearPortal(PortalRenderer portal) {
-		portal.gameObject.SetActive(true);
-		portal.SetCircleRadius(0f);
-
-		float elapsed = 0f;
-		while (elapsed < portalAppearDuration) {
-			elapsed += Time.deltaTime;
-			float progress = Mathf.Min(elapsed / portalAppearDuration, 1f);
-			progress = portalAppearCurve.Evaluate(progress);
-			portal.SetCircleRadius(portalTargetRadius * progress);
-			yield return null;
-		}
-
-		portal.SetCircleRadius(portalTargetRadius);
+	float GetEllipseRadius(in Vector2 dir)
+	{
+		float dx = portalHalfSize.x * dir.x;
+		float dy = portalHalfSize.y * dir.y;
+		return Mathf.Sqrt(dx * dx + dy * dy); // Avoid Pow, use multiplication instead
 	}
 }

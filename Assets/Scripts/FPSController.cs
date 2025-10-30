@@ -20,9 +20,8 @@ public class FPSController : MonoBehaviour
 	[SerializeField] private float groundCheckDistance = 0.15f;
 
 
-    // Using the generated InputActions wrapper (strongly typed) from Assets/Settings/Input/PlayerInput.cs
-    // We keep a reference to it and read/poll actions directly.
-    private global::Input.PlayerInput _controls;
+    
+    private Input.PlayerInput _controls;
 
     // movement state
     private float _gravity;
@@ -44,8 +43,8 @@ public class FPSController : MonoBehaviour
         _gravity = -2f * jumpHeight / (timeToApex * timeToApex);
         _jumpSpeed = 2f * jumpHeight / timeToApex;
 
-        // instantiate generated input wrapper (do not enable here; enable/disable with the component lifecycle)
-        _controls = new global::Input.PlayerInput();
+        // Get the shared input instance from InputManager
+        _controls = InputManager.PlayerInput;
 
         // sync initial yaw/pitch from current transforms
         if (yawTransform != null) {
@@ -57,26 +56,7 @@ public class FPSController : MonoBehaviour
         }
     }
 
-    private void OnEnable() {
-        // enable input actions
-        if (_controls != null) {
-            _controls.Enable();
-        }
-    }
-
-    private void OnDisable() {
-        if (_controls != null) {
-            _controls.Disable();
-        }
-    }
-
-    private void OnDestroy() {
-        if (_controls != null) {
-            _controls.Dispose();
-            _controls = null;
-        }
-    }
-
+ 
 
     private void Update() {
 		float dt = Time.deltaTime;
@@ -98,9 +78,9 @@ public class FPSController : MonoBehaviour
     }
 
 	private void ReadInput(out Vector2 moveInput, out Vector2 lookInput, out bool jumpPressed) {
-		moveInput = (_controls != null) ? _controls.Player.Move.ReadValue<Vector2>() : Vector2.zero;
-		lookInput = (_controls != null) ? _controls.Player.Look.ReadValue<Vector2>() : Vector2.zero;
-		jumpPressed = (_controls != null) && _controls.Player.Jump.WasPerformedThisFrame();
+		moveInput = _controls.Player.Move.ReadValue<Vector2>();
+		lookInput = _controls.Player.Look.ReadValue<Vector2>();
+		jumpPressed = _controls.Player.Jump.WasPerformedThisFrame();
 		_moveInput = moveInput; // retain for debugging if needed
 	}
 
@@ -150,16 +130,16 @@ public class FPSController : MonoBehaviour
 	private void MoveAndCollide(float dy, float dt) {
 		Vector3 move = _horizontalVelocity * dt;
 		move.y = dy;
-		if (characterController == null || !characterController.enabled) return;
+		if (!characterController || !characterController.enabled) return;
 		CollisionFlags flags = characterController.Move(move);
 		_isGrounded = (flags & CollisionFlags.Below) != 0 || CheckGrounded();
 		if ((flags & CollisionFlags.Above) != 0 && _verticalSpeed > 0f) _verticalSpeed = 0f;
 	}
 
 	private bool CheckGrounded() {
-		float radius = characterController != null ? characterController.radius : 0.3f;
+		float radius = characterController.radius;
 		Vector3 centerWorld = transform.position + Vector3.up * radius;
-		float checkDist = groundCheckDistance + (characterController != null ? characterController.skinWidth : 0.02f);
+		float checkDist = groundCheckDistance + characterController.skinWidth;
 		return Physics.SphereCast(centerWorld, Mathf.Max(0.01f, radius * 0.9f), Vector3.down, out _, checkDist, groundMask, QueryTriggerInteraction.Ignore);
 	}
 
@@ -177,8 +157,6 @@ public class FPSController : MonoBehaviour
 		_verticalSpeed = verticalVel.y;
 		
 		// Update internal look angles to match the new rotation
-		// The PortalTraveller has already rotated the transform, so we just need to
-		// read the new angles and update our internal state
 		if (yawTransform != null)
 		{
 			_currentYaw = yawTransform.eulerAngles.y;
