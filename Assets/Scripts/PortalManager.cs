@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -23,16 +22,8 @@ public class PortalManager : MonoBehaviour
 
 	/// <summary>
 	/// Centralized performance settings for all portals
-	/// Portal Refresh Rate %:
-	///   Percentage of main camera's FPS that portals will render at
-	///   e.g., at 144 FPS main camera:
-	///     100% = 144 FPS portals (realtime)
-	///     50% = 72 FPS portals
-	///     25% = 36 FPS portals
-	///     10% = 14.4 FPS portals
 	/// </summary>
 	[SerializeField] private int recursionLimit = 2;
-	[SerializeField] [Range(10, 100)] private int portalRefreshRatePercent = 50;
 
 	private void Awake()
 	{
@@ -42,7 +33,6 @@ public class PortalManager : MonoBehaviour
 			if (portal)
 			{
 				portal.SetRecursionLimit(recursionLimit);
-				portal.SetPortalRefreshRatePercent(portalRefreshRatePercent);
 			}
 		}
 

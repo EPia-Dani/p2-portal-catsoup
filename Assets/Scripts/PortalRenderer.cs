@@ -16,9 +16,6 @@ public class PortalRenderer : MonoBehaviour {
 	[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
 
-	// Handedness/flip fixes you can toggle at runtime
-	[SerializeField] bool flipViewForward = true; // start true
-	[SerializeField] bool invertClipPlane = false; // start false
 	[SerializeField] bool flipScaleZ = false; // start false: X-only flip
 
 	private MaterialPropertyBlock propertyBlock;
@@ -35,34 +32,27 @@ public class PortalRenderer : MonoBehaviour {
 	private Vector3 cachedPairPosition = Vector3.zero;
 	private bool cachedTransformDirty = true;
 
-	private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
-	private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
+private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
+private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
 
-	// Cached shader property values (updated only when they change)
-	private float cachedCircleRadius = -1f;
-	private float cachedPortalOpen = -1f;
+// Cached shader property values (updated only when they change)
+private float cachedCircleRadius = -1f;
+private float cachedPortalOpen = -1f;
 
 	// Temporal rendering: frame skip interval (directly set by PortalManager)
 	private int frameSkipInterval = 1;
 	private int renderOffset = 0; // Stagger portal renders to avoid both rendering same frame
-	private int portalRefreshRatePercent = 50; // Percentage of main camera FPS
 
 	// ===== OPTIMIZATION ADDITIONS =====
 	// Frustum plane caching
 	private Plane[] cachedFrustumPlanes = new Plane[6];
 	private int lastFrustumUpdateFrame = -1;
 
-	// Bounding sphere for faster culling
-	private Bounds portalBounds;
-	private Vector3 cachedPortalCenter = Vector3.zero;
-	private float cachedPortalRadius = 0f;
-
 	// Matrix caching
 	private Matrix4x4 cachedPairLocalToWorld = Matrix4x4.identity;
-	private Matrix4x4 cachedThisWorldToLocal = Matrix4x4.identity;
-	private Matrix4x4 cachedMainCamLocalToWorld = Matrix4x4.identity;
-	private int lastMatrixCacheFrame = -1;
-
+private Matrix4x4 cachedThisWorldToLocal = Matrix4x4.identity;
+private Matrix4x4 cachedMainCamLocalToWorld = Matrix4x4.identity;
+private int lastMatrixCacheFrame = -1;
 
 	RenderTexture rt;
 
@@ -100,13 +90,23 @@ public class PortalRenderer : MonoBehaviour {
 		cam.stereoTargetEye = StereoTargetEyeMask.None;
 
 		var desc = new RenderTextureDescriptor(1024, 1024, RenderTextureFormat.ARGB32, 24) {
-			msaaSamples = 1, useMipMap = false, autoGenerateMips = false,
+			msaaSamples = 1,
+			useMipMap = false,
+			autoGenerateMips = false,
 			sRGB = (QualitySettings.activeColorSpace == ColorSpace.Linear)
 		};
-		rt = new RenderTexture(desc) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+
+		rt = new RenderTexture(desc) {
+			wrapMode = TextureWrapMode.Clamp,
+			filterMode = FilterMode.Bilinear
+		};
+
 		rt.Create();
 		cam.targetTexture = rt;
-		if (portalMeshRenderer) portalMeshRenderer.sharedMaterial.mainTexture = rt;
+
+		if (portalMeshRenderer) {
+			portalMeshRenderer.sharedMaterial.mainTexture = rt;
+		}
 
 		propertyBlock = new MaterialPropertyBlock();
 		matrices = new Stack<Matrix4x4>(recursionLimit);
@@ -118,6 +118,7 @@ public class PortalRenderer : MonoBehaviour {
 		if (rt) {
 			rt.Release();
 			Destroy(rt);
+			rt = null;
 		}
 	}
 
@@ -148,8 +149,6 @@ public class PortalRenderer : MonoBehaviour {
 		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
 		portalMeshRenderer.SetPropertyBlock(propertyBlock);
 
-		// Update cached portal bounds for visibility culling
-		cachedPortalRadius = radius;
 	}
 
 	/// <summary>
@@ -168,21 +167,6 @@ public class PortalRenderer : MonoBehaviour {
 		// Resize the matrices stack if needed
 		matrices = new Stack<Matrix4x4>(recursionLimit);
 	}
-
-	/// <summary>
-	/// Sets the frame skip interval for temporal portal rendering (managed by PortalManager).
-	/// 1 = every frame, 2 = every other frame, 3 = every 3rd frame, etc.
-	/// </summary>
-	public void SetFrameSkipInterval(int interval) { frameSkipInterval = Mathf.Max(1, interval); }
-
-	/// <summary>
-	/// Sets the portal refresh rate as a percentage of main camera FPS (managed by PortalManager).
-	/// 100% = render at same FPS as main camera
-	/// 50% = render at half the FPS of main camera
-	/// 25% = render at quarter the FPS of main camera
-	/// Dynamically calculates frame skip based on actual game FPS.
-	/// </summary>
-	public void SetPortalRefreshRatePercent(int percent) { portalRefreshRatePercent = Mathf.Clamp(percent, 10, 100); }
 
 	/// <summary>
 	/// Sets render frame offset for staggering portal renders (managed by PortalManager).
@@ -267,17 +251,6 @@ public class PortalRenderer : MonoBehaviour {
 
 		// Use bounds intersection test - faster than AABB test
 		return GeometryUtility.TestPlanesAABB(cachedFrustumPlanes, portalMeshRenderer.bounds);
-	}
-
-	// Fallback to original method if needed for compatibility
-	private bool IsVisibleInMainCameraOld() {
-		if (!portalMeshRenderer) return false;
-
-		// Get main camera frustum planes
-		Plane[] frustumPlanes = GeometryUtility.CalculateFrustumPlanes(mainCam);
-
-		// Test if portal's bounds intersect with frustum
-		return GeometryUtility.TestPlanesAABB(frustumPlanes, portalMeshRenderer.bounds);
 	}
 
 	private void RenderPortal(ScriptableRenderContext ctx) {

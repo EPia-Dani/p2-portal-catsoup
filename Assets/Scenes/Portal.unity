@@ -982,8 +982,8 @@ MonoBehaviour:
   yawTransform: {fileID: 165274158}
   pitchTransform: {fileID: 1580168255}
   mouseSensitivity: 0.4
-  mouseSensitivityYaw: 0.3
-  mouseSensitivityPitch: 0.3
+  mouseSensitivityYaw: 0.2
+  mouseSensitivityPitch: 0.2
   pitchClampMin: -89
   pitchClampMax: 89
   characterController: {fileID: 165274161}
@@ -3915,7 +3915,6 @@ MonoBehaviour:
   - {fileID: 1937157125335981014}
   - {fileID: 2069985398880840990}
   recursionLimit: 7
-  portalRefreshRatePercent: 75
 --- !u!4 &2079793666
 Transform:
   m_ObjectHideFlags: 0
@@ -4045,8 +4044,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  flipViewForward: 1
-  invertClipPlane: 0
   flipScaleZ: 0
 --- !u!114 &2069985398880840990
 MonoBehaviour:
@@ -4115,8 +4112,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  flipViewForward: 1
-  invertClipPlane: 0
   flipScaleZ: 0
 --- !u!4 &2174037431210880972
 Transform:
