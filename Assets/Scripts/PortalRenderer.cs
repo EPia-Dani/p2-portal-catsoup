@@ -6,13 +6,14 @@ public class PortalRenderer : MonoBehaviour {
 	[SerializeField] public PortalRenderer pair;
 	[SerializeField] private Camera cam;
 	[SerializeField] private Camera mainCam;
-	[SerializeField] private int recursionLimit = 5;
+	private int recursionLimit = 2;
 	[SerializeField] private MeshRenderer portalMeshRenderer;
 	[SerializeField] private float portalOpenDuration = 1f;
 	[SerializeField] private AnimationCurve portalOpenCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 	[SerializeField] private float portalAppearDuration = 0.3f;
 	[SerializeField] private float portalTargetRadius = 0.4f;
 	[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+	private float portalTargetFPS = 60f;
 
 	private MaterialPropertyBlock propertyBlock;
 	private Stack<Matrix4x4> matrices;
@@ -23,8 +24,20 @@ public class PortalRenderer : MonoBehaviour {
 	private Coroutine openingCoroutine;
 	private Coroutine appearCoroutine;
 
+	// Cached pair portal transform data (updated only when portal is placed)
+	private Vector3 cachedPairForward = Vector3.forward;
+	private Vector3 cachedPairPosition = Vector3.zero;
+	private bool cachedTransformDirty = true;
+
 	private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 	private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
+
+	// Cached shader property values (updated only when they change)
+	private float cachedCircleRadius = -1f;
+	private float cachedPortalOpen = -1f;
+
+	// Temporal rendering: frame skip interval calculated based on target FPS
+	private int frameSkipInterval = 1;
 
 	private void Awake() {
 		if (!cam) cam = GetComponentInChildren<Camera>(true);
@@ -32,6 +45,13 @@ public class PortalRenderer : MonoBehaviour {
 		propertyBlock = new MaterialPropertyBlock();
 		matrices = new Stack<Matrix4x4>(recursionLimit);
 		scaleMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
+		
+		// Calculate frame skip interval dynamically based on actual game FPS
+		// Example: if game runs at 90 FPS and we want 60 FPS portals: 90/60 = 1.5 → skip 1 frame
+		if (Time.deltaTime > 0) {
+			float detectedGameFPS = 1f / Time.deltaTime;
+			frameSkipInterval = Mathf.Max(1, Mathf.RoundToInt(detectedGameFPS / portalTargetFPS));
+		}
 	}
 
 	/// <summary>
@@ -48,10 +68,49 @@ public class PortalRenderer : MonoBehaviour {
 
 	public void SetCircleRadius(float radius) {
 		if (!portalMeshRenderer) return;
-		portalMeshRenderer.GetPropertyBlock(propertyBlock);
+		
+		// Only update if values changed (avoids redundant SetPropertyBlock calls)
+		if (Mathf.Approximately(cachedCircleRadius, radius) && Mathf.Approximately(cachedPortalOpen, portalOpenProgress)) {
+			return;
+		}
+		
+		cachedCircleRadius = radius;
+		cachedPortalOpen = portalOpenProgress;
+		
 		propertyBlock.SetFloat(CircleRadiusId, radius);
 		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
 		portalMeshRenderer.SetPropertyBlock(propertyBlock);
+	}
+
+	/// <summary>
+	/// Invalidates cached transform data. Call this when portal is placed/moved.
+	/// </summary>
+	public void InvalidateCachedTransform()
+	{
+		cachedTransformDirty = true;
+	}
+
+	/// <summary>
+	/// Sets the recursion limit for portal rendering (managed by PortalManager).
+	/// </summary>
+	public void SetRecursionLimit(int limit)
+	{
+		recursionLimit = Mathf.Max(1, limit);
+		// Resize the matrices stack if needed
+		matrices = new Stack<Matrix4x4>(recursionLimit);
+	}
+
+	/// <summary>
+	/// Sets the target FPS for temporal portal rendering (managed by PortalManager).
+	/// </summary>
+	public void SetTargetFPS(float fps)
+	{
+		portalTargetFPS = Mathf.Max(10f, fps); // Minimum 10 FPS to avoid extreme slowdowns
+		// Recalculate frame skip interval
+		if (Time.deltaTime > 0) {
+			float detectedGameFPS = 1f / Time.deltaTime;
+			frameSkipInterval = Mathf.Max(1, Mathf.RoundToInt(detectedGameFPS / portalTargetFPS));
+		}
 	}
 
 	public void StartOpening() {
@@ -64,8 +123,17 @@ public class PortalRenderer : MonoBehaviour {
 
 	private void LateUpdate() {
 		if (!mainCam || !cam) return;
-		if (ShouldRender()) {
-			RenderPortal();
+		
+		// Temporal rendering: skip frames based on target FPS
+		// frameSkipInterval automatically calculated from detected game FPS vs portalTargetFPS
+		// Motion blur on portal cameras makes this imperceptible to players
+		if ((Time.frameCount % frameSkipInterval) == 0) {
+			if (ShouldRender()) {
+				// Only render if portal quad is visible in main camera's frustum
+				if (IsVisibleInMainCamera()) {
+					RenderPortal();
+				}
+			}
 		}
 	}
 
@@ -108,7 +176,13 @@ public class PortalRenderer : MonoBehaviour {
 
 	private void UpdatePortalShader() {
 		if (!portalMeshRenderer) return;
-		portalMeshRenderer.GetPropertyBlock(propertyBlock);
+		
+		// Only update if value changed (avoids redundant SetPropertyBlock calls)
+		if (Mathf.Approximately(cachedPortalOpen, portalOpenProgress)) {
+			return;
+		}
+		
+		cachedPortalOpen = portalOpenProgress;
 		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
 		portalMeshRenderer.SetPropertyBlock(propertyBlock);
 	}
@@ -120,13 +194,28 @@ public class PortalRenderer : MonoBehaviour {
 		return thisCanRender && pairCanRender;
 	}
 
+	private bool IsVisibleInMainCamera() {
+		if (!portalMeshRenderer) return false;
+		
+		// Get main camera frustum planes
+		Plane[] frustumPlanes = GeometryUtility.CalculateFrustumPlanes(mainCam);
+		
+		// Test if portal's bounds intersect with frustum
+		return GeometryUtility.TestPlanesAABB(frustumPlanes, portalMeshRenderer.bounds);
+	}
+
 	private void RenderPortal() {
 		BuildMatrices();
-		Vector3 pairForward = pair.transform.forward;
-		Vector3 pairPosition = pair.transform.position;
+		
+		// Update cache if dirty
+		if (cachedTransformDirty && pair) {
+			cachedPairForward = pair.transform.forward;
+			cachedPairPosition = pair.transform.position;
+			cachedTransformDirty = false;
+		}
 
 		while (matrices.Count > 0) {
-			RenderLevel(matrices.Pop(), pairForward, pairPosition);
+			RenderLevel(matrices.Pop(), cachedPairForward, cachedPairPosition);
 		}
 	}
 

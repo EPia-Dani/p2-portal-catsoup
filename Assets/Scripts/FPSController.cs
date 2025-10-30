@@ -16,8 +16,6 @@ public class FPSController : MonoBehaviour
 	[SerializeField] private float groundAcceleration = 40f;
 	[SerializeField] private float airAcceleration = 10f;
 	[SerializeField] private float groundFriction = 8f;
-	[SerializeField] private LayerMask groundMask = ~0;
-	[SerializeField] private float groundCheckDistance = 0.15f;
 
 
     
@@ -132,15 +130,8 @@ public class FPSController : MonoBehaviour
 		move.y = dy;
 		if (!characterController || !characterController.enabled) return;
 		CollisionFlags flags = characterController.Move(move);
-		_isGrounded = (flags & CollisionFlags.Below) != 0 || CheckGrounded();
+		_isGrounded = (flags & CollisionFlags.Below) != 0;
 		if ((flags & CollisionFlags.Above) != 0 && _verticalSpeed > 0f) _verticalSpeed = 0f;
-	}
-
-	private bool CheckGrounded() {
-		float radius = characterController.radius;
-		Vector3 centerWorld = transform.position + Vector3.up * radius;
-		float checkDist = groundCheckDistance + characterController.skinWidth;
-		return Physics.SphereCast(centerWorld, Mathf.Max(0.01f, radius * 0.9f), Vector3.down, out _, checkDist, groundMask, QueryTriggerInteraction.Ignore);
 	}
 
 	/// <summary>

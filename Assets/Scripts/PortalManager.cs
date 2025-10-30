@@ -22,12 +22,32 @@ public class PortalManager : MonoBehaviour
 	private PortalState[] portalStates = new PortalState[2];
 
 	/// <summary>
+	/// Centralized performance settings for all portals
+	/// </summary>
+	[SerializeField] private int recursionLimit = 2;
+	[SerializeField] private float portalTargetFPS = 60f;
+
+	private void Awake()
+	{
+		// Initialize all portals with centralized settings
+		foreach (PortalRenderer portal in portalPrefabs)
+		{
+			if (portal)
+			{
+				portal.SetRecursionLimit(recursionLimit);
+				portal.SetTargetFPS(portalTargetFPS);
+			}
+		}
+	}
+
+	/// <summary>
 	/// Places a portal at the specified position and orientation.
 	/// Handles state storage and triggers animations.
 	/// </summary>
 	public void PlacePortal(int index, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float wallOffset)
 	{
 		PortalRenderer portal = portalPrefabs[index];
+		PortalRenderer otherPortal = portalPrefabs[1 - index];
 		
 		// Set transform
 		portal.transform.SetPositionAndRotation(position + normal * wallOffset, Quaternion.LookRotation(-normal, up));
@@ -39,6 +59,10 @@ public class PortalManager : MonoBehaviour
 		portalStates[index].right = right;
 		portalStates[index].up = up;
 		portalStates[index].worldCenter = position;
+
+		// Invalidate cached transform data for both portals
+		portal.InvalidateCachedTransform();
+		otherPortal.InvalidateCachedTransform();
 
 		// Play appearance animation
 		portal.PlayAppear();
