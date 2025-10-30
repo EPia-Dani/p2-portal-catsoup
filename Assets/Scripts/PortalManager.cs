@@ -110,4 +110,6 @@ public class PortalManager : MonoBehaviour
 		if (!portal1Opening && !portalStates[1].renderer.IsFullyOpen)
 			portalStates[1].renderer.StartOpening();
 	}
+	
+	
 }

@@ -529,7 +529,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 1
+  m_RenderPostProcessing: 0
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -594,7 +594,7 @@ Camera:
   field of view: 60
   orthographic: 0
   orthographic size: 5
-  m_Depth: -1
+  m_Depth: 1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -3914,8 +3914,8 @@ MonoBehaviour:
   portalPrefabs:
   - {fileID: 1937157125335981014}
   - {fileID: 2069985398880840990}
-  recursionLimit: 3
-  portalRefreshRatePercent: 100
+  recursionLimit: 7
+  portalRefreshRatePercent: 75
 --- !u!4 &2079793666
 Transform:
   m_ObjectHideFlags: 0
@@ -4045,6 +4045,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  flipViewForward: 1
+  invertClipPlane: 0
+  flipScaleZ: 0
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4112,6 +4115,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  flipViewForward: 1
+  invertClipPlane: 0
+  flipScaleZ: 0
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -4137,7 +4143,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8197170447663804482}
   - component: {fileID: 1937157125335981014}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Blue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4320,7 +4326,7 @@ GameObject:
   - component: {fileID: 4805111107266273928}
   - component: {fileID: 8095862263857129310}
   - component: {fileID: 3132859087815590435}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4368,7 +4374,7 @@ GameObject:
   - component: {fileID: 5710452781550541350}
   - component: {fileID: 6168494326109653225}
   - component: {fileID: 1747989180196598255}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Screen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4393,7 +4399,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5365184602941282177}
   - component: {fileID: 2069985398880840990}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Orange
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4411,7 +4417,7 @@ GameObject:
   - component: {fileID: 2174037431210880972}
   - component: {fileID: 8899481715251803678}
   - component: {fileID: 5243277813227354865}
-  m_Layer: 9
+  m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4505,7 +4511,7 @@ GameObject:
   - component: {fileID: 5848951163393321243}
   - component: {fileID: 7435962636747146057}
   - component: {fileID: 3014238485970619237}
-  m_Layer: 7
+  m_Layer: 0
   m_Name: Screen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
