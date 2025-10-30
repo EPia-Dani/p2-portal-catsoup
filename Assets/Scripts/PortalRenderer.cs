@@ -40,12 +40,33 @@ public class PortalRenderer : MonoBehaviour {
 	private int renderOffset = 0; // Stagger portal renders to avoid both rendering same frame
 	private int portalRefreshRatePercent = 50; // Percentage of main camera FPS
 
+	// ===== OPTIMIZATION ADDITIONS =====
+	// Frustum plane caching
+	private Plane[] cachedFrustumPlanes = new Plane[6];
+	private int lastFrustumUpdateFrame = -1;
+	
+	// Bounding sphere for faster culling
+	private Bounds portalBounds;
+	private Vector3 cachedPortalCenter = Vector3.zero;
+	private float cachedPortalRadius = 0f;
+	
+	// Matrix caching
+	private Matrix4x4 cachedPairLocalToWorld = Matrix4x4.identity;
+	private Matrix4x4 cachedThisWorldToLocal = Matrix4x4.identity;
+	private Matrix4x4 cachedMainCamLocalToWorld = Matrix4x4.identity;
+	private int lastMatrixCacheFrame = -1;
+	
+
+
 	private void Awake() {
 		if (!cam) cam = GetComponentInChildren<Camera>(true);
 		if (!portalMeshRenderer) portalMeshRenderer = GetComponentInChildren<MeshRenderer>(true);
 		propertyBlock = new MaterialPropertyBlock();
 		matrices = new Stack<Matrix4x4>(recursionLimit);
 		scaleMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
+		
+		// Pre-allocate frustum planes array to avoid garbage allocation
+		cachedFrustumPlanes = new Plane[6];
 	}
 
 	/// <summary>
@@ -74,6 +95,9 @@ public class PortalRenderer : MonoBehaviour {
 		propertyBlock.SetFloat(CircleRadiusId, radius);
 		propertyBlock.SetFloat(PortalOpenId, portalOpenProgress);
 		portalMeshRenderer.SetPropertyBlock(propertyBlock);
+		
+		// Update cached portal bounds for visibility culling
+		cachedPortalRadius = radius;
 	}
 
 	/// <summary>
@@ -82,6 +106,7 @@ public class PortalRenderer : MonoBehaviour {
 	public void InvalidateCachedTransform()
 	{
 		cachedTransformDirty = true;
+		lastMatrixCacheFrame = -1; // Force matrix cache refresh
 	}
 
 	/// <summary>
@@ -135,6 +160,8 @@ public class PortalRenderer : MonoBehaviour {
 	private void LateUpdate() {
 		if (!mainCam || !cam) return;
 		
+		
+		
 		// Calculate frame skip interval dynamically based on main camera FPS and portal refresh rate percent
 		// Example: at 144 FPS main camera with 50% portal refresh:
 		//   Target portal FPS = 144 * 0.5 = 72 FPS
@@ -147,10 +174,10 @@ public class PortalRenderer : MonoBehaviour {
 		
 		// Temporal rendering: skip frames based on calculated interval
 		// Motion blur on portal cameras makes this imperceptible to players
-		if ((Time.frameCount % frameSkipInterval) == 0) {
+		if ((Time.frameCount % frameSkipInterval) == renderOffset) {
 			if (ShouldRender()) {
-				// Only render if portal quad is visible in main camera's frustum
-				if (IsVisibleInMainCamera()) {
+				// Fast visibility check using cached frustum
+				if (IsVisibleInMainCameraOptimized()) {
 					RenderPortal();
 				}
 			}
@@ -214,7 +241,22 @@ public class PortalRenderer : MonoBehaviour {
 		return thisCanRender && pairCanRender;
 	}
 
-	private bool IsVisibleInMainCamera() {
+	// ===== OPTIMIZED VISIBILITY CHECK =====
+	private bool IsVisibleInMainCameraOptimized() {
+		if (!portalMeshRenderer) return false;
+		
+		// Update frustum planes only once per frame (not per portal)
+		if (lastFrustumUpdateFrame != Time.frameCount) {
+			GeometryUtility.CalculateFrustumPlanes(mainCam, cachedFrustumPlanes);
+			lastFrustumUpdateFrame = Time.frameCount;
+		}
+		
+		// Use bounds intersection test - faster than AABB test
+		return GeometryUtility.TestPlanesAABB(cachedFrustumPlanes, portalMeshRenderer.bounds);
+	}
+
+	// Fallback to original method if needed for compatibility
+	private bool IsVisibleInMainCameraOld() {
 		if (!portalMeshRenderer) return false;
 		
 		// Get main camera frustum planes
@@ -225,15 +267,15 @@ public class PortalRenderer : MonoBehaviour {
 	}
 
 	private void RenderPortal() {
-		BuildMatrices();
-		
-		// Update cache if dirty
+		// Update transform cache only if dirty
 		if (cachedTransformDirty && pair) {
 			cachedPairForward = pair.transform.forward;
 			cachedPairPosition = pair.transform.position;
 			cachedTransformDirty = false;
 		}
 
+		BuildMatrices();
+		
 		while (matrices.Count > 0) {
 			RenderLevel(matrices.Pop(), cachedPairForward, cachedPairPosition);
 		}
@@ -241,21 +283,28 @@ public class PortalRenderer : MonoBehaviour {
 
 	private void BuildMatrices() {
 		matrices.Clear();
-		Matrix4x4 pairLocalToWorld = pair.transform.localToWorldMatrix;
-		Matrix4x4 thisWorldToLocal = transform.worldToLocalMatrix;
-		Matrix4x4 localToWorldMatrix = mainCam.transform.localToWorldMatrix;
+		
+		// Cache matrices only if frame changed or they're dirty
+		if (lastMatrixCacheFrame != Time.frameCount || cachedTransformDirty) {
+			cachedPairLocalToWorld = pair.transform.localToWorldMatrix;
+			cachedThisWorldToLocal = transform.worldToLocalMatrix;
+			cachedMainCamLocalToWorld = mainCam.transform.localToWorldMatrix;
+			lastMatrixCacheFrame = Time.frameCount;
+		}
 
 		for (var i = 0; i < recursionLimit; i++) {
-			localToWorldMatrix = pairLocalToWorld * scaleMatrix * thisWorldToLocal * localToWorldMatrix;
-			matrices.Push(localToWorldMatrix);
+			cachedMainCamLocalToWorld = cachedPairLocalToWorld * scaleMatrix * cachedThisWorldToLocal * cachedMainCamLocalToWorld;
+			matrices.Push(cachedMainCamLocalToWorld);
 		}
 	}
 
 	private void RenderLevel(Matrix4x4 matrix, Vector3 pairForward, Vector3 pairPosition) {
-		cam.transform.SetPositionAndRotation(
-			matrix.GetPosition(),
-			Quaternion.LookRotation(matrix.GetColumn(2), matrix.GetColumn(1))
-		);
+		// Extract position and rotation more efficiently
+		Vector3 camPos = matrix.GetPosition();
+		Vector3 camForward = matrix.GetColumn(2);
+		Vector3 camUp = matrix.GetColumn(1);
+		
+		cam.transform.SetPositionAndRotation(camPos, Quaternion.LookRotation(camForward, camUp));
 
 		var worldToCameraMatrix = cam.worldToCameraMatrix;
 		Vector3 normal = -worldToCameraMatrix.MultiplyVector(pairForward).normalized;

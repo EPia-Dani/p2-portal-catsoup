@@ -8,6 +8,12 @@ public class GameBootstrap : MonoBehaviour {
 		// Initialize InputManager singleton (must happen before other components)
 		InputManager.Initialize();
 		CursorUtility.Apply(lockMode, cursorVisible);
+
+		// Performance defaults for builds: disable VSync and let the GPU run free
+		QualitySettings.vSyncCount = 0;
+		Application.targetFrameRate = -1; // Platform default / as fast as possible
+
+	 
 	}
 
 	private void OnDestroy() {
