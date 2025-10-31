@@ -3914,7 +3914,7 @@ MonoBehaviour:
   - {fileID: 1937157125335981014}
   - {fileID: 2069985398880840990}
   textureWidth: 1024
-  recursionLimit: 2
+  recursionLimit: 5
   frameSkipInterval: 2
   clipPlaneOffset: 0.01
   portalOpenDuration: 1
