@@ -11,8 +11,8 @@ namespace Portal {
 		[SerializeField] float clampSkin = 0.01f;
 
 		static readonly Vector3 ViewportCenter = new(0.5f, 0.5f, 0f);
-		const float SEP = 2.1f;       // push target in ellipse-space
-		const float SEP_CHECK = 2.05f; // verify after clamp
+		const float Sep = 2.1f;       // push target in ellipse-space
+		const float SepCheck = 2.05f; // verify after clamp
 
 		void Update() {
 			var c = InputManager.PlayerInput;
@@ -29,14 +29,33 @@ namespace Portal {
 
 			// Basis
 			Vector3 n = hit.normal;
+			// Default: try to align portal roll with the camera right projected onto the hit plane
 			Vector3 r = Vector3.ProjectOnPlane(shootCamera.transform.right, n);
 			float rsq = r.sqrMagnitude;
 			if (rsq < 1e-4f) {
+				// camera right is nearly parallel to the normal -> fall back to cross with world axes
 				r = Vector3.Cross(n, Vector3.up);
 				if (r.sqrMagnitude < 1e-6f) r = Vector3.Cross(n, Vector3.forward);
 			}
 			r.Normalize();
+			// Compute up from camera-projected basis by default
 			Vector3 u = Vector3.Cross(n, r); // orthonormal by construction
+			
+			// If the surface is inclined (i.e. world-up has a non-zero tangent on the surface),
+			// prefer using the surface's "y axis" — the projection of world-up onto the plane —
+			// so the portal appears upright relative to world Y while still conforming to the surface.
+			Vector3 upProjected = Vector3.ProjectOnPlane(Vector3.up, n);
+			if (upProjected.sqrMagnitude > 1e-4f) {
+				u = upProjected.normalized;
+				// recompute right to maintain orthonormal basis
+				r = Vector3.Cross(n, u);
+				if (r.sqrMagnitude < 1e-6f) {
+					// fallback to camera-based right if degenerate
+					r = Vector3.ProjectOnPlane(shootCamera.transform.right, n);
+					if (r.sqrMagnitude < 1e-6f) r = Vector3.Cross(n, Vector3.up);
+				}
+				r.Normalize();
+			}
 
 			// Plane center on the hit surface
 			Bounds b = col.bounds;
@@ -76,15 +95,15 @@ namespace Portal {
 					float eU = dU / portalHalfSize.y;
 					float mag = Mathf.Sqrt(eR * eR + eU * eU);
 
-					if (mag < SEP) {
+					if (mag < Sep) {
 						// push along ellipse direction
 						float dirR, dirU;
 						if (mag > 1e-3f) {
-							float s = SEP / mag;
+							float s = Sep / mag;
 							dirR = eR * s;
 							dirU = eU * s;
 						} else {
-							dirR = SEP; dirU = 0f;
+							dirR = Sep; dirU = 0f;
 						}
 
 						// back to RU
@@ -97,7 +116,7 @@ namespace Portal {
 
 						float fR = (uvR - oR) / portalHalfSize.x;
 						float fU = (uvU - oU) / portalHalfSize.y;
-						if (Mathf.Sqrt(fR * fR + fU * fU) < SEP_CHECK) return;
+						if (Mathf.Sqrt(fR * fR + fU * fU) < SepCheck) return;
 					}
 				}
 			}

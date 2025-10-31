@@ -2,14 +2,13 @@ using System.Collections;
 using UnityEngine;
 
 namespace Portal {
-	public class PortalAnimator : MonoBehaviour
-	{
-		private float portalOpenDuration = 1f;
-		private AnimationCurve portalOpenCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-		private float portalAppearDuration = 0.3f;
-		private float portalTargetRadius = 0.4f;
-		private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-		private float openThreshold = 0.8f;
+	public class PortalAnimator : MonoBehaviour {
+		[SerializeField] private float portalOpenDuration = 1f;
+		[SerializeField] private AnimationCurve portalOpenCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+		[SerializeField] private float portalAppearDuration = 0.3f;
+		[SerializeField] private float portalTargetRadius = 0.4f;
+		[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+		[SerializeField] private float openThreshold = 0.8f;
 
 		private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 		private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
@@ -24,8 +23,7 @@ namespace Portal {
 		public bool IsOpening => _openingCoroutine != null;
 		public bool IsFullyOpen => _portalOpenProgress >= openThreshold;
 
-		public void Configure(MeshRenderer meshRenderer)
-		{
+		public void Configure(MeshRenderer meshRenderer) {
 			_portalMeshRenderer = meshRenderer;
 			if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
 			_currentCircleRadius = portalTargetRadius;
@@ -41,8 +39,7 @@ namespace Portal {
 			float appearDuration,
 			float targetRadius,
 			AnimationCurve appearCurve,
-			float threshold)
-		{
+			float threshold) {
 			portalOpenDuration = Mathf.Max(0.1f, openDuration);
 			portalOpenCurve = openCurve != null ? openCurve : AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 			portalAppearDuration = Mathf.Max(0.1f, appearDuration);
@@ -51,30 +48,25 @@ namespace Portal {
 			openThreshold = Mathf.Clamp01(threshold);
 		}
 
-		public void PlayAppear()
-		{
+		public void PlayAppear() {
 			if (!_portalMeshRenderer) return;
 			if (_appearCoroutine != null) StopCoroutine(_appearCoroutine);
 			_appearCoroutine = StartCoroutine(AppearRoutine());
 		}
 
-		public void StartOpening()
-		{
+		public void StartOpening() {
 			if (!_portalMeshRenderer) return;
 			if (_openingCoroutine != null) StopCoroutine(_openingCoroutine);
 			_openingCoroutine = StartCoroutine(OpeningRoutine());
 		}
 
-		public void HideImmediate()
-		{
-			if (_openingCoroutine != null)
-			{
+		public void HideImmediate() {
+			if (_openingCoroutine != null) {
 				StopCoroutine(_openingCoroutine);
 				_openingCoroutine = null;
 			}
 
-			if (_appearCoroutine != null)
-			{
+			if (_appearCoroutine != null) {
 				StopCoroutine(_appearCoroutine);
 				_appearCoroutine = null;
 			}
@@ -84,13 +76,11 @@ namespace Portal {
 			ApplyToMaterial();
 		}
 
-		private IEnumerator AppearRoutine()
-		{
+		private IEnumerator AppearRoutine() {
 			SetCircleRadius(0f);
 
 			float elapsed = 0f;
-			while (elapsed < portalAppearDuration)
-			{
+			while (elapsed < portalAppearDuration) {
 				elapsed += Time.deltaTime;
 				float t = Mathf.Clamp01(elapsed / portalAppearDuration);
 				SetCircleRadius(portalTargetRadius * portalAppearCurve.Evaluate(t));
@@ -101,13 +91,11 @@ namespace Portal {
 			_appearCoroutine = null;
 		}
 
-		private IEnumerator OpeningRoutine()
-		{
+		private IEnumerator OpeningRoutine() {
 			_portalOpenProgress = 0f;
 			float elapsed = 0f;
 
-			while (elapsed < portalOpenDuration)
-			{
+			while (elapsed < portalOpenDuration) {
 				elapsed += Time.deltaTime;
 				float t = Mathf.Clamp01(elapsed / portalOpenDuration);
 				_portalOpenProgress = Mathf.Clamp01(portalOpenCurve.Evaluate(t) * openThreshold);
@@ -120,14 +108,12 @@ namespace Portal {
 			_openingCoroutine = null;
 		}
 
-		private void SetCircleRadius(float radius)
-		{
+		private void SetCircleRadius(float radius) {
 			_currentCircleRadius = radius;
 			ApplyToMaterial();
 		}
 
-		private void ApplyToMaterial()
-		{
+		private void ApplyToMaterial() {
 			if (!_portalMeshRenderer) return;
 			_propertyBlock.SetFloat(CircleRadiusId, _currentCircleRadius);
 			_propertyBlock.SetFloat(PortalOpenId, _portalOpenProgress);
