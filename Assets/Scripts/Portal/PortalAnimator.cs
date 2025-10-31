@@ -4,12 +4,12 @@ using UnityEngine;
 namespace Portal {
 	public class PortalAnimator : MonoBehaviour
 	{
-		[SerializeField] private float portalOpenDuration = 1f;
-		[SerializeField] private AnimationCurve portalOpenCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-		[SerializeField] private float portalAppearDuration = 0.3f;
-		[SerializeField] private float portalTargetRadius = 0.4f;
-		[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-		[SerializeField] private float openThreshold = 0.8f;
+		private float portalOpenDuration = 1f;
+		private AnimationCurve portalOpenCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+		private float portalAppearDuration = 0.3f;
+		private float portalTargetRadius = 0.4f;
+		private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+		private float openThreshold = 0.8f;
 
 		private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 		private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
@@ -30,6 +30,25 @@ namespace Portal {
 			if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
 			_currentCircleRadius = portalTargetRadius;
 			ApplyToMaterial();
+		}
+
+		/// <summary>
+		/// Sets all animation settings at once
+		/// </summary>
+		public void SetAnimationSettings(
+			float openDuration,
+			AnimationCurve openCurve,
+			float appearDuration,
+			float targetRadius,
+			AnimationCurve appearCurve,
+			float threshold)
+		{
+			portalOpenDuration = Mathf.Max(0.1f, openDuration);
+			portalOpenCurve = openCurve != null ? openCurve : AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+			portalAppearDuration = Mathf.Max(0.1f, appearDuration);
+			portalTargetRadius = Mathf.Max(0.1f, targetRadius);
+			portalAppearCurve = appearCurve != null ? appearCurve : AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+			openThreshold = Mathf.Clamp01(threshold);
 		}
 
 		public void PlayAppear()

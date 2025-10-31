@@ -7,9 +7,9 @@ namespace Portal {
 	{
 		[SerializeField] private Camera portalCamera;
 		[SerializeField] private MeshRenderer surfaceRenderer;
-		[SerializeField] private int textureWidth = 1024;
-		[SerializeField] private int textureHeight = 1024;
-		[SerializeField] private float clipPlaneOffset = 0.01f;
+		private int textureWidth = 1024;
+		private int textureHeight = 1024;
+		private float clipPlaneOffset = 0.01f;
 
 		private RenderTexture _renderTexture;
 		private static CommandBuffer _sharedCommandBuffer;
@@ -51,6 +51,31 @@ namespace Portal {
 			EnsureRenderTexture();
 		}
 
+		/// <summary>
+		/// Sets the texture size for the portal render texture
+		/// </summary>
+		public void SetTextureSize(int width, int height)
+		{
+			textureWidth = Mathf.Max(64, width);
+			textureHeight = Mathf.Max(64, height);
+			// Force render texture recreation with new settings
+			if (_renderTexture != null)
+			{
+				_renderTexture.Release();
+				Destroy(_renderTexture);
+				_renderTexture = null;
+			}
+			EnsureRenderTexture();
+		}
+
+		/// <summary>
+		/// Sets the clip plane offset for portal rendering
+		/// </summary>
+		public void SetClipPlaneOffset(float offset)
+		{
+			clipPlaneOffset = Mathf.Max(0.001f, offset);
+		}
+
 		public void ConfigureCamera()
 		{
 			if (!portalCamera) return;
@@ -61,7 +86,7 @@ namespace Portal {
 			portalCamera.useOcclusionCulling = false;
 			portalCamera.depthTextureMode = DepthTextureMode.None;
 			portalCamera.clearFlags = CameraClearFlags.SolidColor;
-			portalCamera.backgroundColor = Color.black;
+			portalCamera.backgroundColor = Color.clear;
 			portalCamera.stereoTargetEye = StereoTargetEyeMask.None;
 
 			var extra = portalCamera.GetUniversalAdditionalCameraData();
@@ -100,6 +125,15 @@ namespace Portal {
 			{
 				surfaceRenderer.sharedMaterial.mainTexture = _renderTexture;
 			}
+		}
+
+		public void ClearTexture()
+		{
+			if (_renderTexture == null) return;
+			var prev = RenderTexture.active;
+			RenderTexture.active = _renderTexture;
+			GL.Clear(true, true, Color.clear);
+			RenderTexture.active = prev;
 		}
 
 		public void SetVisible(bool visible)

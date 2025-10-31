@@ -9,9 +9,9 @@ namespace Portal {
 	{
 		[SerializeField] public PortalRenderer pair;
 		[SerializeField] private Camera mainCamera;
-		[SerializeField] private int recursionLimit = 2;
-		[SerializeField] private int frameSkipInterval = 1;
-		[SerializeField] private int renderOffset;
+		private int recursionLimit = 2;
+		private int frameSkipInterval = 1;
+		private int renderOffset;
 
 		private PortalRenderView _view;
 		private PortalAnimator _animator;
@@ -73,7 +73,42 @@ namespace Portal {
 			EnsureRecursionArray();
 		}
 
+		public void SetFrameSkipInterval(int interval)
+		{
+			frameSkipInterval = Mathf.Max(1, interval);
+		}
+
+		public void SetTextureWidth(int width)
+		{
+			if (_view != null)
+			{
+				_view.SetTextureSize(width, width);
+			}
+		}
+
 		public void SetRenderOffset(int offset) => renderOffset = offset;
+
+		public void SetClipPlaneOffset(float offset)
+		{
+			if (_view != null)
+			{
+				_view.SetClipPlaneOffset(offset);
+			}
+		}
+
+		public void SetAnimationSettings(
+			float openDuration,
+			AnimationCurve openCurve,
+			float appearDuration,
+			float targetRadius,
+			AnimationCurve appearCurve,
+			float threshold)
+		{
+			if (_animator != null)
+			{
+				_animator.SetAnimationSettings(openDuration, openCurve, appearDuration, targetRadius, appearCurve, threshold);
+			}
+		}
 
 		public void InvalidateCachedTransform()
 		{
@@ -101,6 +136,8 @@ namespace Portal {
 			if (!visible && _animator != null)
 			{
 				_animator.HideImmediate();
+				// Ensure stale contents are not shown when hidden
+				if (_view != null) _view.ClearTexture();
 			}
 		}
 
@@ -117,6 +154,9 @@ namespace Portal {
 				if (mainCamera) _cachedMainCameraTransform = mainCamera.transform;
 			}
 			if (!mainCamera || currentCamera != mainCamera) return;
+			
+			// Frame skip: only render when (frameCount % frameSkipInterval) equals renderOffset
+			// Example: frameSkipInterval=2, renderOffset=0 means render on frames 0,2,4,6... (every other frame)
 			if ((Time.frameCount % frameSkipInterval) != renderOffset) return;
 			if (!ShouldRender()) return;
 			if (!_view.IsVisible) return;
@@ -138,6 +178,8 @@ namespace Portal {
 			if (!mainCamera || !_view.IsVisible || !pair) return;
 
 			_view.EnsureRenderTexture();
+			// Clear before rendering recursion chain so stale frames don't leak
+			_view.ClearTexture();
 
 			// Use cached transforms for better performance
 			Transform source = _cachedTransform;

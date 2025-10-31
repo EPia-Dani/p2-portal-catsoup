@@ -529,7 +529,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
+  m_RenderPostProcessing: 1
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -604,7 +604,7 @@ Camera:
   m_TargetEye: 3
   m_HDR: 1
   m_AllowMSAA: 1
-  m_AllowDynamicResolution: 0
+  m_AllowDynamicResolution: 1
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
@@ -3913,7 +3913,62 @@ MonoBehaviour:
   portalPrefabs:
   - {fileID: 1937157125335981014}
   - {fileID: 2069985398880840990}
-  recursionLimit: 7
+  textureWidth: 1024
+  recursionLimit: 2
+  frameSkipInterval: 2
+  clipPlaneOffset: 0.01
+  portalOpenDuration: 1
+  portalOpenCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  portalAppearDuration: 0.3
+  portalTargetRadius: 0.4
+  portalAppearCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  openThreshold: 0.8
 --- !u!4 &2079793666
 Transform:
   m_ObjectHideFlags: 0
@@ -3929,6 +3984,55 @@ Transform:
   m_Children:
   - {fileID: 8197170447663804482}
   - {fileID: 5365184602941282177}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &2116874385
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2116874387}
+  - component: {fileID: 2116874386}
+  m_Layer: 0
+  m_Name: Volume
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2116874386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2116874385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IsGlobal: 1
+  priority: 1
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: eb6579978fadc194482d9d0b21e3a805, type: 2}
+--- !u!4 &2116874387
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2116874385}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -75.80517, y: 3.2759569, z: -70.48743}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &1747989180196598255
@@ -3990,9 +4094,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pair: {fileID: 2069985398880840990}
   mainCamera: {fileID: 37313535}
-  recursionLimit: 2
-  frameSkipInterval: 1
-  renderOffset: 0
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4007,9 +4108,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pair: {fileID: 1937157125335981014}
   mainCamera: {fileID: 37313535}
-  recursionLimit: 2
-  frameSkipInterval: 1
-  renderOffset: 0
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -4112,7 +4210,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
+  m_RenderPostProcessing: 1
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -4171,7 +4269,7 @@ MonoBehaviour:
     m_Bits: 1
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
-  m_RenderPostProcessing: 0
+  m_RenderPostProcessing: 1
   m_Antialiasing: 0
   m_AntialiasingQuality: 2
   m_StopNaN: 0
@@ -4314,58 +4412,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b447268a44316d4bb68b7ef501a551a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portalOpenDuration: 1
-  portalOpenCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  portalAppearDuration: 0.3
-  portalTargetRadius: 0.4
-  portalAppearCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  openThreshold: 0.8
 --- !u!114 &6690853907733404542
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4380,9 +4426,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   portalCamera: {fileID: 8899481715251803678}
   surfaceRenderer: {fileID: 1747989180196598255}
-  textureWidth: 2048
-  textureHeight: 2048
-  clipPlaneOffset: 0.01
 --- !u!1 &7219594838380380271
 GameObject:
   m_ObjectHideFlags: 0
@@ -4418,8 +4461,8 @@ Camera:
   m_GameObject: {fileID: 5603041112349524497}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 4
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -4489,58 +4532,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6b447268a44316d4bb68b7ef501a551a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portalOpenDuration: 1
-  portalOpenCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  portalAppearDuration: 0.3
-  portalTargetRadius: 0.4
-  portalAppearCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  openThreshold: 0.8
 --- !u!114 &8197170447663804484
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4555,9 +4546,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   portalCamera: {fileID: 8095862263857129310}
   surfaceRenderer: {fileID: 3014238485970619237}
-  textureWidth: 2048
-  textureHeight: 2048
-  clipPlaneOffset: 0.01
 --- !u!1 &8852276310168618757
 GameObject:
   m_ObjectHideFlags: 0
@@ -4585,8 +4573,8 @@ Camera:
   m_GameObject: {fileID: 7219594838380380271}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 4
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -4635,3 +4623,4 @@ SceneRoots:
   - {fileID: 2079793666}
   - {fileID: 311456981}
   - {fileID: 1315222560}
+  - {fileID: 2116874387}
