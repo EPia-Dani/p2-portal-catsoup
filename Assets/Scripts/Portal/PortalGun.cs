@@ -51,40 +51,30 @@ namespace Portal {
 			if (otherOpt.HasValue) {
 				var op = otherOpt.Value;
 				if (col == op.surface && Vector3.Dot(n, op.normal) > 0.99f) {
-					// Calculate ellipse distance properly (not circle)
 					Vector2 otherUV = new Vector2(Vector3.Dot(op.worldCenter - center, r), Vector3.Dot(op.worldCenter - center, u));
-					Vector2 toHit = uv - otherUV; // direction from other portal toward hit point
+					Vector2 toHit = uv - otherUV;
 					
-					// Check if overlapping using ellipse distance
-					float dx = toHit.x / portalHalfSize.x;
-					float dy = toHit.y / portalHalfSize.y;
-					float ellipseDist = Mathf.Sqrt(dx * dx + dy * dy);
+					// Convert to ellipse-space (unit circle)
+					Vector2 ellipseToHit = new Vector2(toHit.x / portalHalfSize.x, toHit.y / portalHalfSize.y);
+					float ellipseDist = ellipseToHit.magnitude;
 					
-					if (ellipseDist < 2.1f) { // portals overlap (2 radii + small margin)
-						// Try position in direction from other portal toward raycast hit
-						Vector2 dir = toHit.magnitude > 0.01f ? toHit.normalized : Vector2.right;
+					if (ellipseDist < 2.1f) { // portals overlap
+						// Move away in ellipse-space, then convert back
+						Vector2 ellipseDir = ellipseToHit.magnitude > 0.01f ? ellipseToHit.normalized : Vector2.right;
+						Vector2 newEllipsePos = ellipseDir * 2.1f;
 						
-						// Calculate required separation in ellipse space
-						float sepX = portalHalfSize.x * 2.1f;
-						float sepY = portalHalfSize.y * 2.1f;
-						Vector2 minSep = new Vector2(sepX, sepY);
+						// Convert back to world space
+						Vector2 worldOffset = new Vector2(newEllipsePos.x * portalHalfSize.x, newEllipsePos.y * portalHalfSize.y);
+						uv = otherUV + worldOffset;
 						
-						// Project direction onto ellipse axes to get proper separation
-						Vector2 ellipseSep = new Vector2(dir.x * minSep.x, dir.y * minSep.y);
-						float minDist = ellipseSep.magnitude;
-						
-						uv = otherUV + dir * minDist;
-						
-						// Clamp and check if still in bounds
+						// Clamp to bounds
 						uv.x = Mathf.Clamp(uv.x, -clamp.x, clamp.x);
 						uv.y = Mathf.Clamp(uv.y, -clamp.y, clamp.y);
 						
-						// If clamping moved us back into overlap, reject placement
-						Vector2 newOffset = uv - otherUV;
-						float newDx = newOffset.x / portalHalfSize.x;
-						float newDy = newOffset.y / portalHalfSize.y;
-						float newEllipseDist = Mathf.Sqrt(newDx * newDx + newDy * newDy);
-						if (newEllipseDist < 2.05f) return;
+						// Verify still separated after clamping
+						Vector2 finalToHit = uv - otherUV;
+						Vector2 finalEllipse = new Vector2(finalToHit.x / portalHalfSize.x, finalToHit.y / portalHalfSize.y);
+						if (finalEllipse.magnitude < 2.05f) return;
 					}
 				}
 			}
