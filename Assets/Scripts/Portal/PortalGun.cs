@@ -10,7 +10,7 @@ namespace Portal {
 		[SerializeField] float wallOffset = 0.02f;
 		[SerializeField] float clampSkin = 0.01f;
 
-		const float Eps = 1e-6f, SurfDot = 0.995f, OverlapTol = 0.95f;
+		const float Eps = 1e-6f;
 		static readonly Vector3 ViewportCenter = new Vector3(0.5f, 0.5f, 0f);
 
 		void Update() {
@@ -27,65 +27,67 @@ namespace Portal {
 
 			// surface basis
 			Vector3 n = hit.normal;
-			var camTransform = shootCamera ? shootCamera.transform : null;
-			Vector3 r = camTransform != null ? Vector3.ProjectOnPlane(camTransform.right, n) : Vector3.right;
-			if (r.sqrMagnitude <= Eps) r = Vector3.Cross(n, Vector3.up);
-			r.Normalize(); Vector3 u = Vector3.Cross(n, r).normalized;
+			Vector3 r = Vector3.ProjectOnPlane(shootCamera.transform.right, n).normalized;
+			if (r.sqrMagnitude < 0.001f) r = Vector3.Cross(n, Vector3.up).normalized;
+			Vector3 u = Vector3.Cross(n, r);
 
 			// plane center (project bounds center onto plane through hit)
 			Bounds b = col.bounds; Vector3 center = b.center + Vector3.Project(hit.point - b.center, n);
 
 			// clamp extents along portal axes
-			Vector3 absR = new Vector3(Mathf.Abs(r.x), Mathf.Abs(r.y), Mathf.Abs(r.z));
-			Vector3 absU = new Vector3(Mathf.Abs(u.x), Mathf.Abs(u.y), Mathf.Abs(u.z));
 			Vector3 ext = b.extents;
-			Vector2 clamp = new Vector2(Vector3.Dot(ext, absR) - portalHalfSize.x - clampSkin,
-					Vector3.Dot(ext, absU) - portalHalfSize.y - clampSkin);
+			float maxR = Vector3.Dot(ext, new Vector3(Mathf.Abs(r.x), Mathf.Abs(r.y), Mathf.Abs(r.z)));
+			float maxU = Vector3.Dot(ext, new Vector3(Mathf.Abs(u.x), Mathf.Abs(u.y), Mathf.Abs(u.z)));
+			Vector2 clamp = new Vector2(maxR - portalHalfSize.x - clampSkin, maxU - portalHalfSize.y - clampSkin);
 			if (clamp.x <= 0f || clamp.y <= 0f) return;
 
 			// initial UV (local portal coords)
 			Vector3 delta = hit.point - center;
 			Vector2 uv = new Vector2(Mathf.Clamp(Vector3.Dot(delta, r), -clamp.x, clamp.x),
-					Mathf.Clamp(Vector3.Dot(delta, u), -clamp.y, clamp.y));
+				Mathf.Clamp(Vector3.Dot(delta, u), -clamp.y, clamp.y));
 
 			// check overlap with other portal and try to move uv away
 			var otherOpt = portalManager.GetPortalState(1 - i);
 			if (otherOpt.HasValue) {
 				var op = otherOpt.Value;
-				if (col == op.surface && Mathf.Abs(Vector3.Dot(n, op.normal)) > SurfDot) {
+				if (col == op.surface && Vector3.Dot(n, op.normal) > 0.99f) {
+					// Calculate ellipse distance properly (not circle)
 					Vector2 otherUV = new Vector2(Vector3.Dot(op.worldCenter - center, r), Vector3.Dot(op.worldCenter - center, u));
-					Vector2 dUV = uv - otherUV;
-					// inline RequiredSpacing for 'need'
-					Vector2 d1 = dUV.sqrMagnitude > Eps ? dUV.normalized : Vector2.right;
-					float ra1 = Vector2.Scale(portalHalfSize, d1).magnitude;
-					Vector3 w1 = r * d1.x + u * d1.y; w1 = w1.sqrMagnitude > Eps ? w1.normalized : r;
-					Vector2 db1 = new Vector2(Vector3.Dot(w1, op.right), Vector3.Dot(w1, op.up)); db1 = db1.sqrMagnitude > Eps ? db1.normalized : Vector2.right;
-					float rb1 = Vector2.Scale(portalHalfSize, db1).magnitude;
-					float need = ra1 + rb1 + clampSkin * 2f;
-					if (dUV.sqrMagnitude < need * need) {
-						Vector2 dir = dUV.sqrMagnitude > Eps ? dUV.normalized : Vector2.right;
-						float step = Mathf.Max(portalHalfSize.x, portalHalfSize.y);
-						for (int k = 0; k < 3; ++k) {
-							float dist = need + step * k;
-							Vector2 cand = otherUV + dir * dist;
-							cand.x = Mathf.Clamp(cand.x, -clamp.x, clamp.x); cand.y = Mathf.Clamp(cand.y, -clamp.y, clamp.y);
-							Vector2 off = cand - otherUV; if (off.sqrMagnitude < Eps) continue;
-							// inline RequiredSpacing for 'req'
-							Vector2 d2 = off.sqrMagnitude > Eps ? off.normalized : Vector2.right;
-							float ra2 = Vector2.Scale(portalHalfSize, d2).magnitude;
-							Vector3 w2 = r * d2.x + u * d2.y; w2 = w2.sqrMagnitude > Eps ? w2.normalized : r;
-							Vector2 db2 = new Vector2(Vector3.Dot(w2, op.right), Vector3.Dot(w2, op.up)); db2 = db2.sqrMagnitude > Eps ? db2.normalized : Vector2.right;
-							float rb2 = Vector2.Scale(portalHalfSize, db2).magnitude;
-							float req = ra2 + rb2 + clampSkin * 2f;
-
-							if (off.sqrMagnitude >= req * req * OverlapTol) { uv = cand; goto PLACE; }
-						}
-						return; // couldn't resolve
+					Vector2 toHit = uv - otherUV; // direction from other portal toward hit point
+					
+					// Check if overlapping using ellipse distance
+					float dx = toHit.x / portalHalfSize.x;
+					float dy = toHit.y / portalHalfSize.y;
+					float ellipseDist = Mathf.Sqrt(dx * dx + dy * dy);
+					
+					if (ellipseDist < 2.1f) { // portals overlap (2 radii + small margin)
+						// Try position in direction from other portal toward raycast hit
+						Vector2 dir = toHit.magnitude > 0.01f ? toHit.normalized : Vector2.right;
+						
+						// Calculate required separation in ellipse space
+						float sepX = portalHalfSize.x * 2.1f;
+						float sepY = portalHalfSize.y * 2.1f;
+						Vector2 minSep = new Vector2(sepX, sepY);
+						
+						// Project direction onto ellipse axes to get proper separation
+						Vector2 ellipseSep = new Vector2(dir.x * minSep.x, dir.y * minSep.y);
+						float minDist = ellipseSep.magnitude;
+						
+						uv = otherUV + dir * minDist;
+						
+						// Clamp and check if still in bounds
+						uv.x = Mathf.Clamp(uv.x, -clamp.x, clamp.x);
+						uv.y = Mathf.Clamp(uv.y, -clamp.y, clamp.y);
+						
+						// If clamping moved us back into overlap, reject placement
+						Vector2 newOffset = uv - otherUV;
+						float newDx = newOffset.x / portalHalfSize.x;
+						float newDy = newOffset.y / portalHalfSize.y;
+						float newEllipseDist = Mathf.Sqrt(newDx * newDx + newDy * newDy);
+						if (newEllipseDist < 2.05f) return;
 					}
 				}
 			}
-
-			PLACE:
 			portalManager.PlacePortal(i, center + r * uv.x + u * uv.y, n, r, u, col, wallOffset);
 		}
 	}
