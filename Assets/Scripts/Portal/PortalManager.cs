@@ -28,10 +28,11 @@ public class PortalManager : MonoBehaviour
 
 	private void Awake()
 	{
-		// Initialize all portals with centralized settings
-		foreach (PortalRenderer portal in portalPrefabs)
+		// Initialize all portals with centralized settings (use for loop for better performance)
+		for (int i = 0; i < portalPrefabs.Length; i++)
 		{
-			if (portal)
+			PortalRenderer portal = portalPrefabs[i];
+			if (portal != null)
 			{
 				portal.SetRecursionLimit(recursionLimit);
 			}

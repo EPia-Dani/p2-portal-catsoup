@@ -18,6 +18,21 @@ namespace Portal {
 
 		private Input.PlayerInput _controls;
 		private Transform _cameraTransform;
+		
+		// Cached vectors to avoid allocations
+		private Vector2 _cachedClamp;
+		private Vector2 _cachedUV;
+		private Vector2 _cachedOtherUV;
+		private Vector2 _cachedDelta;
+		private Vector2 _cachedDir;
+		private Vector2 _cachedCand;
+		private Vector2 _cachedOff;
+		private Vector3 _cachedNormal;
+		private Vector3 _cachedRight;
+		private Vector3 _cachedUp;
+		private Vector3 _cachedCenter;
+		private Vector3 _cachedPos;
+		private Bounds _cachedBounds;
 
 		private void Awake()
 		{
@@ -51,43 +66,59 @@ namespace Portal {
 			if (!Physics.Raycast(ray, out var hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
 			if (!hit.collider || !hit.collider.enabled) return;
 
-			// Build plane basis at hit
-			Vector3 normal = hit.normal.normalized;
-			ComputeBasis(normal, _cameraTransform.right, out Vector3 right, out Vector3 up);
+			// Build plane basis at hit (cache vectors to avoid allocations)
+			_cachedNormal = hit.normal;
+			float normalMag = Mathf.Sqrt(_cachedNormal.x * _cachedNormal.x + _cachedNormal.y * _cachedNormal.y + _cachedNormal.z * _cachedNormal.z);
+			if (normalMag > 1e-6f)
+			{
+				float invMag = 1f / normalMag;
+				_cachedNormal.x *= invMag;
+				_cachedNormal.y *= invMag;
+				_cachedNormal.z *= invMag;
+			}
+			
+			Vector3 cameraRight = _cameraTransform.right;
+			ComputeBasis(_cachedNormal, cameraRight, out _cachedRight, out _cachedUp);
 
-			// Plane center: project collider bounds center onto plane along its normal
-			Bounds b = hit.collider.bounds;
-			Vector3 center = b.center + normal * Vector3.Dot(normal, hit.point - b.center);
+			// Plane center: project collider bounds center onto plane along its normal (cache bounds)
+			_cachedBounds = hit.collider.bounds;
+			float dot = _cachedNormal.x * (hit.point.x - _cachedBounds.center.x) + 
+			            _cachedNormal.y * (hit.point.y - _cachedBounds.center.y) + 
+			            _cachedNormal.z * (hit.point.z - _cachedBounds.center.z);
+			_cachedCenter.x = _cachedBounds.center.x + _cachedNormal.x * dot;
+			_cachedCenter.y = _cachedBounds.center.y + _cachedNormal.y * dot;
+			_cachedCenter.z = _cachedBounds.center.z + _cachedNormal.z * dot;
 
 			// Compute clamp extents and check if there's room
-			Vector2 clamp = ComputeClampExtents(b, right, up);
-			if (clamp.x <= 0f || clamp.y <= 0f) return;
+			ComputeClampExtents(_cachedBounds, _cachedRight, _cachedUp, out _cachedClamp);
+			if (_cachedClamp.x <= 0f || _cachedClamp.y <= 0f) return;
 
 			// Get initial UV position clamped to surface bounds
-			Vector2 uv = GetInitialUVClamped(hit.point, center, right, up, clamp);
+			GetInitialUVClamped(hit.point, _cachedCenter, _cachedRight, _cachedUp, _cachedClamp, out _cachedUV);
 
 			// Try to resolve overlap with other portal
-			if (!TryResolveOverlapWithOtherPortal(i, ref uv, clamp, center, right, up, normal, hit.collider)) return;
+			if (!TryResolveOverlapWithOtherPortal(i, ref _cachedUV, _cachedClamp, _cachedCenter, _cachedRight, _cachedUp, _cachedNormal, hit.collider)) return;
 
 			// Notify portal manager to place the portal
-			Vector3 pos = center + right * uv.x + up * uv.y;
-			portalManager.PlacePortal(i, pos, normal, right, up, hit.collider, wallOffset);
+			_cachedPos.x = _cachedCenter.x + _cachedRight.x * _cachedUV.x + _cachedUp.x * _cachedUV.y;
+			_cachedPos.y = _cachedCenter.y + _cachedRight.y * _cachedUV.x + _cachedUp.y * _cachedUV.y;
+			_cachedPos.z = _cachedCenter.z + _cachedRight.z * _cachedUV.x + _cachedUp.z * _cachedUV.y;
+			portalManager.PlacePortal(i, _cachedPos, _cachedNormal, _cachedRight, _cachedUp, hit.collider, wallOffset);
 		}
 
-		private Vector2 ComputeClampExtents(Bounds b, Vector3 right, Vector3 up)
+		private void ComputeClampExtents(Bounds b, Vector3 right, Vector3 up, out Vector2 result)
 		{
-			return new Vector2(
-				ProjectExtent(b.extents, right) - portalHalfSize.x - clampSkin,
-				ProjectExtent(b.extents, up) - portalHalfSize.y - clampSkin
-			);
+			result.x = ProjectExtent(b.extents, right) - portalHalfSize.x - clampSkin;
+			result.y = ProjectExtent(b.extents, up) - portalHalfSize.y - clampSkin;
 		}
 
-		private Vector2 GetInitialUVClamped(Vector3 hitPoint, Vector3 center, Vector3 right, Vector3 up, Vector2 clamp)
+		private void GetInitialUVClamped(Vector3 hitPoint, Vector3 center, Vector3 right, Vector3 up, Vector2 clamp, out Vector2 result)
 		{
-			Vector2 uv = new Vector2(Vector3.Dot(hitPoint - center, right), Vector3.Dot(hitPoint - center, up));
-			uv.x = Mathf.Clamp(uv.x, -clamp.x, clamp.x);
-			uv.y = Mathf.Clamp(uv.y, -clamp.y, clamp.y);
-			return uv;
+			float dx = hitPoint.x - center.x;
+			float dy = hitPoint.y - center.y;
+			float dz = hitPoint.z - center.z;
+			result.x = Mathf.Clamp(dx * right.x + dy * right.y + dz * right.z, -clamp.x, clamp.x);
+			result.y = Mathf.Clamp(dx * up.x + dy * up.y + dz * up.z, -clamp.y, clamp.y);
 		}
 
 		private bool TryResolveOverlapWithOtherPortal(int i, ref Vector2 uv, Vector2 clamp, Vector3 center, Vector3 right, Vector3 up, Vector3 normal, Collider col)
@@ -98,30 +129,53 @@ namespace Portal {
 			PortalManager.PortalState otherPortal = otherPortalOpt.Value;
 			if (col != otherPortal.surface || !AreOnSameSurface(normal, otherPortal.normal)) return true;
 
-			Vector2 otherUV = new Vector2(Vector3.Dot(otherPortal.worldCenter - center, right), Vector3.Dot(otherPortal.worldCenter - center, up));
-			Vector2 delta = uv - otherUV;
+			// Calculate other UV using cached vectors (avoid allocations)
+			float otherDx = otherPortal.worldCenter.x - center.x;
+			float otherDy = otherPortal.worldCenter.y - center.y;
+			float otherDz = otherPortal.worldCenter.z - center.z;
+			_cachedOtherUV.x = otherDx * right.x + otherDy * right.y + otherDz * right.z;
+			_cachedOtherUV.y = otherDx * up.x + otherDy * up.y + otherDz * up.z;
+			
+			_cachedDelta.x = uv.x - _cachedOtherUV.x;
+			_cachedDelta.y = uv.y - _cachedOtherUV.y;
 
-			float need = MinSpacing(delta, right, up, otherPortal.right, otherPortal.up);
-			if (delta.sqrMagnitude >= need * need) return true; // No overlap, position is valid
+			float need = MinSpacing(_cachedDelta, right, up, otherPortal.right, otherPortal.up);
+			float deltaSqrMag = _cachedDelta.x * _cachedDelta.x + _cachedDelta.y * _cachedDelta.y;
+			if (deltaSqrMag >= need * need) return true; // No overlap, position is valid
 
-			// Try to find alternative position
-			Vector2 dir = delta.sqrMagnitude > Eps ? delta.normalized : new Vector2(1f, 0f);
+			// Try to find alternative position (avoid allocation from normalized)
+			if (deltaSqrMag > Eps)
+			{
+				float invMag = 1f / Mathf.Sqrt(deltaSqrMag);
+				_cachedDir.x = _cachedDelta.x * invMag;
+				_cachedDir.y = _cachedDelta.y * invMag;
+			}
+			else
+			{
+				_cachedDir.x = 1f;
+				_cachedDir.y = 0f;
+			}
+			
 			float step = Mathf.Max(portalHalfSize.x, portalHalfSize.y);
 
 			for (int k = 0; k < 3; k++)
 			{
-				Vector2 cand = otherUV + dir * (need + step * k);
-				cand.x = Mathf.Clamp(cand.x, -clamp.x, clamp.x);
-				cand.y = Mathf.Clamp(cand.y, -clamp.y, clamp.y);
+				float dist = need + step * k;
+				_cachedCand.x = _cachedOtherUV.x + _cachedDir.x * dist;
+				_cachedCand.y = _cachedOtherUV.y + _cachedDir.y * dist;
+				_cachedCand.x = Mathf.Clamp(_cachedCand.x, -clamp.x, clamp.x);
+				_cachedCand.y = Mathf.Clamp(_cachedCand.y, -clamp.y, clamp.y);
 
 				// Skip if candidate hasn't moved from other portal due to clamping
-				Vector2 off = cand - otherUV;
-				if (off.sqrMagnitude < Eps) continue;
+				_cachedOff.x = _cachedCand.x - _cachedOtherUV.x;
+				_cachedOff.y = _cachedCand.y - _cachedOtherUV.y;
+				float offSqrMag = _cachedOff.x * _cachedOff.x + _cachedOff.y * _cachedOff.y;
+				if (offSqrMag < Eps) continue;
 
-				float req = MinSpacing(off, right, up, otherPortal.right, otherPortal.up);
-				if (off.sqrMagnitude >= req * req * OverlapTol)
+				float req = MinSpacing(_cachedOff, right, up, otherPortal.right, otherPortal.up);
+				if (offSqrMag >= req * req * OverlapTol)
 				{
-					uv = cand;
+					uv = _cachedCand;
 					return true;
 				}
 			}
@@ -146,13 +200,55 @@ namespace Portal {
 		// Ellipse support distance along dir for both portals
 		float MinSpacing(in Vector2 dirUV, in Vector3 rightA, in Vector3 upA, in Vector3 rightB, in Vector3 upB)
 		{
-			Vector2 d = dirUV.sqrMagnitude > Eps ? dirUV.normalized : new Vector2(1f, 0f);
+			Vector2 d;
+			float dirUVSqrMag = dirUV.x * dirUV.x + dirUV.y * dirUV.y;
+			if (dirUVSqrMag > Eps)
+			{
+				float invMag = 1f / Mathf.Sqrt(dirUVSqrMag);
+				d.x = dirUV.x * invMag;
+				d.y = dirUV.y * invMag;
+			}
+			else
+			{
+				d.x = 1f;
+				d.y = 0f;
+			}
 			float ra = GetEllipseRadius(d);
 
-			Vector3 worldDir = rightA * d.x + upA * d.y;
-			worldDir = worldDir.sqrMagnitude > Eps ? worldDir.normalized : rightA;
-			Vector2 dOther = new Vector2(Vector3.Dot(worldDir, rightB), Vector3.Dot(worldDir, upB));
-			dOther = dOther.sqrMagnitude > Eps ? dOther.normalized : new Vector2(1f, 0f);
+			Vector3 worldDir;
+			worldDir.x = rightA.x * d.x + upA.x * d.y;
+			worldDir.y = rightA.y * d.x + upA.y * d.y;
+			worldDir.z = rightA.z * d.x + upA.z * d.y;
+			
+			float worldDirSqrMag = worldDir.x * worldDir.x + worldDir.y * worldDir.y + worldDir.z * worldDir.z;
+			if (worldDirSqrMag > Eps)
+			{
+				float invMag = 1f / Mathf.Sqrt(worldDirSqrMag);
+				worldDir.x *= invMag;
+				worldDir.y *= invMag;
+				worldDir.z *= invMag;
+			}
+			else
+			{
+				worldDir = rightA;
+			}
+			
+			Vector2 dOther;
+			dOther.x = worldDir.x * rightB.x + worldDir.y * rightB.y + worldDir.z * rightB.z;
+			dOther.y = worldDir.x * upB.x + worldDir.y * upB.y + worldDir.z * upB.z;
+			
+			float dOtherSqrMag = dOther.x * dOther.x + dOther.y * dOther.y;
+			if (dOtherSqrMag > Eps)
+			{
+				float invMag = 1f / Mathf.Sqrt(dOtherSqrMag);
+				dOther.x *= invMag;
+				dOther.y *= invMag;
+			}
+			else
+			{
+				dOther.x = 1f;
+				dOther.y = 0f;
+			}
 
 			float rb = GetEllipseRadius(dOther);
 			return ra + rb + clampSkin * 2f;

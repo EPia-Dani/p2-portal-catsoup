@@ -14,6 +14,18 @@ namespace Portal {
 		private RenderTexture _renderTexture;
 		private static CommandBuffer _sharedCommandBuffer;
 		private bool _isVisible = true;
+		
+		// Cached objects to avoid per-frame allocations
+		private Vector4 _cachedClipPlane;
+		private Vector3 _cachedPosition;
+		private Vector3 _cachedForward;
+		private Vector3 _cachedUp;
+		private Vector3 _cachedPlanePoint;
+		private Vector3 _cachedCameraPlaneNormal;
+		private Vector3 _cachedCameraPlanePoint;
+		
+		// Cached GameObject reference to avoid property access
+		private GameObject _cachedCameraGameObject;
 
 		public MeshRenderer SurfaceRenderer => surfaceRenderer;
 		public bool IsVisible => _isVisible;
@@ -22,6 +34,18 @@ namespace Portal {
 		{
 			if (!portalCamera) portalCamera = GetComponentInChildren<Camera>(true);
 			if (!surfaceRenderer) surfaceRenderer = GetComponentInChildren<MeshRenderer>(true);
+
+			if (!portalCamera)
+			{
+				Debug.LogError("PortalRenderView: Portal camera not found! Add a Camera component as a child or assign in inspector.", this);
+			}
+			if (!surfaceRenderer)
+			{
+				Debug.LogError("PortalRenderView: Surface renderer not found! Add a MeshRenderer component as a child or assign in inspector.", this);
+			}
+
+			// Cache camera GameObject reference
+			if (portalCamera != null) _cachedCameraGameObject = portalCamera.gameObject;
 
 			ConfigureCamera();
 			EnsureRenderTexture();
@@ -81,16 +105,15 @@ namespace Portal {
 		public void SetVisible(bool visible)
 		{
 			_isVisible = visible;
-			if (portalCamera)
+			if (_cachedCameraGameObject != null)
 			{
-				var cameraObject = portalCamera.gameObject;
-				if (cameraObject.activeSelf != visible)
+				if (_cachedCameraGameObject.activeSelf != visible)
 				{
-					cameraObject.SetActive(visible);
+					_cachedCameraGameObject.SetActive(visible);
 				}
 			}
 
-			if (surfaceRenderer)
+			if (surfaceRenderer != null)
 			{
 				surfaceRenderer.enabled = visible;
 			}
@@ -107,24 +130,45 @@ namespace Portal {
 
 			EnsureRenderTexture();
 
-			Vector3 position = worldMatrix.MultiplyPoint(Vector3.zero);
-			Vector3 forward = worldMatrix.MultiplyVector(Vector3.forward);
-			Vector3 up = worldMatrix.MultiplyVector(Vector3.up);
+			// Use cached Vector3 fields to avoid allocations
+			_cachedPosition = worldMatrix.MultiplyPoint(Vector3.zero);
+			_cachedForward = worldMatrix.MultiplyVector(Vector3.forward);
+			_cachedUp = worldMatrix.MultiplyVector(Vector3.up);
 
-			portalCamera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
+			portalCamera.transform.SetPositionAndRotation(_cachedPosition, Quaternion.LookRotation(_cachedForward, _cachedUp));
 
-			Vector3 planePoint = destinationPosition + destinationForward * clipPlaneOffset;
+			// Calculate plane point using cached vector
+			float offset = clipPlaneOffset;
+			_cachedPlanePoint.x = destinationPosition.x + destinationForward.x * offset;
+			_cachedPlanePoint.y = destinationPosition.y + destinationForward.y * offset;
+			_cachedPlanePoint.z = destinationPosition.z + destinationForward.z * offset;
+			
 			Matrix4x4 worldToCamera = portalCamera.worldToCameraMatrix;
-			Vector3 cameraPlaneNormal = -worldToCamera.MultiplyVector(destinationForward).normalized;
-			Vector3 cameraPlanePoint = worldToCamera.MultiplyPoint(planePoint);
-			Vector4 clipPlane = new Vector4(
-				cameraPlaneNormal.x,
-				cameraPlaneNormal.y,
-				cameraPlaneNormal.z,
-				-Vector3.Dot(cameraPlanePoint, cameraPlaneNormal)
-			);
+			
+			// Calculate normal using cached vector (avoid temporary allocation from normalized)
+			_cachedCameraPlaneNormal = worldToCamera.MultiplyVector(destinationForward);
+			float normalMag = Mathf.Sqrt(_cachedCameraPlaneNormal.x * _cachedCameraPlaneNormal.x + 
+			                             _cachedCameraPlaneNormal.y * _cachedCameraPlaneNormal.y + 
+			                             _cachedCameraPlaneNormal.z * _cachedCameraPlaneNormal.z);
+			if (normalMag > 1e-6f)
+			{
+				float invMag = -1f / normalMag;
+				_cachedCameraPlaneNormal.x *= invMag;
+				_cachedCameraPlaneNormal.y *= invMag;
+				_cachedCameraPlaneNormal.z *= invMag;
+			}
+			
+			_cachedCameraPlanePoint = worldToCamera.MultiplyPoint(_cachedPlanePoint);
+			
+			// Reuse cached Vector4 instead of allocating new one
+			_cachedClipPlane.x = _cachedCameraPlaneNormal.x;
+			_cachedClipPlane.y = _cachedCameraPlaneNormal.y;
+			_cachedClipPlane.z = _cachedCameraPlaneNormal.z;
+			_cachedClipPlane.w = -(_cachedCameraPlanePoint.x * _cachedCameraPlaneNormal.x + 
+			                        _cachedCameraPlanePoint.y * _cachedCameraPlaneNormal.y + 
+			                        _cachedCameraPlanePoint.z * _cachedCameraPlaneNormal.z);
 
-			portalCamera.projectionMatrix = mainCamera.CalculateObliqueMatrix(clipPlane);
+			portalCamera.projectionMatrix = mainCamera.CalculateObliqueMatrix(_cachedClipPlane);
 
 			context.ExecuteCommandBuffer(GetCommandBuffer());
 #pragma warning disable CS0618

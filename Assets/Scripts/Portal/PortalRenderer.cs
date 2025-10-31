@@ -19,17 +19,39 @@ namespace Portal {
 		private Matrix4x4 _mirrorMatrix;
 		private bool _isVisible = true;
 
-		public bool IsFullyOpen => _animator && _animator.IsFullyOpen;
-		public bool IsOpening => _animator && _animator.IsOpening;
+		// Cached transform references for performance
+		private Transform _cachedTransform;
+		private Transform _cachedPairTransform;
+		private Transform _cachedMainCameraTransform;
+		
+		// Cached transform properties (updated when portals move)
+		private Vector3 _cachedDestinationForward;
+		private Vector3 _cachedDestinationPosition;
+
+		// Cached component references to avoid repeated property access
+		private MeshRenderer _cachedSurfaceRenderer;
+
+		public bool IsFullyOpen => _animator != null && _animator.IsFullyOpen;
+		public bool IsOpening => _animator != null && _animator.IsOpening;
 
 		private void Awake()
 		{
 			_view = GetComponent<PortalRenderView>();
 			_animator = GetComponent<PortalAnimator>();
 			if (!mainCamera) mainCamera = Camera.main;
+			if (!mainCamera)
+			{
+				Debug.LogError("PortalRenderer: Main camera not found! Assign Camera.main or set mainCamera in inspector.", this);
+			}
+
+			// Cache transform references
+			_cachedTransform = transform;
+			if (pair) _cachedPairTransform = pair.transform;
+			if (mainCamera) _cachedMainCameraTransform = mainCamera.transform;
 
 			_view.Initialize();
-			_animator.Configure(_view.SurfaceRenderer);
+			_cachedSurfaceRenderer = _view.SurfaceRenderer;
+			_animator.Configure(_cachedSurfaceRenderer);
 
 			UpdateMirrorMatrix();
 			EnsureRecursionArray();
@@ -53,28 +75,32 @@ namespace Portal {
 
 		public void SetRenderOffset(int offset) => renderOffset = offset;
 
-		public void InvalidateCachedTransform() { }
+		public void InvalidateCachedTransform()
+		{
+			// Update cached transform references when portals are moved
+			if (pair) _cachedPairTransform = pair.transform;
+		}
 
 		public void StartOpening()
 		{
 			if (!_isVisible) SetVisible(true);
-			_animator?.StartOpening();
+			if (_animator != null) _animator.StartOpening();
 		}
 
 		public void PlayAppear()
 		{
 			if (!_isVisible) SetVisible(true);
-			_animator?.PlayAppear();
+			if (_animator != null) _animator.PlayAppear();
 		}
 
 		public void SetVisible(bool visible)
 		{
 			if (_isVisible == visible) return;
 			_isVisible = visible;
-			_view?.SetVisible(visible);
-			if (!visible)
+			if (_view != null) _view.SetVisible(visible);
+			if (!visible && _animator != null)
 			{
-				_animator?.HideImmediate();
+				_animator.HideImmediate();
 			}
 		}
 
@@ -84,43 +110,67 @@ namespace Portal {
 		private void OnBeginCameraRendering(ScriptableRenderContext context, Camera currentCamera)
 		{
 			if (!_view || !_animator) return;
-			if (!mainCamera) mainCamera = Camera.main;
+			if (!mainCamera)
+			{
+				// Only fallback to Camera.main if mainCamera was destroyed/nullified
+				mainCamera = Camera.main;
+				if (mainCamera) _cachedMainCameraTransform = mainCamera.transform;
+			}
 			if (!mainCamera || currentCamera != mainCamera) return;
 			if ((Time.frameCount % frameSkipInterval) != renderOffset) return;
 			if (!ShouldRender()) return;
 			if (!_view.IsVisible) return;
-			if (!PortalVisibility.IsVisible(mainCamera, _view.SurfaceRenderer)) return;
+			if (!PortalVisibility.IsVisible(mainCamera, _cachedSurfaceRenderer)) return;
 
 			RenderPortal(context);
 		}
 
 		private bool ShouldRender()
 		{
-			if (!pair) return false;
-			bool thisReady = _animator && (_animator.IsOpening || _animator.IsFullyOpen);
+			if (pair == null || _animator == null) return false;
+			bool thisReady = _animator.IsOpening || _animator.IsFullyOpen;
 			bool pairReady = pair.IsOpening || pair.IsFullyOpen;
 			return thisReady && pairReady;
 		}
 
 		private void RenderPortal(ScriptableRenderContext context)
 		{
-			if (!mainCamera || !_view.IsVisible) return;
+			if (!mainCamera || !_view.IsVisible || !pair) return;
 
 			_view.EnsureRenderTexture();
 
-			var source = transform;
-			var destination = pair.transform;
-			var stepMatrix = PortalRecursionSolver.BuildStepMatrix(source, destination, _mirrorMatrix);
-			var startMatrix = mainCamera.transform.localToWorldMatrix;
+			// Use cached transforms for better performance
+			Transform source = _cachedTransform;
+			Transform destination = _cachedPairTransform;
+			
+			// Cache pair transform if not already cached (avoid null coalescing overhead)
+			if (destination == null)
+			{
+				destination = pair.transform;
+				_cachedPairTransform = destination;
+			}
+
+			Matrix4x4 stepMatrix = PortalRecursionSolver.BuildStepMatrix(source, destination, _mirrorMatrix);
+			
+			// Cache main camera transform and matrix (avoid null coalescing overhead)
+			Transform mainCamTransform = _cachedMainCameraTransform;
+			if (mainCamTransform == null)
+			{
+				mainCamTransform = mainCamera.transform;
+				_cachedMainCameraTransform = mainCamTransform;
+			}
+			Matrix4x4 startMatrix = mainCamTransform.localToWorldMatrix;
 
 			PortalRecursionSolver.Fill(_recursionMatrices, stepMatrix, startMatrix);
 
-			var destinationForward = destination.forward;
-			var destinationPosition = destination.position;
+			// Cache destination properties (accessed once per render, not per recursion level)
+			_cachedDestinationForward = destination.forward;
+			_cachedDestinationPosition = destination.position;
 
-			for (int i = _recursionMatrices.Length - 1; i >= 0; i--)
+			int matrixCount = _recursionMatrices.Length;
+			for (int i = matrixCount - 1; i >= 0; i--)
 			{
-				_view.RenderLevel(context, mainCamera, _recursionMatrices[i], destinationForward, destinationPosition);
+				_view.RenderLevel(context, mainCamera, _recursionMatrices[i], _cachedDestinationForward, _cachedDestinationPosition);
 			}
 		}
 

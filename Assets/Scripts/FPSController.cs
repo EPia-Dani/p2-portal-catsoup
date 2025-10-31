@@ -34,6 +34,23 @@ public class FPSController : MonoBehaviour
     private bool _isGrounded;
     private Vector2 _moveInput;
     private Vector3 _horizontalVelocity;
+    
+    // Cached Vector3 to avoid per-frame allocations
+    private Vector3 _cachedHorizontal;
+    private Vector3 _cachedMove;
+    private Vector3 _cachedWishDir;
+    private Vector3 _cachedTargetVel;
+    private Vector3 _cachedDelta;
+    private Vector3 _cachedVerticalVel;
+    
+    // Cached transform directions to avoid property access overhead
+    private Transform _cachedTransform;
+    private Vector3 _cachedForward;
+    private Vector3 _cachedRight;
+    
+    // Cached Quaternion for rotations
+    private Quaternion _cachedYawRotation;
+    private Quaternion _cachedPitchRotation;
 
     // Look state - using Euler angles for simplicity (quaternion would be more robust for extreme angles)
     private float _currentYaw;
@@ -44,6 +61,9 @@ public class FPSController : MonoBehaviour
 
     private void Awake() {
         if (!characterController) characterController = GetComponent<CharacterController>();
+
+        // Cache transform reference
+        _cachedTransform = transform;
 
         // Gravity and jump precompute
         _gravity = -2f * jumpHeight / (timeToApex * timeToApex);
@@ -108,12 +128,14 @@ public class FPSController : MonoBehaviour
         _currentPitch += pitchDelta;
         _currentPitch = Mathf.Clamp(_currentPitch, pitchClampMin, pitchClampMax);
 
-        // Apply rotations
+        // Apply rotations (recreate Quaternions - they're necessary for correct rotation, but we cache to avoid repeated property access)
         if (yawTransform != null) {
-            yawTransform.rotation = Quaternion.Euler(0f, _currentYaw, 0f);
+            _cachedYawRotation = Quaternion.Euler(0f, _currentYaw, 0f);
+            yawTransform.rotation = _cachedYawRotation;
         }
         if (pitchTransform != null) {
-            pitchTransform.localRotation = Quaternion.Euler(_currentPitch, 0f, 0f);
+            _cachedPitchRotation = Quaternion.Euler(_currentPitch, 0f, 0f);
+            pitchTransform.localRotation = _cachedPitchRotation;
         }
 
         // Clear accumulated delta for next frame
@@ -135,30 +157,83 @@ public class FPSController : MonoBehaviour
     }
 
     private void UpdateHorizontalMotion(Vector2 moveInput, float dt) {
-        Vector3 wishDir = (transform.forward * moveInput.y + transform.right * moveInput.x);
-        wishDir.y = 0f;
-        if (wishDir.sqrMagnitude > 1e-4f) wishDir.Normalize();
+        // Cache transform directions to avoid property access overhead
+        _cachedForward = _cachedTransform.forward;
+        _cachedRight = _cachedTransform.right;
+        
+        // Calculate wish direction using cached vectors
+        _cachedWishDir.x = _cachedForward.x * moveInput.y + _cachedRight.x * moveInput.x;
+        _cachedWishDir.y = 0f;
+        _cachedWishDir.z = _cachedForward.z * moveInput.y + _cachedRight.z * moveInput.x;
+        
+        float wishDirSqrMag = _cachedWishDir.x * _cachedWishDir.x + _cachedWishDir.z * _cachedWishDir.z;
+        if (wishDirSqrMag > 1e-4f)
+        {
+            float invMag = 1f / Mathf.Sqrt(wishDirSqrMag);
+            _cachedWishDir.x *= invMag;
+            _cachedWishDir.z *= invMag;
+        }
+        
         float wishSpeed = maxSpeedOnGround;
         float accel = _isGrounded ? groundAcceleration : airAcceleration;
-        Vector3 targetVel = wishDir * wishSpeed;
-        Vector3 horizontal = new Vector3(_horizontalVelocity.x, 0f, _horizontalVelocity.z);
-        Vector3 delta = targetVel - horizontal;
+        
+        // Calculate target velocity using cached vector
+        _cachedTargetVel.x = _cachedWishDir.x * wishSpeed;
+        _cachedTargetVel.y = 0f;
+        _cachedTargetVel.z = _cachedWishDir.z * wishSpeed;
+        
+        // Reuse cached Vector3 instead of allocating new one
+        _cachedHorizontal.x = _horizontalVelocity.x;
+        _cachedHorizontal.y = 0f;
+        _cachedHorizontal.z = _horizontalVelocity.z;
+        
+        // Calculate delta using cached vectors
+        _cachedDelta.x = _cachedTargetVel.x - _cachedHorizontal.x;
+        _cachedDelta.y = 0f;
+        _cachedDelta.z = _cachedTargetVel.z - _cachedHorizontal.z;
+        
         float maxDelta = accel * dt;
-        if (delta.sqrMagnitude > maxDelta * maxDelta) delta = delta.normalized * maxDelta;
-        horizontal += delta;
-        if (_isGrounded) {
-            float mag = horizontal.magnitude;
-            mag = Mathf.Max(0f, mag - groundFriction * dt);
-            horizontal = (mag > 0f) ? horizontal.normalized * mag : Vector3.zero;
+        float deltaSqrMag = _cachedDelta.x * _cachedDelta.x + _cachedDelta.z * _cachedDelta.z;
+        if (deltaSqrMag > maxDelta * maxDelta)
+        {
+            float invMag = maxDelta / Mathf.Sqrt(deltaSqrMag);
+            _cachedDelta.x *= invMag;
+            _cachedDelta.z *= invMag;
         }
-        _horizontalVelocity = new Vector3(horizontal.x, 0f, horizontal.z);
+        _cachedHorizontal.x += _cachedDelta.x;
+        _cachedHorizontal.z += _cachedDelta.z;
+        
+        if (_isGrounded) {
+            float originalMag = Mathf.Sqrt(_cachedHorizontal.x * _cachedHorizontal.x + _cachedHorizontal.z * _cachedHorizontal.z);
+            float mag = Mathf.Max(0f, originalMag - groundFriction * dt);
+            if (mag > 1e-4f && originalMag > 1e-4f)
+            {
+                // Scale by ratio of new magnitude to original
+                float scale = mag / originalMag;
+                _cachedHorizontal.x *= scale;
+                _cachedHorizontal.z *= scale;
+            }
+            else
+            {
+                _cachedHorizontal.x = 0f;
+                _cachedHorizontal.z = 0f;
+            }
+        }
+        
+        // Update horizontal velocity from cached value
+        _horizontalVelocity.x = _cachedHorizontal.x;
+        _horizontalVelocity.y = 0f;
+        _horizontalVelocity.z = _cachedHorizontal.z;
     }
 
     private void MoveAndCollide(float dy, float dt) {
-        Vector3 move = _horizontalVelocity * dt;
-        move.y = dy;
-        if (!characterController || !characterController.enabled) return;
-        CollisionFlags flags = characterController.Move(move);
+        // Use cached Vector3 instead of allocating new one
+        _cachedMove.x = _horizontalVelocity.x * dt;
+        _cachedMove.y = dy;
+        _cachedMove.z = _horizontalVelocity.z * dt;
+        
+        if (characterController == null || !characterController.enabled) return;
+        CollisionFlags flags = characterController.Move(_cachedMove);
         _isGrounded = (flags & CollisionFlags.Below) != 0;
         if ((flags & CollisionFlags.Above) != 0 && _verticalSpeed > 0f) _verticalSpeed = 0f;
     }
@@ -171,10 +246,12 @@ public class FPSController : MonoBehaviour
         // Transform horizontal velocity
         _horizontalVelocity = transformMatrix.MultiplyVector(_horizontalVelocity);
         
-        // Transform vertical velocity
-        Vector3 verticalVel = Vector3.up * _verticalSpeed;
-        verticalVel = transformMatrix.MultiplyVector(verticalVel);
-        _verticalSpeed = verticalVel.y;
+        // Transform vertical velocity using cached vector
+        _cachedVerticalVel.x = 0f;
+        _cachedVerticalVel.y = _verticalSpeed;
+        _cachedVerticalVel.z = 0f;
+        _cachedVerticalVel = transformMatrix.MultiplyVector(_cachedVerticalVel);
+        _verticalSpeed = _cachedVerticalVel.y;
         
         // Update internal look angles to match the new rotation
         if (yawTransform != null)

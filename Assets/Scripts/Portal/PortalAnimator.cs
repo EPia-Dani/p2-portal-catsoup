@@ -27,7 +27,7 @@ namespace Portal {
 		public void Configure(MeshRenderer meshRenderer)
 		{
 			_portalMeshRenderer = meshRenderer;
-			_propertyBlock ??= new MaterialPropertyBlock();
+			if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
 			_currentCircleRadius = portalTargetRadius;
 			ApplyToMaterial();
 		}
