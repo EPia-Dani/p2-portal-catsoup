@@ -17,18 +17,10 @@ namespace Portal {
 		private readonly Matrix4x4 _mirrorMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 		private bool _isVisible = true;
 
-		// Cached transform references for performance
-		private Transform _cachedTransform;
-		private Transform _cachedPairTransform;
-
-		// Cached transform properties (updated when portals move)
-		private Vector3 _cachedDestinationForward;
-		private Vector3 _cachedDestinationPosition;
-
-		// Cached component references to avoid repeated property access
-		private MeshRenderer _cachedSurfaceRenderer;
-
-
+		/// <summary>
+		/// Initializes components and sets up recursion matrices array.
+		/// Falls back to Camera.main if mainCamera is not set in inspector.
+		/// </summary>
 		private void Awake() {
 			_view = GetComponent<PortalRenderView>();
 			_animator = GetComponent<PortalAnimator>();
@@ -38,111 +30,136 @@ namespace Portal {
 					"PortalRenderer: Main camera not found! Assign Camera.main or set mainCamera in inspector.", this);
 			}
 
-			// Cache transform references
-			_cachedTransform = transform;
-			if (pair) _cachedPairTransform = pair.transform;
-
 			_view.Initialize();
-			_cachedSurfaceRenderer = _view.SurfaceRenderer;
-			_animator.Configure(_cachedSurfaceRenderer);
+			_animator.Configure(_view.SurfaceRenderer);
 
 			recursionLimit = Mathf.Max(1, recursionLimit);
-			if (_recursionMatrices == null || _recursionMatrices.Length != recursionLimit) {
+			if (_recursionMatrices.Length != recursionLimit) {
 				_recursionMatrices = new Matrix4x4[recursionLimit];
 			}
 
 			_isVisible = _view._isVisible;
 		}
 
-
+		/// <summary>
+		/// Subscribes to render pipeline events when portal becomes active.
+		/// </summary>
 		private void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+		
+		/// <summary>
+		/// Unsubscribes from render pipeline events when portal becomes inactive.
+		/// </summary>
 		private void OnDisable() => RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
-
+		/// <summary>
+		/// Called when portal position changes. No longer needed since we access transform directly.
+		/// Kept for backwards compatibility with PortalManager.
+		/// </summary>
 		public void InvalidateCachedTransform() {
-			// Update cached transform references when portals are moved
-			if (pair) _cachedPairTransform = pair.transform;
+			// No-op: transforms are accessed directly now
 		}
 
+		/// <summary>
+		/// Starts the portal opening animation sequence.
+		/// Makes portal visible if not already visible.
+		/// </summary>
 		public void StartOpening() {
 			if (!_isVisible) SetVisible(true);
-			if (_animator != null) _animator.StartOpening();
+			_animator?.StartOpening();
 		}
 
+		/// <summary>
+		/// Plays the portal appearance animation.
+		/// Makes portal visible if not already visible.
+		/// </summary>
 		public void PlayAppear() {
 			if (!_isVisible) SetVisible(true);
-			if (_animator != null) _animator.PlayAppear();
+			_animator?.PlayAppear();
 		}
 
+		/// <summary>
+		/// Sets portal visibility state and updates view/animation accordingly.
+		/// Clears texture and hides animation immediately when hiding.
+		/// </summary>
+		/// <param name="visible">Whether the portal should be visible</param>
 		public void SetVisible(bool visible) {
 			if (_isVisible == visible) return;
 			_isVisible = visible;
-			if (_view != null) _view.SetVisible(visible);
-			if (!visible && _animator != null) {
-				_animator.HideImmediate();
-				// Ensure stale contents are not shown when hidden
-				if (_view != null) _view.ClearTexture();
+			_view?.SetVisible(visible);
+			if (!visible) {
+				_animator?.HideImmediate();
+				_view?.ClearTexture();
 			}
 		}
 
-
+		/// <summary>
+		/// Called each frame by the render pipeline when main camera starts rendering.
+		/// Checks frame skip, render conditions, visibility, and frustum culling before rendering.
+		/// </summary>
+		/// <param name="context">The scriptable render context</param>
+		/// <param name="currentCamera">The camera currently being rendered</param>
 		private void OnBeginCameraRendering(ScriptableRenderContext context, Camera currentCamera) {
 			if (currentCamera != mainCamera) return;
-
-			// Frame skip: only render when (frameCount % frameSkipInterval) equals renderOffset
-			// Example: frameSkipInterval=2, renderOffset=0 means render on frames 0,2,4,6... (every other frame)
 			if ((Time.frameCount % frameSkipInterval) != 0) return;
 			if (!ShouldRender()) return;
 			if (!_view._isVisible) return;
-			if (!PortalVisibility.IsVisible(mainCamera, _cachedSurfaceRenderer)) return;
+			if (!PortalVisibility.IsVisible(mainCamera, _view.SurfaceRenderer)) return;
 
 			RenderPortal(context);
 		}
 
+		/// <summary>
+		/// Checks if both this portal and its pair are ready to render.
+		/// Portals must be opening or fully open to render.
+		/// </summary>
+		/// <returns>True if both portals are ready to render, false otherwise</returns>
 		private bool ShouldRender() {
-			if (!pair || !_animator) return false;
+			if (!pair || !_animator || !pair._animator) return false;
+			
 			bool thisReady = _animator.IsOpening || _animator.IsFullyOpen;
-			bool pairReady = pair._animator && (pair._animator.IsOpening || pair._animator.IsFullyOpen);
+			bool pairReady = pair._animator.IsOpening || pair._animator.IsFullyOpen;
 			return thisReady && pairReady;
 		}
 
+		/// <summary>
+		/// Main rendering logic. Clears texture, calculates recursion matrices,
+		/// and renders each recursion level from deepest to shallowest.
+		/// </summary>
+		/// <param name="context">The scriptable render context</param>
 		private void RenderPortal(ScriptableRenderContext context) {
 			if (!mainCamera || !_view._isVisible || !pair) return;
 
-			// Clear before rendering recursion chain so stale frames don't leak
 			_view.ClearTexture();
 
-			// Use cached transforms for better performance
-			Transform source = _cachedTransform;
-			Transform destination = _cachedPairTransform;
+			Matrix4x4 stepMatrix = BuildStepMatrix();
+			Matrix4x4[] matrices = BuildRecursionMatrices(stepMatrix);
+			Vector3 destinationForward = pair.transform.forward;
+			Vector3 destinationPosition = pair.transform.position;
 
-			// Cache pair transform if not already cached (avoid null coalescing overhead)
-			if (destination == null) {
-				destination = pair.transform;
-				_cachedPairTransform = destination;
+			for (int i = matrices.Length - 1; i >= 0; i--) {
+				_view.RenderLevel(context, mainCamera, matrices[i], destinationForward, destinationPosition);
 			}
+		}
 
-			Matrix4x4 stepMatrix = PortalRecursionSolver.BuildStepMatrix(source, destination, _mirrorMatrix);
+		/// <summary>
+		/// Builds the transformation matrix for a single portal traversal step.
+		/// Combines source and destination portal transforms with mirror matrix.
+		/// </summary>
+		/// <returns>The step transformation matrix</returns>
+		private Matrix4x4 BuildStepMatrix() {
+			return PortalRecursionSolver.BuildStepMatrix(transform, pair.transform, _mirrorMatrix);
+		}
 
-			// Cache main camera transform and matrix (avoid null coalescing overhead)
-			Transform mainCamTransform = mainCamera.transform;
-			if (mainCamTransform == null) {
-				mainCamTransform = mainCamera.transform;
-			}
-
-			Matrix4x4 startMatrix = mainCamTransform.localToWorldMatrix;
-
+		/// <summary>
+		/// Calculates all recursion level matrices from the starting camera position.
+		/// Each matrix represents the camera transform at that recursion depth.
+		/// </summary>
+		/// <param name="stepMatrix">The transformation matrix for one portal traversal</param>
+		/// <returns>Array of matrices for each recursion level</returns>
+		private Matrix4x4[] BuildRecursionMatrices(Matrix4x4 stepMatrix) {
+			Matrix4x4 startMatrix = mainCamera.transform.localToWorldMatrix;
 			PortalRecursionSolver.Fill(_recursionMatrices, stepMatrix, startMatrix);
-
-			// Cache destination properties (accessed once per render, not per recursion level)
-			_cachedDestinationForward = destination.forward;
-			_cachedDestinationPosition = destination.position;
-
-			int matrixCount = _recursionMatrices.Length;
-			for (int i = matrixCount - 1; i >= 0; i--) {
-				_view.RenderLevel(context, mainCamera, _recursionMatrices[i], _cachedDestinationForward,
-					_cachedDestinationPosition);
-			}
+			return _recursionMatrices;
 		}
 	}
 }
