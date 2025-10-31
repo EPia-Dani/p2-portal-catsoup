@@ -1,3 +1,4 @@
+using Portal;
 using UnityEngine;
 
 /// <summary>
@@ -50,6 +51,8 @@ public class PortalManager : MonoBehaviour
 	{
 		PortalRenderer portal = portalPrefabs[index];
 		PortalRenderer otherPortal = portalPrefabs[1 - index];
+		
+		portal.SetVisible(true);
 		
 		// Set transform
 		portal.transform.SetPositionAndRotation(position + normal * wallOffset, Quaternion.LookRotation(-normal, up));

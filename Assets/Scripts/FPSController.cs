@@ -10,7 +10,6 @@ public class FPSController : MonoBehaviour
     [Header("Camera Settings")]
     [SerializeField] private Transform yawTransform;
     [SerializeField] private Transform pitchTransform;
-    [SerializeField] private float mouseSensitivity = 1.0f; // 1.0 = 1 degree per 1 pixel at any framerate
     [SerializeField] private float mouseSensitivityYaw = 1.0f;
     [SerializeField] private float mouseSensitivityPitch = 1.0f;
     [SerializeField] private float pitchClampMin = -89f;
