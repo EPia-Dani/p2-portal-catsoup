@@ -3363,7 +3363,7 @@ MonoBehaviour:
   portalManager: {fileID: 2079793665}
   portalHalfSize: {x: 0.6, y: 0.9}
   wallOffset: 0.01
-  clampSkin: 0
+  clampSkin: 0.01
 --- !u!1 &2042437990
 GameObject:
   m_ObjectHideFlags: 0
@@ -3913,6 +3913,15 @@ MonoBehaviour:
   portalPrefabs:
   - {fileID: 1937157125335981014}
   - {fileID: 2069985398880840990}
+  portalSurfaces:
+  - {fileID: 0}
+  - {fileID: 0}
+  portalNormals:
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 0}
+  portalCenters:
+  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 0}
 --- !u!4 &2079793666
 Transform:
   m_ObjectHideFlags: 0
@@ -4039,7 +4048,7 @@ MonoBehaviour:
   pair: {fileID: 2069985398880840990}
   mainCamera: {fileID: 37313535}
   recursionLimit: 5
-  frameSkipInterval: 1
+  frameSkipInterval: 2
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4055,7 +4064,7 @@ MonoBehaviour:
   pair: {fileID: 1937157125335981014}
   mainCamera: {fileID: 37313535}
   recursionLimit: 5
-  frameSkipInterval: 1
+  frameSkipInterval: 2
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0

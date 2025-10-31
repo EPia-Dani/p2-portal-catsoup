@@ -1,3 +1,4 @@
+using Input;
 using UnityEngine;
 
 namespace Portal {
@@ -9,120 +10,64 @@ namespace Portal {
 		[SerializeField] Vector2 portalHalfSize = new(0.45f, 0.45f);
 		[SerializeField] float wallOffset = 0.02f;
 		[SerializeField] float clampSkin = 0.01f;
+		
+		private PlayerInput input;
 
-		static readonly Vector3 ViewportCenter = new(0.5f, 0.5f, 0f);
-		const float Sep = 2.1f;       // push target in ellipse-space
-		const float SepCheck = 2.05f; // verify after clamp
-
-		void Update() {
-			var c = InputManager.PlayerInput;
-			if (c.Player.ShootBlue.WasPerformedThisFrame())  Fire(0);
-			if (c.Player.ShootOrange.WasPerformedThisFrame()) Fire(1);
+		void Start() {
+			if (!shootCamera) shootCamera = Camera.main;
+			if (!portalManager) portalManager = GetComponent<PortalManager>();
+			input = InputManager.PlayerInput;
 		}
 
-		void Fire(int i) {
+		void Update() {
+			if (input.Player.ShootBlue.WasPerformedThisFrame()) Fire(0);
+			if (input.Player.ShootOrange.WasPerformedThisFrame()) Fire(1);
+		}
+
+		void Fire(int index) {
 			if (!shootCamera || !portalManager) return;
+			if (!Physics.Raycast(shootCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f)), out var hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
+			var col = hit.collider;
+			if (!col || !col.enabled) return;
 
-			Ray ray = shootCamera.ViewportPointToRay(ViewportCenter);
-			if (!Physics.Raycast(ray, out var hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) return;
-			var col = hit.collider; if (!col || !col.enabled) return;
-
-			// Basis
 			Vector3 n = hit.normal;
-			// Default: try to align portal roll with the camera right projected onto the hit plane
-			Vector3 r = Vector3.ProjectOnPlane(shootCamera.transform.right, n);
-			float rsq = r.sqrMagnitude;
-			if (rsq < 1e-4f) {
-				// camera right is nearly parallel to the normal -> fall back to cross with world axes
-				r = Vector3.Cross(n, Vector3.up);
-				if (r.sqrMagnitude < 1e-6f) r = Vector3.Cross(n, Vector3.forward);
+			Vector3 u = Vector3.ProjectOnPlane(Vector3.up, n);
+			if (u.sqrMagnitude < 1e-4f) {
+				u = Vector3.ProjectOnPlane(shootCamera.transform.forward, n);
+				if (u.sqrMagnitude < 1e-4f) u = Vector3.Cross(n, Vector3.right);
 			}
-			r.Normalize();
-			// Compute up from camera-projected basis by default
-			Vector3 u = Vector3.Cross(n, r); // orthonormal by construction
-			
-			// If the surface is inclined (i.e. world-up has a non-zero tangent on the surface),
-			// prefer using the surface's "y axis" — the projection of world-up onto the plane —
-			// so the portal appears upright relative to world Y while still conforming to the surface.
-			Vector3 upProjected = Vector3.ProjectOnPlane(Vector3.up, n);
-			if (upProjected.sqrMagnitude > 1e-4f) {
-				u = upProjected.normalized;
-				// recompute right to maintain orthonormal basis
-				r = Vector3.Cross(n, u);
-				if (r.sqrMagnitude < 1e-6f) {
-					// fallback to camera-based right if degenerate
-					r = Vector3.ProjectOnPlane(shootCamera.transform.right, n);
-					if (r.sqrMagnitude < 1e-6f) r = Vector3.Cross(n, Vector3.up);
-				}
-				r.Normalize();
-			}
+			u.Normalize();
+			Vector3 r = Vector3.Cross(n, u);
 
-			// Plane center on the hit surface
-			Bounds b = col.bounds;
-			Vector3 bc = b.center;
-			Vector3 center = bc + Vector3.Project(hit.point - bc, n);
-
-			// Clamp extents along r/u using fused-abs dot
-			Vector3 ext = b.extents;
-			float ax = Mathf.Abs(r.x), ay = Mathf.Abs(r.y), az = Mathf.Abs(r.z);
-			float ux = Mathf.Abs(u.x), uy = Mathf.Abs(u.y), uz = Mathf.Abs(u.z);
-			float maxR = ext.x * ax + ext.y * ay + ext.z * az;
-			float maxU = ext.x * ux + ext.y * uy + ext.z * uz;
-
-			float clampR = maxR - portalHalfSize.x - clampSkin;
-			float clampU = maxU - portalHalfSize.y - clampSkin;
+			Vector3 center = col.bounds.center + Vector3.Project(hit.point - col.bounds.center, n);
+			Vector3 ext = col.bounds.extents;
+			float clampR = ext.x * Mathf.Abs(r.x) + ext.y * Mathf.Abs(r.y) + ext.z * Mathf.Abs(r.z) - portalHalfSize.x - clampSkin;
+			float clampU = ext.x * Mathf.Abs(u.x) + ext.y * Mathf.Abs(u.y) + ext.z * Mathf.Abs(u.z) - portalHalfSize.y - clampSkin;
 			if (clampR <= 0f || clampU <= 0f) return;
 
-			// Initial UV
-			Vector3 d = hit.point - center;
-			float uvR = Mathf.Clamp(Vector3.Dot(d, r), -clampR, clampR);
-			float uvU = Mathf.Clamp(Vector3.Dot(d, u), -clampU, clampU);
+			float uvR = Mathf.Clamp(Vector3.Dot(hit.point - center, r), -clampR, clampR);
+			float uvU = Mathf.Clamp(Vector3.Dot(hit.point - center, u), -clampU, clampU);
 
-			// Separation vs other portal on same face
-			var otherOpt = portalManager.GetPortalState(1 - i);
-			if (otherOpt.HasValue) {
-				var op = otherOpt.Value;
-				if (col == op.surface && Vector3.Dot(n, op.normal) > 0.99f) {
-					Vector3 oc = op.worldCenter - center;
-					float oR = Vector3.Dot(oc, r);
-					float oU = Vector3.Dot(oc, u);
+			int oi = 1 - index;
+			if (portalManager.portalSurfaces[oi] == col && Vector3.Dot(n, portalManager.portalNormals[oi]) > 0.99f) {
+				Vector3 toOther = portalManager.portalCenters[oi] - center;
+				float oR = Vector3.Dot(toOther, r);
+				float oU = Vector3.Dot(toOther, u);
+				float eR = (uvR - oR) / portalHalfSize.x;
+				float eU = (uvU - oU) / portalHalfSize.y;
+				float mag = Mathf.Sqrt(eR * eR + eU * eU);
 
-					float dR = uvR - oR;
-					float dU = uvU - oU;
-
-					// ellipse-space
-					float eR = dR / portalHalfSize.x;
-					float eU = dU / portalHalfSize.y;
-					float mag = Mathf.Sqrt(eR * eR + eU * eU);
-
-					if (mag < Sep) {
-						// push along ellipse direction
-						float dirR, dirU;
-						if (mag > 1e-3f) {
-							float s = Sep / mag;
-							dirR = eR * s;
-							dirU = eU * s;
-						} else {
-							dirR = Sep; dirU = 0f;
-						}
-
-						// back to RU
-						uvR = oR + dirR * portalHalfSize.x;
-						uvU = oU + dirU * portalHalfSize.y;
-
-						// Clamp and verify
-						uvR = Mathf.Clamp(uvR, -clampR, clampR);
-						uvU = Mathf.Clamp(uvU, -clampU, clampU);
-
-						float fR = (uvR - oR) / portalHalfSize.x;
-						float fU = (uvU - oU) / portalHalfSize.y;
-						if (Mathf.Sqrt(fR * fR + fU * fU) < SepCheck) return;
-					}
+				if (mag < 2.1f) {
+					float scale = mag > 1e-3f ? 2.1f / mag : 1f;
+					uvR = Mathf.Clamp(oR + eR * scale * portalHalfSize.x, -clampR, clampR);
+					uvU = Mathf.Clamp(oU + eU * scale * portalHalfSize.y, -clampU, clampU);
+					eR = (uvR - oR) / portalHalfSize.x;
+					eU = (uvU - oU) / portalHalfSize.y;
+					if (Mathf.Sqrt(eR * eR + eU * eU) < 2.05f) return;
 				}
 			}
 
-			Vector3 worldPos = center + r * uvR + u * uvU;
-			portalManager.PlacePortal(i, worldPos, n, r, u, col, wallOffset);
+			portalManager.PlacePortal(index, center + r * uvR + u * uvU, n, r, u, col, wallOffset);
 		}
 	}
 }
