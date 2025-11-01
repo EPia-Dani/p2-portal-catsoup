@@ -26,7 +26,7 @@ namespace Portal {
 		private GameObject _cachedCameraGameObject;
 
 		public MeshRenderer SurfaceRenderer => surfaceRenderer;
-		
+
 
 		public void Initialize() {
 			_cachedCameraGameObject = portalCamera.gameObject;
@@ -70,6 +70,18 @@ namespace Portal {
 			if (surfaceRenderer) {
 				surfaceRenderer.sharedMaterial.mainTexture = _renderTexture;
 			}
+		}
+
+		/// <summary>
+		/// Updates texture resolution. Call from PortalManager to change quality.
+		/// </summary>
+		public void UpdateTextureResolution(int width, int height)
+		{
+			if (textureWidth == width && textureHeight == height) return;
+			
+			textureWidth = width;
+			textureHeight = height;
+			EnsureRenderTexture();
 		}
 
 		public void ClearTexture() {

@@ -38,14 +38,43 @@ namespace Portal {
 				_recursionMatrices = new Matrix4x4[recursionLimit];
 			}
 
-			_isVisible = _view._isVisible;
+		_isVisible = _view._isVisible;
+	}
+
+	/// <summary>
+	/// Called by PortalManager to apply all settings at startup.
+	/// </summary>
+	public void ConfigurePortal(int textureWidth, int textureHeight, int recLimit, int frameskip)
+	{
+		_view.UpdateTextureResolution(textureWidth, textureHeight);
+		SetRecursionLimit(recLimit);
+		SetFrameSkipInterval(frameskip);
+	}
+
+	/// <summary>
+	/// Updates recursion limit at runtime.
+	/// </summary>
+	public void SetRecursionLimit(int limit)
+	{
+		recursionLimit = Mathf.Max(1, limit);
+		if (_recursionMatrices.Length != recursionLimit) {
+			_recursionMatrices = new Matrix4x4[recursionLimit];
 		}
+	}
+
+	/// <summary>
+	/// Updates frame skip interval at runtime.
+	/// </summary>
+	public void SetFrameSkipInterval(int interval)
+	{
+		frameSkipInterval = Mathf.Max(1, interval);
+	}
 
 		/// <summary>
 		/// Subscribes to render pipeline events when portal becomes active.
 		/// </summary>
 		private void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
-		
+
 		/// <summary>
 		/// Unsubscribes from render pipeline events when portal becomes inactive.
 		/// </summary>
