@@ -3914,7 +3914,7 @@ MonoBehaviour:
   orangePortal: {fileID: 2069985398880840990}
   textureWidth: 1024
   textureHeight: 1024
-  recursionLimit: 5
+  recursionLimit: 20
   frameSkipInterval: 1
   portalSurfaces:
   - {fileID: 0}

@@ -31,7 +31,7 @@ namespace Portal {
 
 			SetupCamera();
 			CreateRenderTexture();
-
+			
 			if (_animator != null && surfaceRenderer != null) {
 				_animator.Configure(surfaceRenderer);
 			}
@@ -49,7 +49,6 @@ namespace Portal {
 				_renderTexture.Release();
 				Destroy(_renderTexture);
 			}
-
 			if (_portalMaterial != null) {
 				Destroy(_portalMaterial);
 			}
@@ -97,7 +96,6 @@ namespace Portal {
 				textureHeight = height;
 				CreateRenderTexture();
 			}
-
 			SetRecursionLimit(recLimit);
 			SetFrameSkipInterval(frameskip);
 		}
@@ -109,7 +107,9 @@ namespace Portal {
 			}
 		}
 
-		public void SetFrameSkipInterval(int interval) { frameSkipInterval = Mathf.Max(1, interval); }
+		public void SetFrameSkipInterval(int interval) {
+			frameSkipInterval = Mathf.Max(1, interval);
+		}
 
 		private void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
 		private void OnDisable() => RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
@@ -165,6 +165,36 @@ namespace Portal {
 			return Vector3.Dot(surfaceRenderer.transform.forward, toCamera) < 0.1f;
 		}
 
+		// Check if the pair portal is visible through the portal camera at a given recursion level
+		private bool IsPortalVisibleThroughCamera(int recursionLevel) {
+			if (!portalCamera || !pair || !pair.surfaceRenderer) return false;
+
+			// Calculate the portal camera's position and orientation for this recursion level
+			Matrix4x4 worldMatrix = _recursionMatrices[recursionLevel];
+			Vector3 position = worldMatrix.MultiplyPoint(Vector3.zero);
+			Vector3 forward = worldMatrix.MultiplyVector(Vector3.forward);
+			Vector3 up = worldMatrix.MultiplyVector(Vector3.up);
+
+			// Temporarily set the portal camera to this recursion level's position
+			Vector3 originalPos = portalCamera.transform.position;
+			Quaternion originalRot = portalCamera.transform.rotation;
+			portalCamera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(forward, up));
+
+			// Check if pair portal is in the frustum with tunable margin
+			GeometryUtility.CalculateFrustumPlanes(portalCamera, _frustumPlanes);
+			
+			// Expand bounds by tunable margin to prevent edge culling
+			Bounds expandedBounds = pair.surfaceRenderer.bounds;
+			expandedBounds.Expand(frustumCullMargin);
+			
+			bool isVisible = GeometryUtility.TestPlanesAABB(_frustumPlanes, expandedBounds);
+
+			// Restore original camera position
+			portalCamera.transform.SetPositionAndRotation(originalPos, originalRot);
+
+			return isVisible;
+		}
+
 		private void RenderPortal(ScriptableRenderContext context) {
 			if (!mainCamera || !pair || !portalCamera) return;
 
@@ -184,14 +214,17 @@ namespace Portal {
 			// Cull recursion levels based on portal orientation to each other
 			int maxRenderLevel = GetMaxRecursionLevelForPair();
 			int startLevel = Mathf.Min(maxRenderLevel, _recursionMatrices.Length - 1);
-
+			
 			for (int i = startLevel; i >= 0; i--) {
-
+				// Check if the pair portal is visible through the portal camera at this recursion level
+				if (!IsPortalVisibleThroughCamera(i)) continue;
+				
 				RenderLevel(mainCamera, _recursionMatrices[i], destinationForward, destinationPosition);
 			}
 		}
 
 		private int GetMaxRecursionLevelForPair() {
+			if (!pair) return recursionLimit - 1;
 
 			// Check if either portal is vertical (floor/ceiling mounted)
 			bool thisIsVertical = Mathf.Abs(Vector3.Dot(transform.forward, Vector3.up)) > 0.9f;
@@ -213,8 +246,7 @@ namespace Portal {
 			if (angle < 45f) {
 				// 0° difference: skip recursion entirely
 				return 0;
-			}
-			else if (angle < 135f) {
+			} else if (angle < 135f) {
 				// 90° difference (45° to 135° range): 1 level recursion
 				return 1;
 			}
@@ -223,11 +255,7 @@ namespace Portal {
 			return recursionLimit - 1;
 		}
 
-		private void RenderLevel(
-			Camera mainCam,
-			Matrix4x4 worldMatrix,
-			Vector3 destinationForward,
-			Vector3 destinationPosition) {
+		private void RenderLevel(Camera mainCam, Matrix4x4 worldMatrix, Vector3 destinationForward, Vector3 destinationPosition) {
 			if (!portalCamera || !_isVisible) return;
 
 			// Position and orientation
@@ -261,3 +289,4 @@ namespace Portal {
 		}
 	}
 }
+
