@@ -135,6 +135,7 @@ namespace Portal {
 			if (!ShouldRender()) return;
 			if (!_view._isVisible) return;
 			if (!PortalVisibility.IsVisible(mainCamera, _view.SurfaceRenderer)) return;
+			
 
 			RenderPortal(context);
 		}
@@ -168,18 +169,9 @@ namespace Portal {
 			Vector3 destinationForward = pair.transform.forward;
 			Vector3 destinationPosition = pair.transform.position;
 
-			// Find the deepest level where the pair portal is visible
-			// We check each level and stop at the deepest one where pair is still visible
-			int maxVisibleLevel = 0; // Always at least render level 0
-			for (int i = matrices.Length - 1; i >= 0; i--) {
-				if (CanSeePairPortal(matrices[i])) {
-					maxVisibleLevel = i;
-					break; // Found the deepest visible level, stop searching
-				}
-			}
 
 			// Render from the deepest visible level down to level 0
-			for (int i = maxVisibleLevel; i >= 0; i--) {
+			for (int i = recursionLimit; i >= 0; i--) {
 				_view.RenderLevel(context, mainCamera, matrices[i], destinationForward, destinationPosition);
 			}
 		}
@@ -198,21 +190,7 @@ namespace Portal {
 		/// </summary>
 		/// <param name="recursionLevelMatrix">The world matrix of the camera at this recursion level</param>
 		/// <returns>True if the pair portal's renderer is visible from this recursion level, false otherwise</returns>
-		private bool CanSeePairPortal(Matrix4x4 recursionLevelMatrix) {
-			// Safety checks
-			if (pair == null) return false;
-			if (pair.RenderView == null) return false;
-			var renderer = pair.RenderView.SurfaceRenderer;
-			if (renderer == null) return false;
-
-			// Extract camera position and rotation from the recursion level matrix
-			Vector3 cameraPos = recursionLevelMatrix.MultiplyPoint(Vector3.zero);
-			Vector3 cameraForward = recursionLevelMatrix.MultiplyVector(Vector3.forward).normalized;
-			Vector3 cameraUp = recursionLevelMatrix.MultiplyVector(Vector3.up).normalized;
-
-			// Check if pair portal is visible from this recursion level perspective
-			return PortalVisibility.IsVisibleFromPosition(cameraPos, cameraForward, cameraUp, mainCamera, renderer);
-		}
+	
 
 		/// <summary>
 		/// Calculates all recursion level matrices from the starting camera position.
