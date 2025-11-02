@@ -109,7 +109,7 @@ Material:
     - _BlendModePreserveSpecular: 1
     - _Brightness: 1
     - _BumpScale: 1
-    - _CircleRadius: 0.4
+    - _CircleRadius: 0.48
     - _CircleSoftness: 0.066
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0

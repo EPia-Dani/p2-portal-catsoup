@@ -3910,9 +3910,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 814cfd5f38adbf64894174b7441d10f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portalPrefabs:
-  - {fileID: 1937157125335981014}
-  - {fileID: 2069985398880840990}
+  bluePortal: {fileID: 1937157125335981014}
+  orangePortal: {fileID: 2069985398880840990}
   textureWidth: 1024
   textureHeight: 1024
   recursionLimit: 15
@@ -4051,6 +4050,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pair: {fileID: 2069985398880840990}
   mainCamera: {fileID: 37313535}
+  portalCamera: {fileID: 8095862263857129310}
+  surfaceRenderer: {fileID: 3014238485970619237}
+  textureWidth: 1024
+  textureHeight: 1024
   recursionLimit: 5
   frameSkipInterval: 2
 --- !u!114 &2069985398880840990
@@ -4067,6 +4070,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pair: {fileID: 1937157125335981014}
   mainCamera: {fileID: 37313535}
+  portalCamera: {fileID: 8899481715251803678}
+  surfaceRenderer: {fileID: 1747989180196598255}
+  textureWidth: 1024
+  textureHeight: 1024
   recursionLimit: 5
   frameSkipInterval: 2
 --- !u!4 &2174037431210880972
@@ -4437,9 +4444,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff91aea8f2dcb38439de12c29162b78f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portalCamera: {fileID: 8899481715251803678}
-  surfaceRenderer: {fileID: 1747989180196598255}
-  _isVisible: 1
 --- !u!1 &7219594838380380271
 GameObject:
   m_ObjectHideFlags: 0
@@ -4610,9 +4614,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ff91aea8f2dcb38439de12c29162b78f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portalCamera: {fileID: 8095862263857129310}
-  surfaceRenderer: {fileID: 3014238485970619237}
-  _isVisible: 1
 --- !u!1 &8852276310168618757
 GameObject:
   m_ObjectHideFlags: 0
