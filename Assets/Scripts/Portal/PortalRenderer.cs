@@ -14,6 +14,7 @@ namespace Portal {
 		[SerializeField] private int recursionLimit = 2;
 		[SerializeField] private int frameSkipInterval = 1;
 		[SerializeField] private float frustumCullMargin = 3.0f;
+		[SerializeField] private float minScreenCoverageFraction = 0.01f; // Minimum 1% of screen to render portals
 
 		private RenderTexture _renderTexture;
 		private Material _portalMaterial;
@@ -134,6 +135,9 @@ namespace Portal {
 		// Optional: keep a cheap front-face check for main camera. Remove if you want zero gating.
 		if (!MainCameraCanSeeThis()) return;
 
+		// Check screen coverage - skip rendering if portal is too small on screen
+		if (GetScreenSpaceCoverage() < minScreenCoverageFraction) return;
+
 		RenderPortal(context);
 	}
 
@@ -148,6 +152,64 @@ namespace Portal {
 			// Face the camera
 			Vector3 toCamera = (mainCamera.transform.position - surfaceRenderer.transform.position).normalized;
 			return Vector3.Dot(surfaceRenderer.transform.forward, toCamera) < 0.1f;
+		}
+
+		// Calculate screen-space coverage of the portal relative to the main camera's view
+		private float GetScreenSpaceCoverage() {
+			if (!mainCamera || !surfaceRenderer) return 0f;
+
+			// Get the bounds of the portal surface
+			Bounds bounds = surfaceRenderer.bounds;
+			
+			// Project the bounds corners to screen space and find the bounding rectangle
+			Vector3[] boundsCorners = GetBoundsCorners(bounds);
+			Vector3 minScreenPos = new Vector3(float.MaxValue, float.MaxValue, 0);
+			Vector3 maxScreenPos = new Vector3(float.MinValue, float.MinValue, 0);
+
+			int cornersOnScreen = 0;
+			foreach (Vector3 corner in boundsCorners) {
+				Vector3 screenPos = mainCamera.WorldToScreenPoint(corner);
+				
+				// Only count corners that are in front of the camera
+				if (screenPos.z > 0) {
+					minScreenPos.x = Mathf.Min(minScreenPos.x, screenPos.x);
+					minScreenPos.y = Mathf.Min(minScreenPos.y, screenPos.y);
+					maxScreenPos.x = Mathf.Max(maxScreenPos.x, screenPos.x);
+					maxScreenPos.y = Mathf.Max(maxScreenPos.y, screenPos.y);
+					cornersOnScreen++;
+				}
+			}
+
+			// If no corners are on screen, coverage is 0
+			if (cornersOnScreen == 0) return 0f;
+
+			// Calculate screen rectangle area
+			float screenWidth = maxScreenPos.x - minScreenPos.x;
+			float screenHeight = maxScreenPos.y - minScreenPos.y;
+			float screenRectArea = screenWidth * screenHeight;
+
+			// Calculate total screen area
+			float totalScreenArea = mainCamera.pixelWidth * mainCamera.pixelHeight;
+
+			// Return the fraction of screen covered
+			return screenRectArea / totalScreenArea;
+		}
+
+		// Helper to get the 8 corners of a bounds
+		private Vector3[] GetBoundsCorners(Bounds bounds) {
+			Vector3 center = bounds.center;
+			Vector3 extents = bounds.extents;
+			
+			return new Vector3[] {
+				center + new Vector3(-extents.x, -extents.y, -extents.z),
+				center + new Vector3(-extents.x, -extents.y, extents.z),
+				center + new Vector3(-extents.x, extents.y, -extents.z),
+				center + new Vector3(-extents.x, extents.y, extents.z),
+				center + new Vector3(extents.x, -extents.y, -extents.z),
+				center + new Vector3(extents.x, -extents.y, extents.z),
+				center + new Vector3(extents.x, extents.y, -extents.z),
+				center + new Vector3(extents.x, extents.y, extents.z),
+			};
 		}
 
 		// Check if the pair portal is visible through the portal camera at a given recursion level

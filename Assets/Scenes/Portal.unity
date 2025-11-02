@@ -4057,6 +4057,7 @@ MonoBehaviour:
   recursionLimit: 2
   frameSkipInterval: 1
   frustumCullMargin: 4
+  minScreenCoverageFraction: 0.01
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4078,6 +4079,7 @@ MonoBehaviour:
   recursionLimit: 2
   frameSkipInterval: 1
   frustumCullMargin: 4
+  minScreenCoverageFraction: 0.01
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
