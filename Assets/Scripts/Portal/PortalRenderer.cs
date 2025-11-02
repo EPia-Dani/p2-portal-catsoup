@@ -4,7 +4,6 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace Portal {
-	[RequireComponent(typeof(PortalAnimator))]
 	public class PortalRenderer : MonoBehaviour {
 		[SerializeField] public PortalRenderer pair;
 		[SerializeField] private Camera mainCamera;
@@ -16,25 +15,25 @@ namespace Portal {
 		[SerializeField] private int frameSkipInterval = 1;
 		[SerializeField] private float frustumCullMargin = 3.0f;
 
-		private PortalAnimator _animator;
 		private RenderTexture _renderTexture;
 		private Material _portalMaterial;
 		private Matrix4x4[] _recursionMatrices = Array.Empty<Matrix4x4>();
 		private Plane[] _frustumPlanes = new Plane[6];
 		private readonly Matrix4x4 _mirrorMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 		private bool _isVisible = true;
+		private bool _isReadyToRender;
+
+		public bool IsReadyToRender {
+			get => _isReadyToRender;
+			set => _isReadyToRender = value;
+		}
 
 		private void Awake() {
-			_animator = GetComponent<PortalAnimator>();
 			if (!mainCamera) mainCamera = Camera.main;
 			if (!portalCamera) portalCamera = GetComponentInChildren<Camera>();
 
 			SetupCamera();
 			CreateRenderTexture();
-			
-			if (_animator != null && surfaceRenderer != null) {
-				_animator.Configure(surfaceRenderer);
-			}
 
 			recursionLimit = Mathf.Max(1, recursionLimit);
 			if (_recursionMatrices.Length != recursionLimit) {
@@ -111,46 +110,32 @@ namespace Portal {
 			frameSkipInterval = Mathf.Max(1, interval);
 		}
 
-		private void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
-		private void OnDisable() => RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+	private void OnEnable() => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+	private void OnDisable() => RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
-		public void StartOpening() {
-			if (!_isVisible) SetVisible(true);
-			_animator?.StartOpening();
+	public void SetVisible(bool visible) {
+		if (_isVisible == visible) return;
+		_isVisible = visible;
+		if (portalCamera) portalCamera.gameObject.SetActive(visible);
+		if (surfaceRenderer) surfaceRenderer.enabled = visible;
+		if (!visible) {
+			_isReadyToRender = false;
+			ClearTexture();
 		}
+	}
 
-		public void PlayAppear() {
-			if (!_isVisible) SetVisible(true);
-			_animator?.PlayAppear();
-		}
+	private void OnBeginCameraRendering(ScriptableRenderContext context, Camera currentCamera) {
+		if (currentCamera != mainCamera) return;
+		if ((Time.frameCount % frameSkipInterval) != 0) return;
+		if (!pair) return;
+		if (!_isVisible || !_isReadyToRender) return;
+		if (!pair._isVisible || !pair._isReadyToRender) return;
 
-		public void SetVisible(bool visible) {
-			if (_isVisible == visible) return;
-			_isVisible = visible;
-			if (portalCamera) portalCamera.gameObject.SetActive(visible);
-			if (surfaceRenderer) surfaceRenderer.enabled = visible;
-			if (!visible) {
-				_animator?.HideImmediate();
-				ClearTexture();
-			}
-		}
+		// Optional: keep a cheap front-face check for main camera. Remove if you want zero gating.
+		if (!MainCameraCanSeeThis()) return;
 
-		private void OnBeginCameraRendering(ScriptableRenderContext context, Camera currentCamera) {
-			if (currentCamera != mainCamera) return;
-			if ((Time.frameCount % frameSkipInterval) != 0) return;
-			if (!pair || !_animator || !pair._animator) return;
-			if (!_isVisible) return;
-
-			// Only the main camera gates rendering based on portal openness.
-			bool thisReady = _animator.IsOpening || _animator.IsFullyOpen;
-			bool pairReady = pair._animator.IsOpening || pair._animator.IsFullyOpen;
-			if (!thisReady || !pairReady) return;
-
-			// Optional: keep a cheap front-face check for main camera. Remove if you want zero gating.
-			if (!MainCameraCanSeeThis()) return;
-
-			RenderPortal(context);
-		}
+		RenderPortal(context);
+	}
 
 		// Cheap main-camera gate. Remove this method call above if you want literally zero culling.
 		private bool MainCameraCanSeeThis() {

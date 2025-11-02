@@ -13,22 +13,26 @@ namespace Portal {
 		private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 		private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
 
-		private MeshRenderer _portalMeshRenderer;
-		private MaterialPropertyBlock _propertyBlock;
-		private Coroutine _openingCoroutine;
-		private Coroutine _appearCoroutine;
-		private float _portalOpenProgress;
-		private float _currentCircleRadius;
+	private MeshRenderer _portalMeshRenderer;
+	private MaterialPropertyBlock _propertyBlock;
+	private Coroutine _openingCoroutine;
+	private Coroutine _appearCoroutine;
+	private float _portalOpenProgress;
+	private float _currentCircleRadius;
 
-		public bool IsOpening => _openingCoroutine != null;
-		public bool IsFullyOpen => _portalOpenProgress >= openThreshold;
+	public bool IsOpening => _openingCoroutine != null;
+	public bool IsFullyOpen => _portalOpenProgress >= openThreshold;
 
-		public void Configure(MeshRenderer meshRenderer) {
-			_portalMeshRenderer = meshRenderer;
-			if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
-			_currentCircleRadius = portalTargetRadius;
-			ApplyToMaterial();
+	private void Awake() {
+		_portalMeshRenderer = GetComponent<MeshRenderer>();
+		if (_portalMeshRenderer == null) {
+			_portalMeshRenderer = GetComponentInChildren<MeshRenderer>();
 		}
+		if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
+		_currentCircleRadius = 0f;
+		_portalOpenProgress = 0f;
+		ApplyToMaterial();
+	}
 
 		public void SetAnimationSettings(
 			float openDuration,
@@ -88,22 +92,22 @@ namespace Portal {
 			_appearCoroutine = null;
 		}
 
-		private IEnumerator OpeningRoutine() {
-			_portalOpenProgress = 0f;
-			float elapsed = 0f;
+	private IEnumerator OpeningRoutine() {
+		_portalOpenProgress = 0f;
+		float elapsed = 0f;
 
-			while (elapsed < portalOpenDuration) {
-				elapsed += Time.deltaTime;
-				float t = Mathf.Clamp01(elapsed / portalOpenDuration);
-				_portalOpenProgress = Mathf.Clamp01(portalOpenCurve.Evaluate(t) * openThreshold);
-				ApplyToMaterial();
-				yield return null;
-			}
-
-			_portalOpenProgress = openThreshold;
+		while (elapsed < portalOpenDuration) {
+			elapsed += Time.deltaTime;
+			float t = Mathf.Clamp01(elapsed / portalOpenDuration);
+			_portalOpenProgress = portalOpenCurve.Evaluate(t) * openThreshold;
 			ApplyToMaterial();
-			_openingCoroutine = null;
+			yield return null;
 		}
+
+		_portalOpenProgress = openThreshold;
+		ApplyToMaterial();
+		_openingCoroutine = null;
+	}
 
 		private void SetCircleRadius(float radius) {
 			_currentCircleRadius = radius;
