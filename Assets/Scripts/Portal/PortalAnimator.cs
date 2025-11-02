@@ -30,9 +30,6 @@ namespace Portal {
 			ApplyToMaterial();
 		}
 
-		/// <summary>
-		/// Sets all animation settings at once
-		/// </summary>
 		public void SetAnimationSettings(
 			float openDuration,
 			AnimationCurve openCurve,
