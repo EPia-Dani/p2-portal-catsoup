@@ -590,7 +590,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 50
+  far clip plane: 1000
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -3914,7 +3914,7 @@ MonoBehaviour:
   orangePortal: {fileID: 2069985398880840990}
   textureWidth: 1024
   textureHeight: 1024
-  recursionLimit: 7
+  recursionLimit: 20
   frameSkipInterval: 1
   portalSurfaces:
   - {fileID: 0}
@@ -4056,7 +4056,7 @@ MonoBehaviour:
   textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 1
-  frustumCullMargin: 5
+  frustumCullMargin: 4
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4077,7 +4077,7 @@ MonoBehaviour:
   textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 1
-  frustumCullMargin: 5
+  frustumCullMargin: 4
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -4490,7 +4490,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 50
+  far clip plane: 1000
   field of view: 60.000004
   orthographic: 0
   orthographic size: 5
@@ -4640,7 +4640,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 50
+  far clip plane: 1000
   field of view: 60.000004
   orthographic: 0
   orthographic size: 5

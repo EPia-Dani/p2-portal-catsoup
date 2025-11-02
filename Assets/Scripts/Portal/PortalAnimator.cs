@@ -23,12 +23,6 @@ namespace Portal {
 	public bool IsOpening => _openingCoroutine != null;
 	public bool IsFullyOpen => _portalOpenProgress >= openThreshold;
 
-	public void Configure(MeshRenderer renderer) {
-		if (renderer != null) {
-			_portalMeshRenderer = renderer;
-		}
-	}
-
 	private void Awake() {
 		_portalMeshRenderer = GetComponent<MeshRenderer>();
 		if (_portalMeshRenderer == null) {
