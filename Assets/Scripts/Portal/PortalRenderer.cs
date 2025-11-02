@@ -46,7 +46,6 @@ namespace Portal {
 			portalCamera.enabled = false;
 			portalCamera.forceIntoRenderTexture = true;
 			portalCamera.allowHDR = false;
-			portalCamera.useOcclusionCulling = false; // keep off
 			portalCamera.clearFlags = CameraClearFlags.Skybox;
 
 			var extra = portalCamera.GetUniversalAdditionalCameraData();
@@ -169,11 +168,45 @@ namespace Portal {
 			Vector3 destinationForward = pair.transform.forward;
 			Vector3 destinationPosition = pair.transform.position;
 
-			// --- CULLING REMOVED: render all recursion levels ---
-			int startLevel = _recursionMatrices.Length - 1;
+			// Cull recursion levels based on portal orientation to each other
+			int maxRenderLevel = GetMaxRecursionLevelForPair();
+			int startLevel = Mathf.Min(maxRenderLevel, _recursionMatrices.Length - 1);
+			
 			for (int i = startLevel; i >= 0; i--) {
 				RenderLevel(mainCamera, _recursionMatrices[i], destinationForward, destinationPosition);
 			}
+		}
+
+		private int GetMaxRecursionLevelForPair() {
+			if (!pair) return recursionLimit - 1;
+
+			// Check if either portal is vertical (floor/ceiling mounted)
+			bool thisIsVertical = Mathf.Abs(Vector3.Dot(transform.forward, Vector3.up)) > 0.9f;
+			bool pairIsVertical = Mathf.Abs(Vector3.Dot(pair.transform.forward, Vector3.up)) > 0.9f;
+			
+			if (thisIsVertical || pairIsVertical) {
+				// If either portal is on the floor/ceiling, allow 2 recursion levels
+				return 2;
+			}
+
+			// Calculate the angle between this portal's normal and the pair's normal
+			float dotProduct = Vector3.Dot(transform.forward, pair.transform.forward);
+			float angle = Mathf.Acos(Mathf.Clamp(dotProduct, -1f, 1f)) * Mathf.Rad2Deg;
+			
+			// angle ≈ 0°: same direction → no recursion
+			// angle ≈ 90°: perpendicular → 1 level recursion
+			// angle ≈ 180°: facing each other → full recursion
+			
+			if (angle < 45f) {
+				// 0° difference: skip recursion entirely
+				return 0;
+			} else if (angle < 135f) {
+				// 90° difference (45° to 135° range): 1 level recursion
+				return 1;
+			}
+			
+			// 180° difference (facing each other): allow full recursion
+			return recursionLimit - 1;
 		}
 
 		private void RenderLevel(Camera mainCam, Matrix4x4 worldMatrix, Vector3 destinationForward, Vector3 destinationPosition) {
