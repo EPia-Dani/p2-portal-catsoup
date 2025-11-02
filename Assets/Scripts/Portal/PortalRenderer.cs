@@ -17,6 +17,8 @@ namespace Portal {
 		private readonly Matrix4x4 _mirrorMatrix = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 		private bool _isVisible = true;
 
+		public PortalRenderView RenderView => _view;
+
 		/// <summary>
 		/// Initializes components and sets up recursion matrices array.
 		/// Falls back to Camera.main if mainCamera is not set in inspector.
@@ -153,6 +155,7 @@ namespace Portal {
 		/// <summary>
 		/// Main rendering logic. Clears texture, calculates recursion matrices,
 		/// and renders each recursion level from deepest to shallowest.
+		/// Checks visibility of the pair portal before rendering each level to prevent unnecessary recursion.
 		/// </summary>
 		/// <param name="context">The scriptable render context</param>
 		private void RenderPortal(ScriptableRenderContext context) {
@@ -165,7 +168,18 @@ namespace Portal {
 			Vector3 destinationForward = pair.transform.forward;
 			Vector3 destinationPosition = pair.transform.position;
 
+			// Find the deepest level where the pair portal is visible
+			// We check each level and stop at the deepest one where pair is still visible
+			int maxVisibleLevel = 0; // Always at least render level 0
 			for (int i = matrices.Length - 1; i >= 0; i--) {
+				if (CanSeePairPortal(matrices[i])) {
+					maxVisibleLevel = i;
+					break; // Found the deepest visible level, stop searching
+				}
+			}
+
+			// Render from the deepest visible level down to level 0
+			for (int i = maxVisibleLevel; i >= 0; i--) {
 				_view.RenderLevel(context, mainCamera, matrices[i], destinationForward, destinationPosition);
 			}
 		}
@@ -177,6 +191,27 @@ namespace Portal {
 		/// <returns>The step transformation matrix</returns>
 		private Matrix4x4 BuildStepMatrix() {
 			return PortalRecursionSolver.BuildStepMatrix(transform, pair.transform, _mirrorMatrix);
+		}
+
+		/// <summary>
+		/// Checks if the pair portal is visible from a camera positioned at the given recursion level matrix.
+		/// </summary>
+		/// <param name="recursionLevelMatrix">The world matrix of the camera at this recursion level</param>
+		/// <returns>True if the pair portal's renderer is visible from this recursion level, false otherwise</returns>
+		private bool CanSeePairPortal(Matrix4x4 recursionLevelMatrix) {
+			// Safety checks
+			if (pair == null) return false;
+			if (pair.RenderView == null) return false;
+			var renderer = pair.RenderView.SurfaceRenderer;
+			if (renderer == null) return false;
+
+			// Extract camera position and rotation from the recursion level matrix
+			Vector3 cameraPos = recursionLevelMatrix.MultiplyPoint(Vector3.zero);
+			Vector3 cameraForward = recursionLevelMatrix.MultiplyVector(Vector3.forward).normalized;
+			Vector3 cameraUp = recursionLevelMatrix.MultiplyVector(Vector3.up).normalized;
+
+			// Check if pair portal is visible from this recursion level perspective
+			return PortalVisibility.IsVisibleFromPosition(cameraPos, cameraForward, cameraUp, mainCamera, renderer);
 		}
 
 		/// <summary>
