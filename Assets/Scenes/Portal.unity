@@ -2125,7 +2125,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.66, y: 1, z: 0.01}
+  m_LocalScale: {x: 0.66, y: 1, z: 0.04}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8197170447663804482}
@@ -4088,8 +4088,9 @@ MonoBehaviour:
   gateByScreenCoverage: 0
   minScreenCoverageFraction: 0.01
   gateByThroughCamera: 1
-  frustumCullMargin: 4
+  frustumCullMargin: 3
   wallCollider: {fileID: 0}
+  _trackedTravellers: []
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4114,8 +4115,9 @@ MonoBehaviour:
   gateByScreenCoverage: 1
   minScreenCoverageFraction: 0.01
   gateByThroughCamera: 1
-  frustumCullMargin: 4
+  frustumCullMargin: 3
   wallCollider: {fileID: 0}
+  _trackedTravellers: []
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -4298,7 +4300,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.66, y: 1, z: 0.01}
+  m_LocalScale: {x: 0.66, y: 1, z: 0.04}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5365184602941282177}
@@ -4510,15 +4512,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2522092788412533582}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 5.760002, y: -0.34000027, z: 2.8799973}
+  m_LocalRotation: {x: -0, y: -0.46509147, z: -0, w: 0.8852626}
+  m_LocalPosition: {x: 2.02, y: -0.34000027, z: 0.4}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 4805111107266273928}
   - {fileID: 476153941}
   m_Father: {fileID: 2079793666}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -55.432, z: 0}
 --- !u!114 &8197170447663804483
 MonoBehaviour:
   m_ObjectHideFlags: 0

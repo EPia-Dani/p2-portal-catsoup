@@ -54,6 +54,11 @@ namespace Portal {
 			if (!portalCamera) portalCamera = GetComponentInChildren<Camera>(true);
 			if (!surfaceRenderer) surfaceRenderer = GetComponentInChildren<MeshRenderer>(true);
 
+			// Create material instance once to ensure each portal has its own
+			if (surfaceRenderer && !_mat) {
+				_mat = surfaceRenderer.material;
+			}
+
 			SetupCamera();
 			AllocRT();
 
@@ -95,15 +100,14 @@ namespace Portal {
 				Destroy(_rt);
 			}
 
-			_rt = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32) {
+			_rt = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32) {
 				wrapMode = TextureWrapMode.Clamp,
 				filterMode = FilterMode.Bilinear
 			};
 			_rt.Create();
 
 			if (portalCamera) portalCamera.targetTexture = _rt;
-			if (surfaceRenderer) {
-				_mat = surfaceRenderer.material;
+			if (_mat) {
 				_mat.mainTexture = _rt;
 			}
 		}
