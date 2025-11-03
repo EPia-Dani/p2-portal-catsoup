@@ -65,7 +65,12 @@ namespace Portal {
 		portalNormals[index] = normal;
 		portalCenters[index] = position;
 
-	
+		// Set the wall collider reference in PortalTeleporter (if it exists)
+		PortalTeleporter teleporter = portal.GetComponent<PortalTeleporter>();
+		if (teleporter != null && surface != null) {
+			teleporter.SetWallCollider(surface);
+		}
+
 		if (animator != null) animator.PlayAppear();
 
 		if (bluePortal != null && orangePortal != null &&

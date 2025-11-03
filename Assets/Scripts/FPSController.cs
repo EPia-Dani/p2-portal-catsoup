@@ -269,4 +269,65 @@ public class FPSController : MonoBehaviour
             _currentPitch = Mathf.DeltaAngle(0f, rawX);
         }
     }
+
+    /// <summary>
+    /// Called by PortalTraveller to transform rotation through a portal
+    /// </summary>
+    public void TransformRotation(Matrix4x4 transformMatrix)
+    {
+        // Extract rotation matrix (remove translation)
+        Matrix4x4 rotMatrix = transformMatrix;
+        rotMatrix.m03 = 0f;
+        rotMatrix.m13 = 0f;
+        rotMatrix.m23 = 0f;
+        rotMatrix.m33 = 1f;
+        
+        // Transform yaw transform if it exists
+        if (yawTransform != null)
+        {
+            // Get current forward and up in world space
+            Vector3 yawForward = yawTransform.forward;
+            Vector3 yawUp = yawTransform.up;
+            
+            // Transform through portal matrix (this handles mirroring correctly)
+            Vector3 transformedForward = rotMatrix.MultiplyVector(yawForward);
+            Vector3 transformedUp = rotMatrix.MultiplyVector(yawUp);
+            transformedForward.Normalize();
+            transformedUp.Normalize();
+            
+            // Apply transformed rotation
+            yawTransform.rotation = Quaternion.LookRotation(transformedForward, transformedUp);
+            _currentYaw = yawTransform.eulerAngles.y;
+        }
+        
+        // Transform pitch transform if it exists
+        if (pitchTransform != null)
+        {
+            // Get current forward and up in world space
+            Vector3 pitchForward = pitchTransform.forward;
+            Vector3 pitchUp = pitchTransform.up;
+            
+            // Transform through portal matrix
+            Vector3 transformedForward = rotMatrix.MultiplyVector(pitchForward);
+            Vector3 transformedUp = rotMatrix.MultiplyVector(pitchUp);
+            transformedForward.Normalize();
+            transformedUp.Normalize();
+            
+            // Get world rotation
+            Quaternion worldRot = Quaternion.LookRotation(transformedForward, transformedUp);
+            
+            // Convert to local space relative to yaw transform (or base transform)
+            Transform parentRot = yawTransform != null ? yawTransform : transform;
+            Quaternion localRot = Quaternion.Inverse(parentRot.rotation) * worldRot;
+            pitchTransform.localRotation = localRot;
+            
+            // Update internal pitch angle
+            float rawX = pitchTransform.localEulerAngles.x;
+            _currentPitch = Mathf.DeltaAngle(0f, rawX);
+            _currentPitch = Mathf.Clamp(_currentPitch, pitchClampMin, pitchClampMax);
+        }
+        
+        // Clear accumulated mouse delta to prevent jump
+        _accumulatedMouseDelta = Vector2.zero;
+    }
 }
