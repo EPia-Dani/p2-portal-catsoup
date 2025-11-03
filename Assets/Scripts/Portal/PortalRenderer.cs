@@ -19,36 +19,46 @@ namespace Portal {
 		[SerializeField] private int recursionLimit = 2;
 		[SerializeField] private int frameSkipInterval = 1;
 
-		[Header("Cull Gates")]
-		[SerializeField] private bool gateByMainCamera = false;        // was true; default off
-		[SerializeField] private bool gateByScreenCoverage = false;     // was true; default off
-		[SerializeField] private float minScreenCoverageFraction = 0.01f;
-		[SerializeField] private bool gateByThroughCamera = true;       // keep this, cheap cull
-		[SerializeField] private float frustumCullMargin = 3.0f;
+	[Header("Cull Gates")]
+	[SerializeField] private bool gateByMainCamera = false;        // was true; default off
+	[SerializeField] private bool gateByScreenCoverage = false;     // was true; default off
+	[SerializeField] private float minScreenCoverageFraction = 0.01f;
+	[SerializeField] private bool gateByThroughCamera = true;       // keep this, cheap cull
+	[SerializeField] private float frustumCullMargin = 3.0f;
 
-		private RenderTexture _rt;
-		private Material _mat;
-		private Matrix4x4[] _recursion = Array.Empty<Matrix4x4>();
-		private Plane[] _frustum = new Plane[6];
-		private readonly Matrix4x4 _mirror = Matrix4x4.Scale(new Vector3(-1, 1, -1));
-		private bool _visible = true;
-		private bool _ready;
+	[Header("Physics Passthrough")]
+	[SerializeField] [Tooltip("Wall collider to disable for player when entering portal")]
+	private Collider wallCollider;
 
-		public bool IsReadyToRender { get => _ready; set => _ready = value; }
+	private RenderTexture _rt;
+	private Material _mat;
+	private Matrix4x4[] _recursion = Array.Empty<Matrix4x4>();
+	private Plane[] _frustum = new Plane[6];
+	private readonly Matrix4x4 _mirror = Matrix4x4.Scale(new Vector3(-1, 1, -1));
+	private bool _visible = true;
+	private bool _ready;
+	private System.Collections.Generic.List<PortalTraveller> _trackedTravellers = new();
 
-		void Awake() {
-			if (!mainCamera) mainCamera = Camera.main;
-			if (!portalCamera) portalCamera = GetComponentInChildren<Camera>(true);
-			if (!surfaceRenderer) surfaceRenderer = GetComponentInChildren<MeshRenderer>(true);
+	public bool IsReadyToRender { get => _ready; set => _ready = value; }
 
-			SetupCamera();
-			AllocRT();
+	/// <summary>
+	/// Public getter for this portal's transform (needed for teleportation).
+	/// </summary>
+	public Transform PortalTransform => transform;
 
-			recursionLimit = Mathf.Max(1, recursionLimit);
-			if (_recursion.Length != recursionLimit) _recursion = new Matrix4x4[recursionLimit];
+	void Awake() {
+		if (!mainCamera) mainCamera = Camera.main;
+		if (!portalCamera) portalCamera = GetComponentInChildren<Camera>(true);
+		if (!surfaceRenderer) surfaceRenderer = GetComponentInChildren<MeshRenderer>(true);
 
-			_visible = surfaceRenderer && surfaceRenderer.enabled;
-		}
+		SetupCamera();
+		AllocRT();
+
+		recursionLimit = Mathf.Max(1, recursionLimit);
+		if (_recursion.Length != recursionLimit) _recursion = new Matrix4x4[recursionLimit];
+
+		_visible = surfaceRenderer && surfaceRenderer.enabled;
+	}
 
 		void OnDestroy() {
 			if (_rt) { _rt.Release(); Destroy(_rt); }
@@ -87,6 +97,8 @@ namespace Portal {
 			}
 		}
 
+	
+
 		public void ConfigurePortal(int w, int h, int recLimit, int frameskip) {
 			if (textureWidth != w || textureHeight != h) { textureWidth = w; textureHeight = h; AllocRT(); }
 			SetRecursionLimit(recLimit);
@@ -102,15 +114,112 @@ namespace Portal {
 			frameSkipInterval = Mathf.Max(1, interval);
 		}
 
-		void OnEnable()  => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
-		void OnDisable() => RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
+	void OnEnable()  => RenderPipelineManager.beginCameraRendering += OnBeginCameraRendering;
+	void OnDisable() => RenderPipelineManager.beginCameraRendering -= OnBeginCameraRendering;
 
-		public void SetVisible(bool visible) {
-			_visible = visible;
-			if (portalCamera) portalCamera.gameObject.SetActive(visible);
-			if (surfaceRenderer) surfaceRenderer.enabled = visible;
-			if (!visible) { _ready = false; ClearTexture(); }
+	void LateUpdate() {
+		HandleTravellers();
+	}
+
+	void HandleTravellers() {
+		if (!pair) return; // Need linked portal to teleport
+		
+		for (int i = 0; i < _trackedTravellers.Count; i++) {
+			PortalTraveller traveller = _trackedTravellers[i];
+			if (!traveller) {
+				_trackedTravellers.RemoveAt(i);
+				i--;
+				continue;
+			}
+			
+			Transform travellerT = traveller.transform;
+			
+			// Calculate transformation matrix - THIS portal to LINKED portal
+			var m = pair.transform.localToWorldMatrix * transform.worldToLocalMatrix * travellerT.localToWorldMatrix;
+
+			// Check which side of THIS portal the traveller is on
+			Vector3 offsetFromPortal = travellerT.position - transform.position;
+			int portalSide = System.Math.Sign(Vector3.Dot(offsetFromPortal, transform.forward));
+			int portalSideOld = System.Math.Sign(Vector3.Dot(traveller.previousOffsetFromPortal, transform.forward));
+
+		// Teleport if crossed from one side to the other
+		if (portalSide != portalSideOld) {
+			Vector3 newPos = m.GetColumn(3);
+			Quaternion newRot = m.rotation;
+			
+			// Since portals are one-sided (placed on walls), we need to rotate 180 degrees
+			// so the player exits facing OUTWARD from the destination wall, not inward
+			Quaternion flip = Quaternion.AngleAxis(180, pair.transform.up);
+			newRot = flip * newRot;
+
+			Debug.Log($"TELEPORT! {traveller.name} crossed {gameObject.name} -> {pair.gameObject.name}");
+			
+			traveller.Teleport(transform, pair.transform, newPos, newRot);
+			
+			// Add traveller to linked portal's tracker (justTeleported = true to prevent immediate re-teleport)
+			pair.OnTravellerEnterPortal(traveller, justTeleported: true);
+			
+			// Remove from this portal's tracker
+			_trackedTravellers.RemoveAt(i);
+			i--;
+		} else {
+				// Update previous offset
+				traveller.previousOffsetFromPortal = offsetFromPortal;
+			}
 		}
+	}
+
+	void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
+		if (!_trackedTravellers.Contains(traveller)) {
+			// Calculate offset from portal
+			Vector3 offsetFromPortal = traveller.transform.position - transform.position;
+			
+			// If just teleported, ensure previousOffset indicates we're on the BACK side (safe side)
+			// to prevent immediate re-teleportation
+			if (justTeleported) {
+				// Make sure the previous offset is on the negative side (behind the portal)
+				float currentDot = Vector3.Dot(offsetFromPortal, transform.forward);
+				Debug.Log($"{gameObject.name}: Teleport arrival - currentDot={currentDot:F3}, offsetFromPortal={offsetFromPortal}");
+				if (currentDot >= 0) {
+					// We're in front, so set previous to be behind
+					traveller.previousOffsetFromPortal = offsetFromPortal - transform.forward * (currentDot + 0.1f);
+					float newDot = Vector3.Dot(traveller.previousOffsetFromPortal, transform.forward);
+					Debug.Log($"{gameObject.name}: Forced to back side - newDot={newDot:F3}");
+				} else {
+					// Already behind, use actual position
+					traveller.previousOffsetFromPortal = offsetFromPortal;
+					Debug.Log($"{gameObject.name}: Already on back side");
+				}
+			} else {
+				// Normal entry, use actual current offset
+				traveller.previousOffsetFromPortal = offsetFromPortal;
+			}
+			
+			_trackedTravellers.Add(traveller);
+			
+			// Disable collision between player and wall collider
+			if (wallCollider) {
+				Collider playerCollider = traveller.GetComponent<Collider>();
+				if (playerCollider) {
+					Physics.IgnoreCollision(playerCollider, wallCollider, true);
+					Debug.Log($"{gameObject.name}: Disabled collision between {traveller.name} and wall");
+				}
+			}
+
+			Debug.Log($"{gameObject.name}: Traveller {traveller.name} entered portal");
+		}
+	}
+
+	public void SetWallCollider(Collider col) {
+		wallCollider = col;
+	}
+
+	public void SetVisible(bool visible) {
+		_visible = visible;
+		if (portalCamera) portalCamera.gameObject.SetActive(visible);
+		if (surfaceRenderer) surfaceRenderer.enabled = visible;
+		if (!visible) { _ready = false; ClearTexture(); }
+	}
 
 		void OnBeginCameraRendering(ScriptableRenderContext ctx, Camera cam) {
 			if (cam != mainCamera) return;
@@ -235,5 +344,30 @@ namespace Portal {
 			GL.Clear(true, true, Color.clear);
 			RenderTexture.active = prev;
 		}
+
+		void OnTriggerEnter(Collider other) {
+			var traveller = other.GetComponent<PortalTraveller>();
+			if (traveller) {
+				OnTravellerEnterPortal(traveller);
+			}
+		}
+
+	void OnTriggerExit(Collider other) {
+		var traveller = other.GetComponent<PortalTraveller>();
+		if (traveller && _trackedTravellers.Contains(traveller)) {
+			_trackedTravellers.Remove(traveller);
+			
+			// Re-enable collision between player and wall collider
+			if (wallCollider) {
+				Collider playerCollider = traveller.GetComponent<Collider>();
+				if (playerCollider) {
+					Physics.IgnoreCollision(playerCollider, wallCollider, false);
+					Debug.Log($"{gameObject.name}: Re-enabled collision between {traveller.name} and wall");
+				}
+			}
+			
+			Debug.Log($"{gameObject.name}: Traveller {traveller.name} exited portal");
+		}
+	}
 	}
 }

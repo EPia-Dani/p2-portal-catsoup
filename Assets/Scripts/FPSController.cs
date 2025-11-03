@@ -5,7 +5,6 @@ using UnityEngine;
 public class FPSController : PortalTraveller {
 
     public float walkSpeed = 3;
-    public float runSpeed = 6;
     public float jumpForce = 8;
     public float gravity = 18;
 
@@ -43,6 +42,16 @@ public class FPSController : PortalTraveller {
         // Initialize input controls if not already done
         if (_controls == null) {
             _controls = InputManager.PlayerInput;
+        }
+
+        // Ensure we have a Rigidbody (kinematic) for reliable trigger detection
+        // CharacterController + Rigidbody (kinematic) = reliable OnTriggerEnter
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (!rb) {
+            rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+            Debug.Log("Added kinematic Rigidbody for portal trigger detection");
         }
     }
 
@@ -96,13 +105,21 @@ public class FPSController : PortalTraveller {
     }
 
     public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot) {
+        // Teleport the player position
         transform.position = pos;
+        
+        // Rotate the player's yaw based on portal orientation change
         Vector3 eulerRot = rot.eulerAngles;
-        float delta = Mathf.DeltaAngle (yaw, eulerRot.y);
+        float delta = Mathf.DeltaAngle(yaw, eulerRot.y);
         yaw += delta;
         transform.eulerAngles = Vector3.up * yaw;
-        velocity = toPortal.TransformVector (fromPortal.InverseTransformVector (velocity));
-        Physics.SyncTransforms ();
+        
+        // Transform the velocity through the portal pair
+        // This ensures the player continues moving in the correct direction after teleportation
+        velocity = toPortal.TransformVector(fromPortal.InverseTransformVector(velocity));
+        
+        // Sync physics to prevent collision detection issues
+        Physics.SyncTransforms();
     }
 
 }

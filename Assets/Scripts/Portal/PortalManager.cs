@@ -3,22 +3,32 @@ using UnityEngine;
 namespace Portal {
 	public class PortalManager : MonoBehaviour
 	{
-		[Header("Portals")]
-		[SerializeField] private PortalRenderer bluePortal;
-		[SerializeField] private PortalRenderer orangePortal;
+	[Header("Portals")]
+	[SerializeField] private PortalRenderer bluePortal;
+	[SerializeField] private PortalRenderer orangePortal;
 
-		[Header("Settings")]
-		[SerializeField] private int textureWidth = 1024;
-		[SerializeField] private int textureHeight = 1024;
-		[SerializeField] private int recursionLimit = 2;
-		[SerializeField] private int frameSkipInterval = 1;
+	[Header("Settings")]
+	[SerializeField] private int textureWidth = 1024;
+	[SerializeField] private int textureHeight = 1024;
+	[SerializeField] private int recursionLimit = 2;
+	[SerializeField] private int frameSkipInterval = 1;
 
-		public Collider[] portalSurfaces = new Collider[2];
-		public Vector3[] portalNormals = new Vector3[2];
-		public Vector3[] portalCenters = new Vector3[2];
+	public Collider[] portalSurfaces = new Collider[2];
+	public Vector3[] portalNormals = new Vector3[2];
+	public Vector3[] portalCenters = new Vector3[2];
 
 	private PortalAnimator _blueAnimator;
 	private PortalAnimator _orangeAnimator;
+
+	/// <summary>
+	/// Gets the blue portal renderer.
+	/// </summary>
+	public PortalRenderer BluePortal => bluePortal;
+
+	/// <summary>
+	/// Gets the orange portal renderer.
+	/// </summary>
+	public PortalRenderer OrangePortal => orangePortal;
 
 	private void Awake() {
 		if (bluePortal) {
@@ -30,6 +40,13 @@ namespace Portal {
 			_orangeAnimator = orangePortal.GetComponent<PortalAnimator>();
 			if (_orangeAnimator == null) _orangeAnimator = orangePortal.GetComponentInChildren<PortalAnimator>();
 			orangePortal.IsReadyToRender = false;
+		}
+
+		// Link portals as pairs (like in Portals project)
+		if (bluePortal && orangePortal) {
+			bluePortal.pair = orangePortal;
+			orangePortal.pair = bluePortal;
+			Debug.Log("Portals linked as pairs");
 		}
 	}
 
@@ -60,6 +77,9 @@ namespace Portal {
 
 		portal.SetVisible(true);
 		portal.transform.SetPositionAndRotation(position + normal * wallOffset, Quaternion.LookRotation(-normal, up));
+		
+		// Set the wall collider so player can pass through
+		portal.SetWallCollider(surface);
 
 		portalSurfaces[index] = surface;
 		portalNormals[index] = normal;
