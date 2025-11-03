@@ -15,7 +15,7 @@ Shader "Tecnocampus/Portal"
         {
             Tags { "LightMode"="UniversalForward" }
             
-            Cull Back
+            Cull Off
             HLSLPROGRAM
             #pragma target 3.0
             #pragma vertex vert
