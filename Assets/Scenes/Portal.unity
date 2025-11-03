@@ -920,7 +920,7 @@ GameObject:
   - component: {fileID: 165274160}
   - component: {fileID: 165274159}
   - component: {fileID: 165274163}
-  - component: {fileID: 165274165}
+  - component: {fileID: 165274164}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1076,7 +1076,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &165274165
+--- !u!114 &165274164
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1085,9 +1085,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 165274156}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55b61f04919847fc91b1a3cc0fcdc054, type: 3}
+  m_Script: {fileID: 11500000, guid: b2c4e1d7f5a9c8e3b1d4a5f9c8b2e1d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _lastPosition: {x: 0, y: 0, z: 0}
 --- !u!43 &263760033
 Mesh:
   m_ObjectHideFlags: 32
