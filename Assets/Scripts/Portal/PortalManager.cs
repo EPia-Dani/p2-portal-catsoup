@@ -65,6 +65,7 @@ namespace Portal {
 		portalNormals[index] = normal;
 		portalCenters[index] = position;
 
+	
 		if (animator != null) animator.PlayAppear();
 
 		if (bluePortal != null && orangePortal != null &&
@@ -74,6 +75,7 @@ namespace Portal {
 			_orangeAnimator.StartOpening();
 		}
 	}
+
 
 	private void Update() {
 		UpdateRenderReadiness();
