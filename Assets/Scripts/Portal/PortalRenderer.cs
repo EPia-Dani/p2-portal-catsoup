@@ -237,6 +237,11 @@ namespace Portal {
 			if (!_visible || !_ready) return;
 			if (!pair._visible || !pair._ready) return;
 
+			// Ensure the portal screen has enough thickness so the player's near clip plane
+			// does not slice it when crossing the threshold. This mirrors the classic
+			// ProtectScreenFromClipping technique.
+			ProtectScreenFromClipping(mainCamera.transform.position);
+
 			if (gateByMainCamera && !MainCameraCanSeeThis()) return;
 			if (gateByScreenCoverage && GetScreenSpaceCoverage() < minScreenCoverageFraction) return;
 
@@ -337,6 +342,10 @@ namespace Portal {
 		void RenderLevel(Matrix4x4 world, Vector3 exitPos, Vector3 exitFwd) {
 			if (!portalCamera || !_visible) return;
 
+			// Skip if render target/pixel rect are invalid (prevents frustum errors)
+			if (!portalCamera.targetTexture) return;
+			if (portalCamera.pixelWidth <= 0 || portalCamera.pixelHeight <= 0) return;
+
 			Vector3 pos = world.MultiplyPoint(Vector3.zero);
 			Vector3 fwd = world.MultiplyVector(Vector3.forward);
 			Vector3 up = world.MultiplyVector(Vector3.up);
@@ -348,9 +357,17 @@ namespace Portal {
 			Vector3 pCam = w2c.MultiplyPoint(planePoint);
 			Vector4 clip = new(nCam.x, nCam.y, nCam.z, -Vector3.Dot(pCam, nCam));
 
-			portalCamera.projectionMatrix = mainCamera.CalculateObliqueMatrix(clip);
+			// Validate clip plane before applying
+			if (!IsFinite(clip)) return;
+
+			// Use the portal camera's projection for the oblique matrix
+			portalCamera.projectionMatrix = portalCamera.CalculateObliqueMatrix(clip);
 			RenderPipeline.SubmitRenderRequest(portalCamera, new UniversalRenderPipeline.SingleCameraRequest());
 			portalCamera.ResetProjectionMatrix();
+		}
+
+		static bool IsFinite(Vector4 v) {
+			return float.IsFinite(v.x) && float.IsFinite(v.y) && float.IsFinite(v.z) && float.IsFinite(v.w);
 		}
 
 		void ClearTexture() {
@@ -359,6 +376,27 @@ namespace Portal {
 			RenderTexture.active = _rt;
 			GL.Clear(true, true, Color.clear);
 			RenderTexture.active = prev;
+		}
+
+		// Sets the thickness of the portal screen so it won't be clipped by the
+		// player's near plane when moving through the portal. Returns the thickness
+		// applied (useful if callers want to reuse it for slicing logic).
+		float ProtectScreenFromClipping(Vector3 viewPoint) {
+			if (!mainCamera || !surfaceRenderer) return 0f;
+
+			// Distance from eye to a corner of the near clip plane
+			float halfHeight = mainCamera.nearClipPlane * Mathf.Tan(mainCamera.fieldOfView * 0.5f * Mathf.Deg2Rad);
+			float halfWidth = halfHeight * mainCamera.aspect;
+			float thickness = new Vector3(halfWidth, halfHeight, mainCamera.nearClipPlane).magnitude;
+
+			Transform screenT = surfaceRenderer.transform;
+			bool camFacingSameDirAsPortal = Vector3.Dot(transform.forward, transform.position - viewPoint) > 0f;
+
+			// Scale depth (z) and offset so the screen volume straddles the portal plane
+			screenT.localScale = new Vector3(screenT.localScale.x, screenT.localScale.y, thickness);
+			screenT.localPosition = Vector3.forward * thickness * (camFacingSameDirAsPortal ? 0.5f : -0.5f);
+
+			return thickness;
 		}
 
 		void OnTriggerEnter(Collider other) {
