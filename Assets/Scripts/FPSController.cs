@@ -118,46 +118,17 @@ public class FPSController : PortalTraveller {
         transform.eulerAngles = Vector3.up * yaw;
         
         // ===== UNIVERSAL VELOCITY TRANSFORMATION =====
-        // Convert velocity to source portal's local space
-        // In portal local space: Z = through portal, X = right (lateral), Y = up
-        Vector3 localVel = fromPortal.InverseTransformVector(currentVelocity);
-        
-        // Decompose velocity into portal-relative components
-        float throughPortal = localVel.z;      // Velocity going through portal
-        float lateral = localVel.x;            // Lateral velocity (left/right)
-        float verticalInPortalSpace = localVel.y;  // Vertical in portal's local space
-        
-        // Mirror the "through portal" component (reverse it)
-        throughPortal = -throughPortal;
-        
-        // Detect portal orientations (vertical = walls, horizontal = floors/ceilings)
-        Vector3 fromNormal = fromPortal.forward;
-        Vector3 toNormal = toPortal.forward;
-        bool fromIsVertical = Mathf.Abs(Vector3.Dot(fromNormal, Vector3.up)) < 0.707f; // < 45° from vertical
-        bool toIsVertical = Mathf.Abs(Vector3.Dot(toNormal, Vector3.up)) < 0.707f;
-        
-        // Transform velocity components based on portal orientation
-        Vector3 newLocalVel;
-        
-        if (!fromIsVertical && toIsVertical) {
-            // Floor/Ceiling → Wall: vertical becomes forward, forward becomes vertical
-            newLocalVel = new Vector3(lateral, -throughPortal, verticalInPortalSpace);
-        }
-        else if (fromIsVertical && !toIsVertical) {
-            // Wall → Floor/Ceiling: forward becomes vertical, vertical becomes forward
-            newLocalVel = new Vector3(lateral, throughPortal, verticalInPortalSpace);
-        }
-        else {
-            // Same orientation (Wall→Wall or Floor→Floor): standard mirror
-            newLocalVel = new Vector3(lateral, verticalInPortalSpace, throughPortal);
-        }
-        
-        // Transform back to world space using destination portal
-        velocity = toPortal.TransformVector(newLocalVel);
-        
-        // Update verticalVelocity to match the new velocity's Y component
+        // Rotate the entire velocity vector from the source portal's orientation to the destination's.
+        // We include a 180° flip around the source portal's up so 'entering' becomes 'exiting'.
+        Quaternion flip = Quaternion.AngleAxis(180f, fromPortal.up);
+        Quaternion relativeRotation = toPortal.rotation * flip * Quaternion.Inverse(fromPortal.rotation);
+
+        // Rotate the captured world-space velocity into the destination orientation
+        velocity = relativeRotation * currentVelocity;
+
+        // Update verticalVelocity to match the new world-space Y component
         verticalVelocity = velocity.y;
-        
+
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();
     }
