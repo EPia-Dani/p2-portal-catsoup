@@ -114,9 +114,11 @@ public class FPSController : PortalTraveller {
         yaw += delta;
         transform.eulerAngles = Vector3.up * yaw;
         
-        // Transform the velocity through the portal pair
-        // This ensures the player continues moving in the correct direction after teleportation
-        velocity = toPortal.TransformVector(fromPortal.InverseTransformVector(velocity));
+        // Transform the velocity through the portal pair, including mirror across the portal plane
+        // so lateral direction (left/right) is preserved correctly after teleport.
+        Vector3 localVel = fromPortal.InverseTransformVector(velocity);
+        localVel = Vector3.Scale(localVel, new Vector3(-1f, 1f, -1f));
+        velocity = toPortal.TransformVector(localVel);
         
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();

@@ -465,7 +465,7 @@ Transform:
   m_GameObject: {fileID: 22518727}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 5.7230225, y: 2.0487137, z: 5.2686157}
+  m_LocalPosition: {x: 5.597, y: 2.0487137, z: 4.919}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -518,7 +518,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_RenderShadows: 1
+  m_RenderShadows: 0
   m_RequiresDepthTextureOption: 2
   m_RequiresOpaqueTextureOption: 2
   m_CameraType: 0
@@ -606,7 +606,7 @@ Camera:
   m_AllowMSAA: 1
   m_AllowDynamicResolution: 1
   m_ForceIntoRT: 0
-  m_OcclusionCulling: 1
+  m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
 --- !u!1 &146055139
@@ -2108,7 +2108,7 @@ GameObject:
   - component: {fileID: 476153941}
   - component: {fileID: 476153943}
   - component: {fileID: 476153942}
-  m_Layer: 10
+  m_Layer: 7
   m_Name: Screen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2124,8 +2124,8 @@ Transform:
   m_GameObject: {fileID: 476153940}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.66, y: 1, z: 0.1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.1}
+  m_LocalScale: {x: 0.7, y: 1, z: 0.2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8197170447663804482}
@@ -3738,7 +3738,7 @@ Transform:
   m_GameObject: {fileID: 2042437990}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -4.3788757, y: 9.600577, z: -6.0610657}
+  m_LocalPosition: {x: -4.09, y: 9.47, z: -5.46}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4089,7 +4089,7 @@ MonoBehaviour:
   minScreenCoverageFraction: 0.01
   gateByThroughCamera: 1
   frustumCullMargin: 3
-  wallCollider: {fileID: 0}
+  wallCollider: {fileID: 22518728}
   _trackedTravellers: []
 --- !u!114 &2069985398880840990
 MonoBehaviour:
@@ -4116,7 +4116,7 @@ MonoBehaviour:
   minScreenCoverageFraction: 0.01
   gateByThroughCamera: 1
   frustumCullMargin: 3
-  wallCollider: {fileID: 0}
+  wallCollider: {fileID: 2042437991}
   _trackedTravellers: []
 --- !u!4 &2174037431210880972
 Transform:
@@ -4145,7 +4145,7 @@ GameObject:
   - component: {fileID: 1937157125335981014}
   - component: {fileID: 8197170447663804483}
   - component: {fileID: 8197170447663804484}
-  m_Layer: 10
+  m_Layer: 7
   m_Name: Blue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4264,7 +4264,7 @@ Transform:
   m_GameObject: {fileID: 6690853907733404540}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.70710677, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.128, y: -0.441, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -4283,7 +4283,7 @@ GameObject:
   - component: {fileID: 4805111107266273928}
   - component: {fileID: 8095862263857129310}
   - component: {fileID: 3132859087815590435}
-  m_Layer: 10
+  m_Layer: 7
   m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4299,8 +4299,8 @@ Transform:
   m_GameObject: {fileID: 5979101503272710188}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0, y: 0, z: 0}
-  m_LocalScale: {x: 0.66, y: 1, z: 0.1}
+  m_LocalPosition: {x: 0, y: 0, z: 0.1}
+  m_LocalScale: {x: 0.7, y: 1, z: 0.2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5365184602941282177}
@@ -4316,7 +4316,7 @@ GameObject:
   - component: {fileID: 5710452781550541350}
   - component: {fileID: 6168494326109653225}
   - component: {fileID: 1747989180196598255}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Screen
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4343,7 +4343,7 @@ GameObject:
   - component: {fileID: 2069985398880840990}
   - component: {fileID: 6690853907733404541}
   - component: {fileID: 6690853907733404543}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Orange
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4433,7 +4433,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.9, y: 0.9, z: 0.5}
+  m_Size: {x: 1, y: 1, z: 0.4}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &7219594838380380271
 GameObject:
@@ -4446,7 +4446,7 @@ GameObject:
   - component: {fileID: 2174037431210880972}
   - component: {fileID: 8899481715251803678}
   - component: {fileID: 5243277813227354865}
-  m_Layer: 10
+  m_Layer: 9
   m_Name: Camera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4492,7 +4492,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 7671
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: fc599718af08d9c48b271e70298be8b9, type: 2}
   m_TargetDisplay: 0
@@ -4512,15 +4512,15 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2522092788412533582}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0.46509147, z: -0, w: 0.8852626}
-  m_LocalPosition: {x: 2.02, y: -0.34000027, z: 0.4}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.806, y: -0.476, z: 2.148}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 4805111107266273928}
   - {fileID: 476153941}
   m_Father: {fileID: 2079793666}
-  m_LocalEulerAnglesHint: {x: 0, y: -55.432, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8197170447663804483
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4604,7 +4604,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.9, y: 0.9, z: 0.5}
+  m_Size: {x: 1, y: 1, z: 0.4}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!20 &8899481715251803678
 Camera:
@@ -4645,7 +4645,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 8055
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: e79cd8f2eac983649845aa1f800dd7a9, type: 2}
   m_TargetDisplay: 0

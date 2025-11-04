@@ -146,18 +146,20 @@ namespace Portal {
 					continue;
 				}
 
-				var toDest = pair.transform.localToWorldMatrix * transform.worldToLocalMatrix *
-				             t.transform.localToWorldMatrix;
+                // Build full mapping from traveller -> destination world using the same mirror used for rendering.
+                // This ensures both rotation AND position are mirrored through the portal plane.
+                var toDest = pair.transform.localToWorldMatrix * _mirror * transform.worldToLocalMatrix *
+                             t.transform.localToWorldMatrix;
 
 				Vector3 offset = t.transform.position - transform.position;
 				int sidePrev = Math.Sign(Vector3.Dot(t.previousOffsetFromPortal, transform.forward));
 				int sideNow = Math.Sign(Vector3.Dot(offset, transform.forward));
 
-				if (sideNow > 0 && sidePrev < 0) {
-					// front -> back: valid
-					Vector3 newPos = toDest.GetColumn(3);
-					Quaternion newRot = toDest.rotation * Quaternion.AngleAxis(180f, pair.transform.up);
-					newPos += pair.transform.forward * 0.15f;
+                if (sideNow > 0 && sidePrev < 0) {
+                    // front -> back: valid
+                    Vector3 newPos = toDest.GetColumn(3);
+                    Quaternion newRot = toDest.rotation;
+                    newPos += pair.transform.forward * 0.15f;
 
 					Debug.Log($"TELEPORT! {t.name} crossed {name} -> {pair.name}");
 					t.Teleport(transform, pair.transform, newPos, newRot);

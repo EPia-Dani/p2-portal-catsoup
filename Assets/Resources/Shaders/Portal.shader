@@ -38,7 +38,6 @@ Shader "Tecnocampus/Portal"
 
             CBUFFER_START(UnityPerMaterial)
                 float4 _MainTex_ST;
-                float _FullScreen;
             CBUFFER_END
 
             Varyings vert(Attributes IN)
@@ -53,17 +52,10 @@ Shader "Tecnocampus/Portal"
             half4 frag(Varyings IN) : SV_Target
             {
                 float2 screenUV;
+               
+                // Modo normal: usar screenPos del cubo como máscara
+                screenUV = IN.screenPos.xy / IN.screenPos.w;
                 
-                // Si FullScreen está activado, usar coordenadas de pantalla completas
-                if (_FullScreen > 0.5) {
-                    // Coordenadas de pantalla completas (0,0 a 1,1)
-                    screenUV = IN.positionCS.xy / IN.positionCS.w;
-                    screenUV = screenUV * 0.5 + 0.5;
-                    screenUV.y = 1.0 - screenUV.y; // Flip Y para Unity
-                } else {
-                    // Modo normal: usar screenPos del cubo como máscara
-                    screenUV = IN.screenPos.xy / IN.screenPos.w;
-                }
                 
                 half4 portalView = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, screenUV);
                 return portalView;
