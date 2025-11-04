@@ -123,17 +123,26 @@ public class FPSController : PortalTraveller {
         // Teleport the player position
         transform.position = pos;
         
-        // Rotate the player's yaw based on portal orientation change
-        Vector3 eulerRot = rot.eulerAngles;
-        float delta = Mathf.DeltaAngle(yaw, eulerRot.y);
-        yaw += delta;
-        transform.eulerAngles = Vector3.up * yaw;
-        
         // ===== UNIVERSAL VELOCITY TRANSFORMATION =====
         // Rotate the entire velocity vector from the source portal's orientation to the destination's.
         // We include a 180° flip around the portal's local up so 'entering' becomes 'exiting'.
         Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
         Quaternion relativeRotation = toPortal.rotation * flipLocal * Quaternion.Inverse(fromPortal.rotation);
+        
+        // Transform the player's forward direction through the portal (same transformation as velocity)
+        // This preserves relative orientation: looking left relative to source portal = looking left relative to dest portal
+        Vector3 currentForward = transform.forward;
+        Vector3 transformedForward = relativeRotation * currentForward;
+        
+        // Project onto horizontal plane and extract yaw
+        Vector3 horizontalForward = new Vector3(transformedForward.x, 0, transformedForward.z);
+        if (horizontalForward.sqrMagnitude > 0.01f) {
+            horizontalForward.Normalize();
+            yaw = Mathf.Atan2(horizontalForward.x, horizontalForward.z) * Mathf.Rad2Deg;
+        }
+        // If horizontal component is too small, keep current yaw (rare edge case)
+        
+        transform.eulerAngles = Vector3.up * yaw;
 
         // Rotate the captured world-space velocity into the destination orientation
         velocity = relativeRotation * currentVelocity;

@@ -55,8 +55,6 @@ namespace Portal {
 	}
 
 		private void OnValidate() {
-			textureWidth = Mathf.Clamp(textureWidth, 256, 4096);
-			textureHeight = Mathf.Clamp(textureHeight, 256, 4096);
 			recursionLimit = Mathf.Max(1, recursionLimit);
 			frameSkipInterval = Mathf.Max(1, frameSkipInterval);
 		}
