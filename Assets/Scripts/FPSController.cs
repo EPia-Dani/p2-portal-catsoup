@@ -20,6 +20,10 @@ public class FPSController : PortalTraveller {
     float verticalVelocity;
     Vector3 velocity;
 
+    // External horizontal momentum applied after teleport (preserved across frames)
+    Vector3 externalVelocity = Vector3.zero;
+    public float portalMomentumDamping = 2f; // higher = faster decay
+
     bool jumping;
     float lastGroundedTime;
     bool disabled;
@@ -71,7 +75,13 @@ public class FPSController : PortalTraveller {
         Vector3 worldInputDir = transform.TransformDirection (inputDir);
 
         float currentSpeed = walkSpeed;
-        velocity = new Vector3(worldInputDir.x * currentSpeed, verticalVelocity, worldInputDir.z * currentSpeed);
+        // Compute player's input-based horizontal velocity
+        Vector3 inputVel = new Vector3(worldInputDir.x * currentSpeed, 0, worldInputDir.z * currentSpeed);
+
+        // Combine input velocity with any external (portal) momentum
+        Vector3 horizontal = inputVel + externalVelocity;
+
+        velocity = new Vector3(horizontal.x, verticalVelocity, horizontal.z);
 
         verticalVelocity -= gravity * Time.deltaTime;
         velocity = new Vector3 (velocity.x, verticalVelocity, velocity.z);
@@ -102,6 +112,8 @@ public class FPSController : PortalTraveller {
         transform.eulerAngles = Vector3.up * yaw;
         cam.transform.localEulerAngles = Vector3.right * pitch;
 
+        // Decay external velocity over time so momentum fades
+        externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
     }
 
     public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot) {
@@ -119,15 +131,28 @@ public class FPSController : PortalTraveller {
         
         // ===== UNIVERSAL VELOCITY TRANSFORMATION =====
         // Rotate the entire velocity vector from the source portal's orientation to the destination's.
-        // We include a 180° flip around the source portal's up so 'entering' becomes 'exiting'.
-        Quaternion flip = Quaternion.AngleAxis(180f, fromPortal.up);
-        Quaternion relativeRotation = toPortal.rotation * flip * Quaternion.Inverse(fromPortal.rotation);
+        // We include a 180° flip around the portal's local up so 'entering' becomes 'exiting'.
+        Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+        Quaternion relativeRotation = toPortal.rotation * flipLocal * Quaternion.Inverse(fromPortal.rotation);
 
         // Rotate the captured world-space velocity into the destination orientation
         velocity = relativeRotation * currentVelocity;
 
         // Update verticalVelocity to match the new world-space Y component
         verticalVelocity = velocity.y;
+
+        // Determine if the source portal is 'non-vertical' (e.g. on the floor/ceiling).
+        // We treat portals whose forward/normal has a significant Y component as non-vertical.
+        float portalUpDot = Mathf.Abs(Vector3.Dot(fromPortal.forward.normalized, Vector3.up));
+        const float nonVerticalThreshold = 0.5f; // tweakable: >0.5 means noticeably tilted towards horizontal plane
+
+        if (portalUpDot > nonVerticalThreshold) {
+            // Preserve horizontal components as external momentum so Update doesn't overwrite them
+            externalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        } else {
+            // For vertical portals (walls), don't inject external momentum so movement stays fluid
+            externalVelocity = Vector3.zero;
+        }
 
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();

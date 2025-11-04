@@ -129,8 +129,6 @@ namespace Portal {
 					// Up is depth
 					_cylinderRadius = new Vector3(rightSize * 0.5f, forwardSize * 0.5f, upSize * 0.5f);
 				}
-				
-				Debug.Log($"{gameObject.name}: Detected cylinder mesh - radius: {_cylinderRadius}, depth: {_cylinderDepth}");
 			} else {
 				// Fallback: try bounds-based detection
 				DetectCylinderFromBounds(bounds);
@@ -184,13 +182,17 @@ namespace Portal {
 				Destroy(_rt);
 			}
 
-			_rt = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32) {
+			_rt = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32) {
 				wrapMode = TextureWrapMode.Clamp,
 				filterMode = FilterMode.Bilinear
 			};
 			_rt.Create();
 
-			if (portalCamera) portalCamera.targetTexture = _rt;
+			if (portalCamera) {
+				portalCamera.targetTexture = _rt;
+				// Set pixelRect to match render texture dimensions
+				portalCamera.pixelRect = new Rect(0, 0, textureWidth, textureHeight);
+			}
 			if (_mat) {
 				_mat.mainTexture = _rt;
 			}
@@ -239,26 +241,37 @@ namespace Portal {
 				int sidePrev = Math.Sign(Vector3.Dot(t.previousOffsetFromPortal, transform.forward));
 				int sideNow = Math.Sign(Vector3.Dot(offset, transform.forward));
 
-                if (sideNow > 0 && sidePrev < 0) {
+				if (sideNow > 0 && sidePrev < 0) {
                     // front -> back: valid
                     Vector3 newPos = toDest.GetColumn(3);
                     Quaternion newRot = toDest.rotation;
                     //newPos += pair.transform.forward * -0.1f; // nudge forward to avoid immediate re-teleport
 
-					// Disable collision with destination portal's wall BEFORE teleporting
-					// This prevents the player from colliding with the wall during teleport
-					if (pair.wallCollider) {
-						Collider playerCollider = t.GetComponent<Collider>();
-						if (playerCollider) {
-							Physics.IgnoreCollision(playerCollider, pair.wallCollider, true);
-							Debug.Log($"{pair.name}: Disabled collision between {t.name} and wall (before teleport)");
-						}
+					Collider playerCollider = t.GetComponent<Collider>();
+					
+					// Re-enable collision with SOURCE portal's wall BEFORE teleporting
+					// This is necessary because OnTriggerExit may not fire when teleporting instantly
+					if (wallCollider && playerCollider) {
+						Physics.IgnoreCollision(playerCollider, wallCollider, false);
+						Debug.Log($"{gameObject.name}: Re-enabled collision between {t.name} and " + wallCollider.name + " (teleport exit)");
 					}
 
-					Debug.Log($"TELEPORT! {t.name} crossed {name} -> {pair.name}");
-					t.Teleport(transform, pair.transform, newPos, newRot);
+					// Disable collision with destination portal's wall BEFORE teleporting
+					// This prevents the player from colliding with the wall during teleport
+					if (pair.wallCollider && playerCollider) {
+						Physics.IgnoreCollision(playerCollider, pair.wallCollider, true);
+						Debug.Log($"{pair.name}: Disabled collision between {t.name} and " + pair.wallCollider.name);
+					}
 
+					t.Teleport(transform, pair.transform, newPos, newRot);
+					
+					// Remove from source portal's tracked list
 					_trackedTravellers.RemoveAt(i--);
+					
+					// Manually notify destination portal that traveller just teleported in
+					// This ensures proper setup since OnTriggerEnter may not fire immediately
+					pair.OnTravellerEnterPortal(t, justTeleported: true);
+					
 					continue;
 				}
 
@@ -268,7 +281,7 @@ namespace Portal {
 		}
 
 
-		void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
+		public void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
 			if (!_trackedTravellers.Contains(traveller)) {
 				// Calculate offset from portal
 				Vector3 offsetFromPortal = traveller.transform.position - transform.position;
@@ -278,18 +291,13 @@ namespace Portal {
 				if (justTeleported) {
 					// Make sure the previous offset is on the negative side (behind the portal)
 					float currentDot = Vector3.Dot(offsetFromPortal, transform.forward);
-					Debug.Log(
-						$"{gameObject.name}: Teleport arrival - currentDot={currentDot:F3}, offsetFromPortal={offsetFromPortal}");
 					if (currentDot >= 0) {
 						// We're in front, so set previous to be behind
 						traveller.previousOffsetFromPortal = offsetFromPortal - transform.forward * (currentDot + 0.1f);
-						float newDot = Vector3.Dot(traveller.previousOffsetFromPortal, transform.forward);
-						Debug.Log($"{gameObject.name}: Forced to back side - newDot={newDot:F3}");
 					}
 					else {
 						// Already behind, use actual position
 						traveller.previousOffsetFromPortal = offsetFromPortal;
-						Debug.Log($"{gameObject.name}: Already on back side");
 					}
 				}
 				else {
@@ -304,11 +312,9 @@ namespace Portal {
 					Collider playerCollider = traveller.GetComponent<Collider>();
 					if (playerCollider) {
 						Physics.IgnoreCollision(playerCollider, wallCollider, true);
-						Debug.Log($"{gameObject.name}: Disabled collision between {traveller.name} and wall");
+						Debug.Log($"{gameObject.name}: Disabled collision between {traveller.name} and " + wallCollider.name);
 					}
 				}
-
-				Debug.Log($"{gameObject.name}: Traveller {traveller.name} entered portal");
 			}
 		}
 
@@ -486,6 +492,11 @@ namespace Portal {
 			Vector3 up = world.MultiplyVector(Vector3.up);
 			portalCamera.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, up));
 
+			// Ensure pixelRect matches render texture dimensions
+			if (portalCamera.targetTexture != null) {
+				portalCamera.pixelRect = new Rect(0, 0, portalCamera.targetTexture.width, portalCamera.targetTexture.height);
+			}
+
 			Vector3 planePoint = exitPos + exitFwd * 0.001f;
 			Matrix4x4 w2c = portalCamera.worldToCameraMatrix;
 			Vector3 nCam = Vector3.Normalize(-w2c.MultiplyVector(exitFwd));
@@ -522,11 +533,9 @@ namespace Portal {
 					Collider playerCollider = traveller.GetComponent<Collider>();
 					if (playerCollider) {
 						Physics.IgnoreCollision(playerCollider, wallCollider, false);
-						Debug.Log($"{gameObject.name}: Re-enabled collision between {traveller.name} and wall");
+						Debug.Log($"{gameObject.name}: Re-enabled collision between {traveller.name} and " + wallCollider.name);
 					}
 				}
-
-				Debug.Log($"{gameObject.name}: Traveller {traveller.name} exited portal");
 			}
 		}
 	}
