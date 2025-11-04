@@ -589,7 +589,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.01
+  near clip plane: 0.1
   far clip plane: 1000
   field of view: 60
   orthographic: 0
@@ -626,7 +626,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &118090731
 Transform:
   m_ObjectHideFlags: 0
@@ -2195,12 +2195,12 @@ GameObject:
   - component: {fileID: 476153943}
   - component: {fileID: 476153942}
   m_Layer: 7
-  m_Name: Screen
+  m_Name: ScreenBox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &476153941
 Transform:
   m_ObjectHideFlags: 0
@@ -2210,8 +2210,8 @@ Transform:
   m_GameObject: {fileID: 476153940}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.7, y: 1, z: 0.03}
+  m_LocalPosition: {x: 0, y: 0, z: 0.1}
+  m_LocalScale: {x: 0.7, y: 0.7, z: 0.2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8197170447663804482}
@@ -2969,7 +2969,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1858539478
 Transform:
   m_ObjectHideFlags: 0
@@ -4251,7 +4251,7 @@ MonoBehaviour:
   pair: {fileID: 2069985398880840990}
   mainCamera: {fileID: 37313535}
   portalCamera: {fileID: 8095862263857129310}
-  surfaceRenderer: {fileID: 118090733}
+  surfaceRenderer: {fileID: 476153942}
   textureWidth: 1024
   textureHeight: 1024
   recursionLimit: 2
@@ -4278,7 +4278,7 @@ MonoBehaviour:
   pair: {fileID: 1937157125335981014}
   mainCamera: {fileID: 37313535}
   portalCamera: {fileID: 8899481715251803678}
-  surfaceRenderer: {fileID: 1858539480}
+  surfaceRenderer: {fileID: 1747989180196598255}
   textureWidth: 1024
   textureHeight: 1024
   recursionLimit: 2
@@ -4472,8 +4472,8 @@ Transform:
   m_GameObject: {fileID: 5979101503272710188}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.7, y: 1, z: 0.03}
+  m_LocalPosition: {x: 0, y: 0, z: 0.1}
+  m_LocalScale: {x: 0.7, y: 0.7, z: 0.2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5365184602941282177}
@@ -4490,12 +4490,12 @@ GameObject:
   - component: {fileID: 6168494326109653225}
   - component: {fileID: 1747989180196598255}
   m_Layer: 9
-  m_Name: Screen
+  m_Name: ScreenBox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!33 &6168494326109653225
 MeshFilter:
   m_ObjectHideFlags: 0

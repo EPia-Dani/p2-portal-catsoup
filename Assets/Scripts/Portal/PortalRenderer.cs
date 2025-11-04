@@ -159,7 +159,7 @@ namespace Portal {
                     // front -> back: valid
                     Vector3 newPos = toDest.GetColumn(3);
                     Quaternion newRot = toDest.rotation;
-                    newPos += pair.transform.forward * 0.15f;
+                    newPos += pair.transform.forward * -0.05f; // nudge forward to avoid immediate re-teleport
 
 					Debug.Log($"TELEPORT! {t.name} crossed {name} -> {pair.name}");
 					t.Teleport(transform, pair.transform, newPos, newRot);
