@@ -33,6 +33,14 @@ namespace Portal {
 		[Tooltip("Wall collider to disable for player when entering portal")]
 		private Collider wallCollider;
 
+		[Header("Screen Thickness")]
+		[SerializeField]
+		[Tooltip("Also ensure screen thickness covers the wall depth to prevent a wall flash when crossing.")]
+		private bool useWallThicknessForScreen = true;
+		[SerializeField]
+		[Tooltip("Extra padding added over computed thickness (meters)")]
+		private float screenPadding = 0.01f;
+
 		private RenderTexture _rt;
 		private Material _mat;
 		private Matrix4x4[] _recursion = Array.Empty<Matrix4x4>();
@@ -392,11 +400,39 @@ namespace Portal {
 			Transform screenT = surfaceRenderer.transform;
 			bool camFacingSameDirAsPortal = Vector3.Dot(transform.forward, transform.position - viewPoint) > 0f;
 
-			// Scale depth (z) and offset so the screen volume straddles the portal plane
-			screenT.localScale = new Vector3(screenT.localScale.x, screenT.localScale.y, thickness);
-			screenT.localPosition = Vector3.forward * thickness * (camFacingSameDirAsPortal ? 0.5f : -0.5f);
+			// Optionally extend to cover wall thickness too
+			if (useWallThicknessForScreen && wallCollider)
+			{
+				float wallDepth = GetColliderDepthAlongForward(wallCollider);
+				if (wallDepth > 0f) thickness = Mathf.Max(thickness, wallDepth + screenPadding);
+			}
+
+			// Scale depth (z) and offset along LOCAL Z so the volume sits entirely on the camera side
+			float depth = Mathf.Abs(thickness);
+			screenT.localScale = new Vector3(screenT.localScale.x, screenT.localScale.y, depth);
+			float half = (camFacingSameDirAsPortal ? 0.5f : -0.5f) * depth;
+			screenT.localPosition = new Vector3(screenT.localPosition.x, screenT.localPosition.y, half);
 
 			return thickness;
+		}
+
+		// Estimates how thick a collider is along the portal's forward direction
+		float GetColliderDepthAlongForward(Collider col)
+		{
+			Bounds b = col.bounds; // world-space AABB
+			Vector3 c = b.center; Vector3 e = b.extents;
+			Vector3 fwd = transform.forward; // projection axis
+			float minDot = float.PositiveInfinity, maxDot = float.NegativeInfinity;
+			for (int xi = -1; xi <= 1; xi += 2)
+			for (int yi = -1; yi <= 1; yi += 2)
+			for (int zi = -1; zi <= 1; zi += 2)
+			{
+				Vector3 corner = c + new Vector3(e.x * xi, e.y * yi, e.z * zi);
+				float d = Vector3.Dot(corner, fwd);
+				if (d < minDot) minDot = d;
+				if (d > maxDot) maxDot = d;
+			}
+			return Mathf.Max(0f, maxDot - minDot);
 		}
 
 		void OnTriggerEnter(Collider other) {
