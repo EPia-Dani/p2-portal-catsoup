@@ -243,7 +243,17 @@ namespace Portal {
                     // front -> back: valid
                     Vector3 newPos = toDest.GetColumn(3);
                     Quaternion newRot = toDest.rotation;
-                    newPos += pair.transform.forward * -0.05f; // nudge forward to avoid immediate re-teleport
+                    //newPos += pair.transform.forward * -0.1f; // nudge forward to avoid immediate re-teleport
+
+					// Disable collision with destination portal's wall BEFORE teleporting
+					// This prevents the player from colliding with the wall during teleport
+					if (pair.wallCollider) {
+						Collider playerCollider = t.GetComponent<Collider>();
+						if (playerCollider) {
+							Physics.IgnoreCollision(playerCollider, pair.wallCollider, true);
+							Debug.Log($"{pair.name}: Disabled collision between {t.name} and wall (before teleport)");
+						}
+					}
 
 					Debug.Log($"TELEPORT! {t.name} crossed {name} -> {pair.name}");
 					t.Teleport(transform, pair.transform, newPos, newRot);
