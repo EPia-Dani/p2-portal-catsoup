@@ -1,8 +1,7 @@
-Shader "Tecnocampus/PortalBillboard"
+Shader "Tecnocampus/PortalBorder"
 {
     Properties
     {
-        _MainTex ("Portal View", 2D) = "white" {}
         _Cutout ("Cutout Threshold", Range(0.0, 1.0)) = 0.5
         _Brightness ("Brightness", Range(0.5, 2.0)) = 1.0
 
@@ -59,13 +58,9 @@ Shader "Tecnocampus/PortalBillboard"
             #define VORTEX_STRENGTH 2.0
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
-            struct Varyings   { float4 positionHCS : SV_POSITION; float2 uv : TEXCOORD0; float4 screenPos : TEXCOORD1; };
-
-            TEXTURE2D(_MainTex);
-            SAMPLER(sampler_MainTex);
+            struct Varyings   { float4 positionHCS : SV_POSITION; float2 uv : TEXCOORD0; };
 
             CBUFFER_START(UnityPerMaterial)
-                float4 _MainTex_ST;
                 float _Cutout;
                 float _Brightness;
                 float _UseCircularMask;   // driven by the [Toggle], not read but keeps SRP Batcher happy
@@ -100,14 +95,12 @@ Shader "Tecnocampus/PortalBillboard"
             {
                 Varyings OUT;
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
-                OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
-                OUT.screenPos = ComputeScreenPos(OUT.positionHCS);
+                OUT.uv = IN.uv;
                 return OUT;
             }
 
             half4 frag(Varyings IN) : SV_Target
             {
-                float2 screenUV = IN.screenPos.xy / IN.screenPos.w;
                 half finalAlpha = 1.0;
                 half outlineMask = 0.0;
 
@@ -145,19 +138,19 @@ Shader "Tecnocampus/PortalBillboard"
                     float insideHole = smoothstep(holeRadius + smoothRange, holeRadius - smoothRange, normalizedDist);
                     insideHole = (_PortalOpen > 0.01) ? insideHole : 0.0;
 
-                    half4 renderTexture = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, screenUV);
-
                     half3 noiseColor = _NoiseColor.rgb * _NoiseEmission * noiseValue;
-                    half  noiseAlpha = _NoiseTransparency * (noiseValue * 0.7 + 0.3);
-                    half4 noiseCol   = half4(noiseColor, noiseAlpha);
+                    half4 noiseCol   = half4(noiseColor, 1.0); // Full opacity for noise
 
-                    half4 baseCol = lerp(noiseCol, renderTexture, insideHole);
+                    // Make hole area transparent (show world behind), keep noise fully opaque outside
+                    half4 baseCol = noiseCol;
+                    baseCol.a = (1.0 - insideHole); // Fully opaque outside hole, transparent inside
 
                     half3 portalContent = baseCol.rgb * _Brightness * finalAlpha;
                     half3 outlineCol    = _OutlineColor.rgb * outlineMask * _OutlineEmission;
                     half3 finalColor    = lerp(portalContent, outlineCol, outlineMask);
 
-                    half finalAlphaWithNoise = finalAlpha * lerp(_NoiseTransparency, 1.0, insideHole);
+                    // Ensure outline and border area is fully opaque
+                    half finalAlphaWithNoise = max(finalAlpha * baseCol.a, outlineMask);
                     return half4(finalColor, finalAlphaWithNoise);
                 #else
                     clip(1.0 - _Cutout);

@@ -1,4 +1,5 @@
-// PortalAnimator.cs  (unchanged)
+
+// PortalAnimator.cs
 using System.Collections;
 using UnityEngine;
 
@@ -10,6 +11,9 @@ namespace Portal {
 		[SerializeField] private float portalTargetRadius = 0.4f;
 		[SerializeField] private AnimationCurve portalAppearCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 		[SerializeField] private float openThreshold = 0.8f;
+
+		[Header("Border Renderer")]
+		[SerializeField] private MeshRenderer borderRenderer;
 
 		private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 		private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
@@ -43,13 +47,11 @@ namespace Portal {
 		}
 
 		public void PlayAppear() {
-			if (!_portalMeshRenderer) return;
 			if (_appearCoroutine != null) StopCoroutine(_appearCoroutine);
 			_appearCoroutine = StartCoroutine(AppearRoutine());
 		}
 
 		public void StartOpening() {
-			if (!_portalMeshRenderer) return;
 			if (_openingCoroutine != null) StopCoroutine(_openingCoroutine);
 			_openingCoroutine = StartCoroutine(OpeningRoutine());
 		}
@@ -96,11 +98,13 @@ namespace Portal {
 		}
 
 		private void ApplyToMaterial() {
-			if (!_portalMeshRenderer) return;
+			// Use border renderer if assigned, otherwise fallback to portal renderer
+			MeshRenderer targetRenderer = borderRenderer != null ? borderRenderer : _portalMeshRenderer;
+			if (targetRenderer == null) return;
+
 			_propertyBlock.SetFloat(CircleRadiusId, _currentCircleRadius);
 			_propertyBlock.SetFloat(PortalOpenId, _portalOpenProgress);
-			_portalMeshRenderer.SetPropertyBlock(_propertyBlock);
+			targetRenderer.SetPropertyBlock(_propertyBlock);
 		}
 	}
 }
-

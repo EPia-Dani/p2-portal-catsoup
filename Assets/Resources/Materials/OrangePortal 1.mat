@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: OrangePortal 1
-  m_Shader: {fileID: 4800000, guid: b5409b1ffe1e5a64c8489af02ae75a0f, type: 3}
+  m_Shader: {fileID: 4800000, guid: a22ae414b8087d24f9cfe69265afbc91, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords:
