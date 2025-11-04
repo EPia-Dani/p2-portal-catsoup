@@ -29,7 +29,7 @@ namespace Portal {
 		[SerializeField] private float frustumCullMargin = 3.0f;
 
 		[Header("Physics Passthrough")]
-		[SerializeField]
+		[SerializeField] [Range(0.0f, 0.2f)] private float portalCrossOffset;
 		[Tooltip("Wall collider to disable for player when entering portal")]
 		private Collider wallCollider;
 
@@ -159,7 +159,7 @@ namespace Portal {
                     // front -> back: valid
                     Vector3 newPos = toDest.GetColumn(3);
                     Quaternion newRot = toDest.rotation;
-                    newPos += pair.transform.forward * -0.05f; // nudge forward to avoid immediate re-teleport
+                    newPos += pair.transform.forward * -portalCrossOffset; // nudge forward to avoid immediate re-teleport
 
 					Debug.Log($"TELEPORT! {t.name} crossed {name} -> {pair.name}");
 					t.Teleport(transform, pair.transform, newPos, newRot);

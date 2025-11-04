@@ -105,6 +105,9 @@ public class FPSController : PortalTraveller {
     }
 
     public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot) {
+        // Capture velocity BEFORE position change
+        Vector3 currentVelocity = velocity;
+        
         // Teleport the player position
         transform.position = pos;
         
@@ -114,11 +117,46 @@ public class FPSController : PortalTraveller {
         yaw += delta;
         transform.eulerAngles = Vector3.up * yaw;
         
-        // Transform the velocity through the portal pair, including mirror across the portal plane
-        // so lateral direction (left/right) is preserved correctly after teleport.
-        Vector3 localVel = fromPortal.InverseTransformVector(velocity);
-        localVel = Vector3.Scale(localVel, new Vector3(-1f, 1f, -1f));
-        velocity = toPortal.TransformVector(localVel);
+        // ===== UNIVERSAL VELOCITY TRANSFORMATION =====
+        // Convert velocity to source portal's local space
+        // In portal local space: Z = through portal, X = right (lateral), Y = up
+        Vector3 localVel = fromPortal.InverseTransformVector(currentVelocity);
+        
+        // Decompose velocity into portal-relative components
+        float throughPortal = localVel.z;      // Velocity going through portal
+        float lateral = localVel.x;            // Lateral velocity (left/right)
+        float verticalInPortalSpace = localVel.y;  // Vertical in portal's local space
+        
+        // Mirror the "through portal" component (reverse it)
+        throughPortal = -throughPortal;
+        
+        // Detect portal orientations (vertical = walls, horizontal = floors/ceilings)
+        Vector3 fromNormal = fromPortal.forward;
+        Vector3 toNormal = toPortal.forward;
+        bool fromIsVertical = Mathf.Abs(Vector3.Dot(fromNormal, Vector3.up)) < 0.707f; // < 45° from vertical
+        bool toIsVertical = Mathf.Abs(Vector3.Dot(toNormal, Vector3.up)) < 0.707f;
+        
+        // Transform velocity components based on portal orientation
+        Vector3 newLocalVel;
+        
+        if (!fromIsVertical && toIsVertical) {
+            // Floor/Ceiling → Wall: vertical becomes forward, forward becomes vertical
+            newLocalVel = new Vector3(lateral, -throughPortal, verticalInPortalSpace);
+        }
+        else if (fromIsVertical && !toIsVertical) {
+            // Wall → Floor/Ceiling: forward becomes vertical, vertical becomes forward
+            newLocalVel = new Vector3(lateral, throughPortal, verticalInPortalSpace);
+        }
+        else {
+            // Same orientation (Wall→Wall or Floor→Floor): standard mirror
+            newLocalVel = new Vector3(lateral, verticalInPortalSpace, throughPortal);
+        }
+        
+        // Transform back to world space using destination portal
+        velocity = toPortal.TransformVector(newLocalVel);
+        
+        // Update verticalVelocity to match the new velocity's Y component
+        verticalVelocity = velocity.y;
         
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();

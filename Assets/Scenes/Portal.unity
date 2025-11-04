@@ -4255,7 +4255,7 @@ MonoBehaviour:
   textureWidth: 1024
   textureHeight: 1024
   recursionLimit: 2
-  frameSkipInterval: 1
+  frameSkipInterval: 2
   gateByMainCamera: 1
   gateByScreenCoverage: 1
   minScreenCoverageFraction: 0.01
@@ -4282,7 +4282,7 @@ MonoBehaviour:
   textureWidth: 1024
   textureHeight: 1024
   recursionLimit: 2
-  frameSkipInterval: 1
+  frameSkipInterval: 2
   gateByMainCamera: 1
   gateByScreenCoverage: 1
   minScreenCoverageFraction: 0.01
