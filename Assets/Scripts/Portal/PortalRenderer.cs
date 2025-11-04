@@ -1,4 +1,5 @@
 ﻿// PortalRenderer.cs  (URP recursion + oblique clip, gates optional and OFF by default)
+// Updated to support both cube and cylinder meshes
 
 using System;
 using UnityEngine;
@@ -28,8 +29,7 @@ namespace Portal {
 		[SerializeField] private bool gateByThroughCamera = true; // keep this, cheap cull
 		[SerializeField] private float frustumCullMargin = 3.0f;
 
-		[Header("Physics Passthrough")]
-		[SerializeField] [Range(0.0f, 0.2f)] private float portalCrossOffset;
+		
 		[Tooltip("Wall collider to disable for player when entering portal")]
 		private Collider wallCollider;
 
@@ -41,6 +41,11 @@ namespace Portal {
 		private bool _visible = true;
 		private bool _ready;
 		public System.Collections.Generic.List<PortalTraveller> _trackedTravellers = new();
+
+		// Cylinder detection and caching
+		private bool _isCylinder = false;
+		private Vector3 _cylinderRadius = Vector3.one; // radius in local space (x, y, z)
+		private float _cylinderDepth = 0.1f; // thickness along forward axis
 
 		public bool IsReadyToRender { get => _ready; set => _ready = value; }
 
@@ -59,6 +64,7 @@ namespace Portal {
 				_mat = surfaceRenderer.material;
 			}
 
+			DetectCylinderGeometry();
 			SetupCamera();
 			AllocRT();
 
@@ -66,6 +72,84 @@ namespace Portal {
 			if (_recursion.Length != recursionLimit) _recursion = new Matrix4x4[recursionLimit];
 
 			_visible = surfaceRenderer && surfaceRenderer.enabled;
+		}
+
+		void DetectCylinderGeometry() {
+			if (!surfaceRenderer) return;
+
+			var meshFilter = surfaceRenderer.GetComponent<MeshFilter>();
+			if (!meshFilter || !meshFilter.sharedMesh) {
+				// Try to detect from bounds
+				var localBounds = surfaceRenderer.localBounds;
+				DetectCylinderFromBounds(localBounds);
+				return;
+			}
+
+			var mesh = meshFilter.sharedMesh;
+			var bounds = mesh.bounds;
+			
+			// Check if mesh is roughly cylindrical
+			// Cylinder characteristic: two dimensions are similar (radius), one is different (height or depth)
+			Vector3 size = bounds.size;
+			float minDim = Mathf.Min(size.x, size.y, size.z);
+			float maxDim = Mathf.Max(size.x, size.y, size.z);
+			float midDim = size.x + size.y + size.z - minDim - maxDim;
+
+			// If two dimensions are similar and one is different, likely a cylinder
+			float ratio1 = midDim / minDim;
+			float ratio2 = maxDim / midDim;
+			
+			// Typical cylinder: radius ~= radius, height/depth is different
+			if (ratio1 < 1.3f && ratio2 > 1.5f) {
+				_isCylinder = true;
+				
+				// Determine which axis is the cylinder's "forward" (depth)
+				// Portal forward should be along transform.forward (usually Z)
+				Vector3 forward = transform.forward;
+				Vector3 right = transform.right;
+				Vector3 up = transform.up;
+				
+				// Project bounds size onto portal axes
+				float forwardSize = Mathf.Abs(Vector3.Dot(size, forward));
+				float rightSize = Mathf.Abs(Vector3.Dot(size, right));
+				float upSize = Mathf.Abs(Vector3.Dot(size, up));
+				
+				// The smallest dimension is likely the depth (thickness)
+				_cylinderDepth = Mathf.Min(forwardSize, rightSize, upSize);
+				
+				// The other two dimensions define the elliptical cross-section
+				// Use the two larger dimensions
+				if (forwardSize <= rightSize && forwardSize <= upSize) {
+					// Forward is depth
+					_cylinderRadius = new Vector3(rightSize * 0.5f, upSize * 0.5f, forwardSize * 0.5f);
+				} else if (rightSize <= forwardSize && rightSize <= upSize) {
+					// Right is depth
+					_cylinderRadius = new Vector3(forwardSize * 0.5f, upSize * 0.5f, rightSize * 0.5f);
+				} else {
+					// Up is depth
+					_cylinderRadius = new Vector3(rightSize * 0.5f, forwardSize * 0.5f, upSize * 0.5f);
+				}
+				
+				Debug.Log($"{gameObject.name}: Detected cylinder mesh - radius: {_cylinderRadius}, depth: {_cylinderDepth}");
+			} else {
+				// Fallback: try bounds-based detection
+				DetectCylinderFromBounds(bounds);
+			}
+		}
+
+		void DetectCylinderFromBounds(Bounds bounds) {
+			Vector3 size = bounds.size;
+			float minDim = Mathf.Min(size.x, size.y, size.z);
+			float maxDim = Mathf.Max(size.x, size.y, size.z);
+			
+			// If one dimension is much smaller, might be a cylinder viewed edge-on
+			if (maxDim / minDim > 3.0f) {
+				_isCylinder = true;
+				_cylinderDepth = minDim;
+				// Approximate radius from the larger dimensions
+				float avgRadius = (size.x + size.y + size.z - minDim) * 0.25f;
+				_cylinderRadius = new Vector3(avgRadius, avgRadius, minDim * 0.5f);
+			}
 		}
 
 		void OnDestroy() {
@@ -159,7 +243,7 @@ namespace Portal {
                     // front -> back: valid
                     Vector3 newPos = toDest.GetColumn(3);
                     Quaternion newRot = toDest.rotation;
-                    newPos += pair.transform.forward * -portalCrossOffset; // nudge forward to avoid immediate re-teleport
+                    newPos += pair.transform.forward * -0.05f; // nudge forward to avoid immediate re-teleport
 
 					Debug.Log($"TELEPORT! {t.name} crossed {name} -> {pair.name}");
 					t.Teleport(transform, pair.transform, newPos, newRot);
@@ -253,6 +337,12 @@ namespace Portal {
 
 		float GetScreenSpaceCoverage() {
 			if (!mainCamera || !surfaceRenderer) return 0f;
+			
+			if (_isCylinder) {
+				return GetScreenSpaceCoverageCylinder();
+			}
+			
+			// Original cube-based calculation
 			var b = surfaceRenderer.bounds;
 			Vector3 c = b.center, e = b.extents;
 			Vector3[] pts = {
@@ -273,6 +363,41 @@ namespace Portal {
 				if (sp.y > max.y) max.y = sp.y;
 			}
 
+			if (on == 0) return 0f;
+			float area = (max.x - min.x) * (max.y - min.y);
+			return area / (mainCamera.pixelWidth * mainCamera.pixelHeight);
+		}
+
+		float GetScreenSpaceCoverageCylinder() {
+			// Sample points around the cylinder's elliptical perimeter
+			// Use the portal's local right/up axes for the ellipse
+			Vector3 center = surfaceRenderer.bounds.center;
+			Vector3 right = transform.right;
+			Vector3 up = transform.up;
+			
+			// Get radius in local space (assuming ellipse in right-up plane)
+			float radiusX = _cylinderRadius.x; // right axis
+			float radiusY = _cylinderRadius.y; // up axis
+			
+			// Sample points around the ellipse perimeter
+			int sampleCount = 16; // Good balance between accuracy and performance
+			Vector3 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
+			int on = 0;
+			
+			for (int i = 0; i < sampleCount; i++) {
+				float angle = (i / (float)sampleCount) * Mathf.PI * 2f;
+				// Ellipse parameterization
+				Vector3 point = center + right * (Mathf.Cos(angle) * radiusX) + up * (Mathf.Sin(angle) * radiusY);
+				
+				var sp = mainCamera.WorldToScreenPoint(point);
+				if (sp.z <= 0) continue;
+				on++;
+				if (sp.x < min.x) min.x = sp.x;
+				if (sp.y < min.y) min.y = sp.y;
+				if (sp.x > max.x) max.x = sp.x;
+				if (sp.y > max.y) max.y = sp.y;
+			}
+			
 			if (on == 0) return 0f;
 			float area = (max.x - min.x) * (max.y - min.y);
 			return area / (mainCamera.pixelWidth * mainCamera.pixelHeight);
@@ -307,14 +432,23 @@ namespace Portal {
 			Vector3 pos = world.MultiplyPoint(Vector3.zero);
 			Vector3 fwd = world.MultiplyVector(Vector3.forward);
 			Vector3 up = world.MultiplyVector(Vector3.up);
-
+			
 			Vector3 oPos = portalCamera.transform.position;
 			Quaternion oRot = portalCamera.transform.rotation;
 			portalCamera.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, up));
 
 			GeometryUtility.CalculateFrustumPlanes(portalCamera, _frustum);
+			
+			// For cylinders, use a tighter bounds approximation
 			Bounds expanded = pair.surfaceRenderer.bounds;
-			expanded.Expand(frustumCullMargin);
+			if (pair._isCylinder) {
+				// Shrink bounds slightly for cylinders to avoid over-conservative culling
+				// The AABB is already larger than needed, so we don't expand as much
+				expanded.Expand(frustumCullMargin * 0.5f);
+			} else {
+				expanded.Expand(frustumCullMargin);
+			}
+			
 			bool ok = GeometryUtility.TestPlanesAABB(_frustum, expanded);
 
 			portalCamera.transform.SetPositionAndRotation(oPos, oRot);
