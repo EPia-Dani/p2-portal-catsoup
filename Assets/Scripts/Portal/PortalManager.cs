@@ -76,7 +76,8 @@ namespace Portal {
 		if (portal == null) return;
 
 		portal.SetVisible(true);
-		portal.transform.SetPositionAndRotation(position + normal * wallOffset, Quaternion.LookRotation(-normal, up));
+		// Place portal at exact same Z position as wall - z-fighting handled by shader depth bias
+		portal.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
 		
 		// Set the wall collider so player can pass through
 		portal.SetWallCollider(surface);
