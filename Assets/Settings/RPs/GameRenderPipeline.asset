@@ -19,6 +19,7 @@ MonoBehaviour:
   m_RendererDataList:
   - {fileID: 11400000, guid: f288ae1f4751b564a96ac7587541f7a2, type: 2}
   - {fileID: 11400000, guid: bef90501090548a4ca904259b8b83b4c, type: 2}
+  - {fileID: 11400000, guid: 54076b94bad205446b0bc91ea0b54cd7, type: 2}
   m_DefaultRendererIndex: 0
   m_RequireDepthTexture: 0
   m_RequireOpaqueTexture: 0
@@ -43,9 +44,9 @@ MonoBehaviour:
   m_SupportProbeVolumeScenarioBlending: 0
   m_ProbeVolumeSHBands: 0
   m_MainLightRenderingMode: 1
-  m_MainLightShadowsSupported: 0
+  m_MainLightShadowsSupported: 1
   m_MainLightShadowmapResolution: 2048
-  m_AdditionalLightsRenderingMode: 0
+  m_AdditionalLightsRenderingMode: 1
   m_AdditionalLightsPerObjectLimit: 1
   m_AdditionalLightShadowsSupported: 0
   m_AdditionalLightsShadowmapResolution: 256
@@ -100,8 +101,8 @@ MonoBehaviour:
     obsoleteHasProbeVolumes:
       m_Keys: []
       m_Values: 
-  m_PrefilteringModeMainLightShadows: 0
-  m_PrefilteringModeAdditionalLight: 0
+  m_PrefilteringModeMainLightShadows: 3
+  m_PrefilteringModeAdditionalLight: 3
   m_PrefilteringModeAdditionalLightShadows: 0
   m_PrefilterXRKeywords: 1
   m_PrefilteringModeForwardPlus: 0
