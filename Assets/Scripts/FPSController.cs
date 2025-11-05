@@ -7,6 +7,8 @@ public class FPSController : PortalTraveller {
     public float walkSpeed = 3;
     public float jumpForce = 8;
     public float gravity = 18;
+    [Range(0f, 1f)]
+    public float airControl = 0.3f; // 0 = no control, 1 = full control (grounded). Lower = harder to maneuver in air
 
     public bool lockCursor;
     public float mouseSensitivity = 10;
@@ -78,6 +80,39 @@ public class FPSController : PortalTraveller {
         // Compute player's input-based horizontal velocity
         Vector3 inputVel = new Vector3(worldInputDir.x * currentSpeed, 0, worldInputDir.z * currentSpeed);
 
+        // Check if player is actively providing movement input
+        bool isActivelyMoving = moveInput.sqrMagnitude > 0.01f;
+        
+        // Smart damping: only damp external velocity when player isn't moving, or damp it more gently
+        if (isActivelyMoving && externalVelocity.sqrMagnitude > 0.01f) {
+            // When player is moving, only damp the component of external velocity that opposes player input
+            float inputVelMagnitude = inputVel.magnitude;
+            if (inputVelMagnitude > 0.01f) {
+                Vector3 inputDirNormalized = inputVel / inputVelMagnitude;
+                float alignment = Vector3.Dot(externalVelocity.normalized, inputDirNormalized);
+                
+                // If external velocity aligns with input (both going same direction), damp less
+                // If external velocity opposes input, damp more aggressively
+                float dampingFactor = alignment > 0.3f ? portalMomentumDamping * 0.3f : portalMomentumDamping * 1.5f;
+                
+                // Project external velocity onto input direction and perpendicular to it
+                Vector3 parallelComponent = Vector3.Project(externalVelocity, inputDirNormalized);
+                Vector3 perpendicularComponent = externalVelocity - parallelComponent;
+                
+                // Damp perpendicular component more aggressively, parallel component less so
+                perpendicularComponent = Vector3.Lerp(perpendicularComponent, Vector3.zero, portalMomentumDamping * Time.deltaTime);
+                parallelComponent = Vector3.Lerp(parallelComponent, Vector3.zero, dampingFactor * Time.deltaTime);
+                
+                externalVelocity = parallelComponent + perpendicularComponent;
+            } else {
+                // Fallback: if input velocity is somehow zero, apply normal damping
+                externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
+            }
+        } else {
+            // When player isn't moving, apply normal damping
+            externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
+        }
+
         // Combine input velocity with any external (portal) momentum
         Vector3 horizontal = inputVel + externalVelocity;
 
@@ -111,9 +146,6 @@ public class FPSController : PortalTraveller {
 
         transform.eulerAngles = Vector3.up * yaw;
         cam.transform.localEulerAngles = Vector3.right * pitch;
-
-        // Decay external velocity over time so momentum fades
-        externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
     }
 
     public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot) {

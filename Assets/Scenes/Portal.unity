@@ -696,7 +696,7 @@ MonoBehaviour:
   pitchMinMax: {x: -89, y: 89}
   yaw: 0
   pitch: 0
-  portalMomentumDamping: 1
+  portalMomentumDamping: 4
 --- !u!114 &165274160
 MonoBehaviour:
   m_ObjectHideFlags: 0
