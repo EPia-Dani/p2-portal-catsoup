@@ -5,6 +5,7 @@ using UnityEngine;
 public class FPSController : PortalTraveller {
 
     public float walkSpeed = 3;
+    public float sprintMultiplier = 1.5f; // Speed multiplier when sprinting
     public float jumpForce = 8;
     public float gravity = 18;
     [Range(0f, 1f)]
@@ -72,13 +73,20 @@ public class FPSController : PortalTraveller {
         Vector2 moveInput = _controls.Player.Move.ReadValue<Vector2>();
         Vector2 lookInput = _controls.Player.Look.ReadValue<Vector2>();
         bool jumpPressed = _controls.Player.Jump.WasPerformedThisFrame();
+        bool isSprinting = _controls.Player.Sprint.IsPressed();
 
         Vector3 inputDir = new Vector3 (moveInput.x, 0, moveInput.y).normalized;
         Vector3 worldInputDir = transform.TransformDirection (inputDir);
 
-        float currentSpeed = walkSpeed;
-        // Compute player's input-based horizontal velocity
-        Vector3 inputVel = new Vector3(worldInputDir.x * currentSpeed, 0, worldInputDir.z * currentSpeed);
+        // Check if player is grounded (with small buffer for edge cases)
+        bool isGrounded = controller.isGrounded || (Time.time - lastGroundedTime < 0.1f);
+        float controlMultiplier = isGrounded ? 1f : airControl;
+        
+        // Apply sprint multiplier when sprinting
+        float speedMultiplier = isSprinting ? sprintMultiplier : 1f;
+        float currentSpeed = walkSpeed * speedMultiplier;
+        // Compute player's input-based horizontal velocity (reduced in air)
+        Vector3 inputVel = new Vector3(worldInputDir.x * currentSpeed * controlMultiplier, 0, worldInputDir.z * currentSpeed * controlMultiplier);
 
         // Check if player is actively providing movement input
         bool isActivelyMoving = moveInput.sqrMagnitude > 0.01f;
@@ -173,7 +181,6 @@ public class FPSController : PortalTraveller {
             yaw = Mathf.Atan2(horizontalForward.x, horizontalForward.z) * Mathf.Rad2Deg;
         }
         // If horizontal component is too small, keep current yaw (rare edge case)
-        
         transform.eulerAngles = Vector3.up * yaw;
 
         // Rotate the captured world-space velocity into the destination orientation
