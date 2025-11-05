@@ -58,7 +58,6 @@ public class FPSController : PortalTraveller {
             rb = gameObject.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             rb.useGravity = false;
-            Debug.Log("Added kinematic Rigidbody for portal trigger detection");
         }
     }
 

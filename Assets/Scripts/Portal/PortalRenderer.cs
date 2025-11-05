@@ -26,8 +26,7 @@ namespace Portal {
 
 		[SerializeField] private bool gateByScreenCoverage = false; // was true; default off
 		[SerializeField] private float minScreenCoverageFraction = 0.01f;
-		[SerializeField] private bool gateByThroughCamera = true; // keep this, cheap cull
-		[SerializeField] private float frustumCullMargin = 3.0f;
+
 
 		
 		[Tooltip("Wall collider to disable for player when entering portal")]
@@ -42,10 +41,12 @@ namespace Portal {
 		private bool _ready;
 		public System.Collections.Generic.List<PortalTraveller> _trackedTravellers = new();
 
+		// Dynamic RT sizing hysteresis to avoid frequent reallocations
+		const float RtResizeHysteresis = 0.2f; // 20%
+
 		// Cylinder detection and caching
 		private bool _isCylinder = false;
 		private Vector3 _cylinderRadius = Vector3.one; // radius in local space (x, y, z)
-		private float _cylinderDepth = 0.1f; // thickness along forward axis
 
 		public bool IsReadyToRender { get => _ready; set => _ready = value; }
 
@@ -114,9 +115,6 @@ namespace Portal {
 				float rightSize = Mathf.Abs(Vector3.Dot(size, right));
 				float upSize = Mathf.Abs(Vector3.Dot(size, up));
 				
-				// The smallest dimension is likely the depth (thickness)
-				_cylinderDepth = Mathf.Min(forwardSize, rightSize, upSize);
-				
 				// The other two dimensions define the elliptical cross-section
 				// Use the two larger dimensions
 				if (forwardSize <= rightSize && forwardSize <= upSize) {
@@ -142,8 +140,7 @@ namespace Portal {
 			
 			// If one dimension is much smaller, might be a cylinder viewed edge-on
 			if (maxDim / minDim > 3.0f) {
-				_isCylinder = true;
-				_cylinderDepth = minDim;
+			_isCylinder = true;
 				// Approximate radius from the larger dimensions
 				float avgRadius = (size.x + size.y + size.z - minDim) * 0.25f;
 				_cylinderRadius = new Vector3(avgRadius, avgRadius, minDim * 0.5f);
@@ -253,14 +250,12 @@ namespace Portal {
 					// This is necessary because OnTriggerExit may not fire when teleporting instantly
 					if (wallCollider && playerCollider) {
 						Physics.IgnoreCollision(playerCollider, wallCollider, false);
-						Debug.Log($"{gameObject.name}: Re-enabled collision between {t.name} and " + wallCollider.name + " (teleport exit)");
 					}
 
 					// Disable collision with destination portal's wall BEFORE teleporting
 					// This prevents the player from colliding with the wall during teleport
 					if (pair.wallCollider && playerCollider) {
 						Physics.IgnoreCollision(playerCollider, pair.wallCollider, true);
-						Debug.Log($"{pair.name}: Disabled collision between {t.name} and " + pair.wallCollider.name);
 					}
 
 					t.Teleport(transform, pair.transform, newPos, newRot);
@@ -312,7 +307,6 @@ namespace Portal {
 					Collider playerCollider = traveller.GetComponent<Collider>();
 					if (playerCollider) {
 						Physics.IgnoreCollision(playerCollider, wallCollider, true);
-						Debug.Log($"{gameObject.name}: Disabled collision between {traveller.name} and " + wallCollider.name);
 					}
 				}
 			}
@@ -340,7 +334,49 @@ namespace Portal {
 			if (gateByMainCamera && !MainCameraCanSeeThis()) return;
 			if (gateByScreenCoverage && GetScreenSpaceCoverage() < minScreenCoverageFraction) return;
 
+			// Adjust RT size dynamically before rendering
+			int maxLevel = GetMaxRecursionLevelForPair();
+			EnsureDynamicRtSize(maxLevel);
+
 			Render(ctx);
+		}
+
+		// Compute desired RT size from coverage and recursion and reallocate if needed
+		void EnsureDynamicRtSize(int maxLevel) {
+			if (mainCamera == null) return;
+
+			float coverage = Mathf.Clamp01(GetScreenSpaceCoverage());
+			// Base scale from area coverage (sqrt), biased up for sharpness
+			float scaleFromCoverage = Mathf.Sqrt(coverage) * 1.2f;
+			// Recursion bias: +10% per level (cap 5 levels of bias)
+			float recursionBias = 1f + 0.1f * Mathf.Clamp(maxLevel, 0, 5);
+			float targetScale = Mathf.Clamp(scaleFromCoverage * recursionBias, 0.25f, 2.5f);
+
+			int targetW = ClosestTier(mainCamera.pixelWidth * targetScale);
+			int targetH = ClosestTier(mainCamera.pixelHeight * targetScale);
+
+			// Clamp to reasonable bounds
+			targetW = Mathf.Clamp(targetW, 768, 2048);
+			targetH = Mathf.Clamp(targetH, 432, 2048);
+
+			bool bigDelta = (Mathf.Abs(targetW - textureWidth) > textureWidth * RtResizeHysteresis) ||
+			               (Mathf.Abs(targetH - textureHeight) > textureHeight * RtResizeHysteresis);
+			if (bigDelta) {
+				textureWidth = targetW;
+				textureHeight = targetH;
+				AllocRT();
+			}
+		}
+
+		static int ClosestTier(float v) {
+			int[] tiers = { 256, 384, 512, 640, 768, 896, 1024, 1280, 1536, 1792, 2048 };
+			int best = tiers[0];
+			float bestD = Mathf.Abs(v - best);
+			for (int i = 1; i < tiers.Length; i++) {
+				float d = Mathf.Abs(v - tiers[i]);
+				if (d < bestD) { bestD = d; best = tiers[i]; }
+			}
+			return best;
 		}
 
 		bool MainCameraCanSeeThis() {
@@ -436,40 +472,10 @@ namespace Portal {
 			int start = Mathf.Min(maxLevel, _recursion.Length - 1);
 
 			for (int i = start; i >= 0; i--) {
-				if (gateByThroughCamera && !IsPortalVisibleThroughCamera(i)) continue;
 				RenderLevel(_recursion[i], exitPos, exitFwd);
 			}
 		}
 
-		bool IsPortalVisibleThroughCamera(int level) {
-			if (!portalCamera || !pair || !pair.surfaceRenderer) return false;
-
-			Matrix4x4 world = _recursion[level];
-			Vector3 pos = world.MultiplyPoint(Vector3.zero);
-			Vector3 fwd = world.MultiplyVector(Vector3.forward);
-			Vector3 up = world.MultiplyVector(Vector3.up);
-			
-			Vector3 oPos = portalCamera.transform.position;
-			Quaternion oRot = portalCamera.transform.rotation;
-			portalCamera.transform.SetPositionAndRotation(pos, Quaternion.LookRotation(fwd, up));
-
-			GeometryUtility.CalculateFrustumPlanes(portalCamera, _frustum);
-			
-			// For cylinders, use a tighter bounds approximation
-			Bounds expanded = pair.surfaceRenderer.bounds;
-			if (pair._isCylinder) {
-				// Shrink bounds slightly for cylinders to avoid over-conservative culling
-				// The AABB is already larger than needed, so we don't expand as much
-				expanded.Expand(frustumCullMargin * 0.5f);
-			} else {
-				expanded.Expand(frustumCullMargin);
-			}
-			
-			bool ok = GeometryUtility.TestPlanesAABB(_frustum, expanded);
-
-			portalCamera.transform.SetPositionAndRotation(oPos, oRot);
-			return ok;
-		}
 
 		int GetMaxRecursionLevelForPair() {
 			if (!pair) return recursionLimit - 1;
@@ -533,7 +539,6 @@ namespace Portal {
 					Collider playerCollider = traveller.GetComponent<Collider>();
 					if (playerCollider) {
 						Physics.IgnoreCollision(playerCollider, wallCollider, false);
-						Debug.Log($"{gameObject.name}: Re-enabled collision between {traveller.name} and " + wallCollider.name);
 					}
 				}
 			}

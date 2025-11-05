@@ -46,7 +46,6 @@ namespace Portal {
 		if (bluePortal && orangePortal) {
 			bluePortal.pair = orangePortal;
 			orangePortal.pair = bluePortal;
-			Debug.Log("Portals linked as pairs");
 		}
 	}
 

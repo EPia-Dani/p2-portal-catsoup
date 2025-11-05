@@ -3,7 +3,6 @@ Shader "Tecnocampus/Portal"
     Properties
     {
         _MainTex ("Portal View", 2D) = "white" {}
-        _FullScreen ("Full Screen Mode", Range(0, 1)) = 0
     }
 
     SubShader
