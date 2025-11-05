@@ -696,7 +696,7 @@ MonoBehaviour:
   pitchMinMax: {x: -89, y: 89}
   yaw: 0
   pitch: 0
-  portalMomentumDamping: 5
+  portalMomentumDamping: 1
 --- !u!114 &165274160
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3102,8 +3102,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bluePortal: {fileID: 1937157125335981014}
   orangePortal: {fileID: 2069985398880840990}
-  textureWidth: 1024
-  textureHeight: 1024
+  textureWidth: 2048
+  textureHeight: 2048
   recursionLimit: 7
   frameSkipInterval: 1
   portalSurfaces:
