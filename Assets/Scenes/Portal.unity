@@ -5564,7 +5564,7 @@ MonoBehaviour:
   textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 2
-  gateByMainCamera: 1
+  gateByMainCamera: 0
   gateByScreenCoverage: 1
   minScreenCoverageFraction: 0.001
   _trackedTravellers: []
@@ -5588,7 +5588,7 @@ MonoBehaviour:
   textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 2
-  gateByMainCamera: 1
+  gateByMainCamera: 0
   gateByScreenCoverage: 1
   minScreenCoverageFraction: 0.001
   _trackedTravellers: []
