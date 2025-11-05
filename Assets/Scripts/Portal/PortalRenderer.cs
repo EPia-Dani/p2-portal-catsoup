@@ -361,18 +361,34 @@ namespace Portal {
 			if (mainCamera == null) return;
 
 			float coverage = Mathf.Clamp01(GetScreenSpaceCoverage());
-			// Base scale from area coverage (sqrt), biased up for sharpness
-			float scaleFromCoverage = Mathf.Sqrt(coverage) * 1.2f;
+			
+			// Use a gentler scaling curve that maintains quality at distance
+			// Instead of sqrt, use a power curve that's less aggressive (coverage^0.6)
+			// This maintains better quality when coverage is small
+			float coveragePower = Mathf.Pow(coverage, 0.6f);
+			
+			// Apply a minimum quality floor (50% of full resolution) to prevent excessive blur
+			// and scale up from there based on coverage
+			float minQualityFloor = 0.5f; // Never go below 50% resolution
+			float maxQualityScale = 1.5f;  // Can go up to 150% for close portals
+			
+			// Interpolate between min floor and max scale based on coverage
+			// Higher coverage -> higher resolution, but never below the floor
+			float scaleFromCoverage = Mathf.Lerp(minQualityFloor, maxQualityScale, coveragePower);
+			
 			// Recursion bias: +10% per level (cap 5 levels of bias)
 			float recursionBias = 1f + 0.1f * Mathf.Clamp(maxLevel, 0, 5);
-			float targetScale = Mathf.Clamp(scaleFromCoverage * recursionBias, 0.25f, 2.5f);
+			float targetScale = Mathf.Clamp(scaleFromCoverage * recursionBias, minQualityFloor, 2.5f);
 
 			int targetW = ClosestTier(mainCamera.pixelWidth * targetScale);
 			int targetH = ClosestTier(mainCamera.pixelHeight * targetScale);
 
-			// Clamp to reasonable bounds
-			targetW = Mathf.Clamp(targetW, 768, 2048);
-			targetH = Mathf.Clamp(targetH, 432, 2048);
+			// Clamp to reasonable bounds - ensure minimum quality is maintained
+			// Minimum is now based on maintaining 50% of screen resolution
+			int minWidth = Mathf.Max(512, Mathf.RoundToInt(mainCamera.pixelWidth * minQualityFloor));
+			int minHeight = Mathf.Max(288, Mathf.RoundToInt(mainCamera.pixelHeight * minQualityFloor));
+			targetW = Mathf.Clamp(targetW, minWidth, 2048);
+			targetH = Mathf.Clamp(targetH, minHeight, 2048);
 
 			bool bigDelta = (Mathf.Abs(targetW - textureWidth) > textureWidth * RtResizeHysteresis) ||
 			               (Mathf.Abs(targetH - textureHeight) > textureHeight * RtResizeHysteresis);
