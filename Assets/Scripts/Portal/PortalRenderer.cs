@@ -43,6 +43,19 @@ namespace Portal {
 
 		// Dynamic RT sizing hysteresis to avoid frequent reallocations
 		const float RtResizeHysteresis = 0.2f; // 20%
+		// Additional debounce to ensure stability (in frames)
+		const int RtResizeStableFrames = 6;
+		private int _rtTargetW;
+		private int _rtTargetH;
+		private int _rtStableCounter;
+
+		// Cached arrays/vectors to avoid per-frame allocations in coverage
+		private readonly Vector3[] _cubeCoveragePts = new Vector3[8];
+		private Vector3 _ssMin;
+		private Vector3 _ssMax;
+
+		// Cache last computed max recursion to avoid recomputation in Render()
+		private int _lastMaxRecursionLevel;
 
 		// Cylinder detection and caching
 		private bool _isCylinder = false;
@@ -161,7 +174,9 @@ namespace Portal {
 			portalCamera.enabled = false;
 			portalCamera.forceIntoRenderTexture = true;
 			portalCamera.allowHDR = false;
-			portalCamera.clearFlags = CameraClearFlags.Skybox;
+			portalCamera.clearFlags = CameraClearFlags.SolidColor;
+			portalCamera.backgroundColor = Color.black;
+			portalCamera.useOcclusionCulling = false;
 
 			var extra = portalCamera.GetUniversalAdditionalCameraData();
 			if (extra != null) {
@@ -335,10 +350,10 @@ namespace Portal {
 			if (gateByScreenCoverage && GetScreenSpaceCoverage() < minScreenCoverageFraction) return;
 
 			// Adjust RT size dynamically before rendering
-			int maxLevel = GetMaxRecursionLevelForPair();
-			EnsureDynamicRtSize(maxLevel);
+			_lastMaxRecursionLevel = GetMaxRecursionLevelForPair();
+			EnsureDynamicRtSize(_lastMaxRecursionLevel);
 
-			Render(ctx);
+			Render(ctx, _lastMaxRecursionLevel);
 		}
 
 		// Compute desired RT size from coverage and recursion and reallocate if needed
@@ -361,9 +376,28 @@ namespace Portal {
 
 			bool bigDelta = (Mathf.Abs(targetW - textureWidth) > textureWidth * RtResizeHysteresis) ||
 			               (Mathf.Abs(targetH - textureHeight) > textureHeight * RtResizeHysteresis);
-			if (bigDelta) {
-				textureWidth = targetW;
-				textureHeight = targetH;
+
+			// Debounce: only resize after target has remained stable for N frames
+			if (!bigDelta) {
+				// Reset target tracking if we're already close
+				_rtTargetW = textureWidth;
+				_rtTargetH = textureHeight;
+				_rtStableCounter = 0;
+				return;
+			}
+
+			if (_rtTargetW != targetW || _rtTargetH != targetH) {
+				_rtTargetW = targetW;
+				_rtTargetH = targetH;
+				_rtStableCounter = 0;
+			} else {
+				_rtStableCounter++;
+			}
+
+			if (_rtStableCounter >= RtResizeStableFrames) {
+				textureWidth = _rtTargetW;
+				textureHeight = _rtTargetH;
+				_rtStableCounter = 0;
 				AllocRT();
 			}
 		}
@@ -394,29 +428,33 @@ namespace Portal {
 				return GetScreenSpaceCoverageCylinder();
 			}
 			
-			// Original cube-based calculation
+			// Cube-based calculation without allocations
 			var b = surfaceRenderer.bounds;
 			Vector3 c = b.center, e = b.extents;
-			Vector3[] pts = {
-				c + new Vector3(-e.x, -e.y, -e.z), c + new Vector3(-e.x, -e.y, e.z),
-				c + new Vector3(-e.x, e.y, -e.z), c + new Vector3(-e.x, e.y, e.z),
-				c + new Vector3(e.x, -e.y, -e.z), c + new Vector3(e.x, -e.y, e.z),
-				c + new Vector3(e.x, e.y, -e.z), c + new Vector3(e.x, e.y, e.z),
-			};
-			Vector3 min = new(float.MaxValue, float.MaxValue), max = new(float.MinValue, float.MinValue);
+			_cubeCoveragePts[0] = c + new Vector3(-e.x, -e.y, -e.z);
+			_cubeCoveragePts[1] = c + new Vector3(-e.x, -e.y,  e.z);
+			_cubeCoveragePts[2] = c + new Vector3(-e.x,  e.y, -e.z);
+			_cubeCoveragePts[3] = c + new Vector3(-e.x,  e.y,  e.z);
+			_cubeCoveragePts[4] = c + new Vector3( e.x, -e.y, -e.z);
+			_cubeCoveragePts[5] = c + new Vector3( e.x, -e.y,  e.z);
+			_cubeCoveragePts[6] = c + new Vector3( e.x,  e.y, -e.z);
+			_cubeCoveragePts[7] = c + new Vector3( e.x,  e.y,  e.z);
+
+			_ssMin.x = float.MaxValue; _ssMin.y = float.MaxValue;
+			_ssMax.x = float.MinValue; _ssMax.y = float.MinValue;
 			int on = 0;
 			for (int i = 0; i < 8; i++) {
-				var sp = mainCamera.WorldToScreenPoint(pts[i]);
+				var sp = mainCamera.WorldToScreenPoint(_cubeCoveragePts[i]);
 				if (sp.z <= 0) continue;
 				on++;
-				if (sp.x < min.x) min.x = sp.x;
-				if (sp.y < min.y) min.y = sp.y;
-				if (sp.x > max.x) max.x = sp.x;
-				if (sp.y > max.y) max.y = sp.y;
+				if (sp.x < _ssMin.x) _ssMin.x = sp.x;
+				if (sp.y < _ssMin.y) _ssMin.y = sp.y;
+				if (sp.x > _ssMax.x) _ssMax.x = sp.x;
+				if (sp.y > _ssMax.y) _ssMax.y = sp.y;
 			}
 
 			if (on == 0) return 0f;
-			float area = (max.x - min.x) * (max.y - min.y);
+			float area = (_ssMax.x - _ssMin.x) * (_ssMax.y - _ssMin.y);
 			return area / (mainCamera.pixelWidth * mainCamera.pixelHeight);
 		}
 
@@ -455,7 +493,7 @@ namespace Portal {
 			return area / (mainCamera.pixelWidth * mainCamera.pixelHeight);
 		}
 
-		void Render(ScriptableRenderContext ctx) {
+		void Render(ScriptableRenderContext ctx, int maxRecursionLevel) {
 			ClearTexture();
 
 			Matrix4x4 step = pair.transform.localToWorldMatrix * _mirror * transform.worldToLocalMatrix;
@@ -468,8 +506,7 @@ namespace Portal {
 			Vector3 exitPos = pair.transform.position;
 			Vector3 exitFwd = pair.transform.forward;
 
-			int maxLevel = GetMaxRecursionLevelForPair();
-			int start = Mathf.Min(maxLevel, _recursion.Length - 1);
+			int start = Mathf.Min(maxRecursionLevel, _recursion.Length - 1);
 
 			for (int i = start; i >= 0; i--) {
 				RenderLevel(_recursion[i], exitPos, exitFwd);
