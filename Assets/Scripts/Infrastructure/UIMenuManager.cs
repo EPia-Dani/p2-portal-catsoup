@@ -31,6 +31,8 @@ namespace SlimUI.ModernMenu{
         [Header("PANELS")]
         [Tooltip("The UI Panel parenting all sub menus")]
         public GameObject mainCanvas;
+        [Tooltip("The UI Panel parenting all sub configuration menus")]
+		public GameObject settingsMenu;
         [Tooltip("The UI Panel that holds the CONTROLS window tab")]
         public GameObject PanelControls;
         [Tooltip("The UI Panel that holds the VIDEO window tab")]
@@ -151,10 +153,12 @@ namespace SlimUI.ModernMenu{
 
 		public void Position2(){
 			DisablePlayCampaign();
+			
 			CameraObject.SetFloat("Animate",1);
 		}
 
 		public void Position1(){
+			
 			CameraObject.SetFloat("Animate",0);
 		}
 
