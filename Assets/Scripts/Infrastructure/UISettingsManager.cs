@@ -49,6 +49,12 @@ namespace SlimUI.ModernMenu{
 		public GameObject sensitivityXSlider;
 		public GameObject sensitivityYSlider;
 		public GameObject mouseSmoothSlider;
+		// NEW: Portal sliders
+		public GameObject recursionSlider;
+		public GameObject frameSkipSlider;
+		// NEW: Value labels to the right of sliders
+		public GameObject recursionValueText;
+		public GameObject frameSkipValueText;
 
 		private float sliderValue = 0.0f;
 		private float sliderValueXSensitivity = 0.0f;
@@ -60,23 +66,24 @@ namespace SlimUI.ModernMenu{
             // Initialize Show FPS indicator (repurposed from ShowHUD)
             int showFps = PlayerPrefs.GetInt("ShowFPS", 0);
             showhudtext.GetComponent<TMP_Text>().text = showFps == 1 ? "on" : "off";
+            
+            // Initialize FPSDisplay component based on saved preference
+            var fps = FindObjectOfType<FPSDisplay>();
+            if (fps == null && showFps == 1) {
+                var go = new GameObject("FPSDisplay");
+                fps = go.AddComponent<FPSDisplay>();
+                DontDestroyOnLoad(go);
+            }
+            if (fps != null) {
+                fps.enabled = showFps == 1;
+            }
 
             // Initialize Portal settings UI using difficulty UI lines as indicators
             int recursion = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion", 2));
             int frameSkip = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip", 1));
 
-            // Repurpose difficulty line highlights to show that recursion controls are active
-            difficultynormaltextLINE.gameObject.SetActive(true);
-            difficultyhardcoretextLINE.gameObject.SetActive(true);
-
-            // Update the visible text elements to show current values
-            if (difficultynormaltext != null) {
-                difficultynormaltext.GetComponent<TMP_Text>().text = $"Recursion: {recursion}";
-            }
-            if (difficultyhardcoretext != null) {
-                difficultyhardcoretext.GetComponent<TMP_Text>().text = "+1";
-            }
-            if (tooltipstext != null) {
+			// Update the visible text elements to show current values
+			if (tooltipstext != null) {
                 tooltipstext.GetComponent<TMP_Text>().text = $"FrameSkip: {frameSkip}";
             }
 
@@ -85,6 +92,22 @@ namespace SlimUI.ModernMenu{
 			sensitivityXSlider.GetComponent<Slider>().value = PlayerPrefs.GetFloat("XSensitivity");
 			sensitivityYSlider.GetComponent<Slider>().value = PlayerPrefs.GetFloat("YSensitivity");
 			mouseSmoothSlider.GetComponent<Slider>().value = PlayerPrefs.GetFloat("MouseSmoothing");
+
+			// initialize portal sliders if present
+			if (recursionSlider != null) {
+				recursionSlider.GetComponent<Slider>().value = recursion;
+			}
+			if (frameSkipSlider != null) {
+				frameSkipSlider.GetComponent<Slider>().value = frameSkip;
+			}
+
+			// initialize value labels
+			if (recursionValueText != null) {
+				recursionValueText.GetComponent<TMP_Text>().text = recursion.ToString();
+			}
+			if (frameSkipValueText != null) {
+				frameSkipValueText.GetComponent<TMP_Text>().text = frameSkip.ToString();
+			}
 
 			// check full screen
 			if(Screen.fullScreen == true){
@@ -146,13 +169,13 @@ namespace SlimUI.ModernMenu{
 			}
 
 
-			// check vsync
-			if(QualitySettings.vSyncCount == 0){
-				vsynctext.GetComponent<TMP_Text>().text = "off";
-			}
-			else if(QualitySettings.vSyncCount == 1){
-				vsynctext.GetComponent<TMP_Text>().text = "on";
-			}
+		// check vsync
+		if(QualitySettings.vSyncCount == 0){
+			vsynctext.GetComponent<TMP_Text>().text = "off";
+		}
+		else if(QualitySettings.vSyncCount == 1){
+			vsynctext.GetComponent<TMP_Text>().text = "on";
+		}
 
 			// check mouse inverse
 			if(PlayerPrefs.GetInt("Inverted")==0){
@@ -235,6 +258,26 @@ namespace SlimUI.ModernMenu{
 			Debug.Log(PlayerPrefs.GetFloat("MouseSmoothing"));
 		}
 
+		// NEW: Recursion slider handler (expects whole numbers via slider settings)
+		public void RecursionSliderChanged (float value){
+			int v = Mathf.Clamp(Mathf.RoundToInt(value), 1, 30);
+			PlayerPrefs.SetInt("PortalRecursion", v);
+			if (difficultynormaltext != null) difficultynormaltext.GetComponent<TMP_Text>().text = $"Recursion: {v}";
+			if (recursionValueText != null) recursionValueText.GetComponent<TMP_Text>().text = v.ToString();
+			var mgr = FindObjectOfType<Portal.PortalManager>();
+			if (mgr != null) mgr.SetRecursionLimit(v);
+		}
+
+		// NEW: Frame-skip slider handler (1..4 typical; PortalManager supports 1+)
+		public void FrameSkipSliderChanged (float value){
+			int v = Mathf.Clamp(Mathf.RoundToInt(value), 1, 4);
+			PlayerPrefs.SetInt("PortalFrameSkip", v);
+			if (tooltipstext != null) tooltipstext.GetComponent<TMP_Text>().text = $"FrameSkip: {v}";
+			if (frameSkipValueText != null) frameSkipValueText.GetComponent<TMP_Text>().text = v.ToString();
+			var mgr = FindObjectOfType<Portal.PortalManager>();
+			if (mgr != null) mgr.SetFrameSkipInterval(v);
+		}
+
         // Repurposed: Toggle FPS display instead of HUD
         public void ShowHUD (){
             int current = PlayerPrefs.GetInt("ShowFPS", 0);
@@ -248,8 +291,10 @@ namespace SlimUI.ModernMenu{
                 var go = new GameObject("FPSDisplay");
                 fps = go.AddComponent<FPSDisplay>();
                 DontDestroyOnLoad(go);
-            }
-            if (fps != null) {
+                // Ensure it's enabled immediately after creation
+                fps.enabled = true;
+            } else if (fps != null) {
+                // Always set enabled state, even if component already exists
                 fps.enabled = next == 1;
             }
         }
@@ -283,31 +328,49 @@ namespace SlimUI.ModernMenu{
             int current = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip", 1));
             int next = current + 1;
             if (next > 4) next = 1;
-            PlayerPrefs.SetInt("PortalFrameSkip", next);
-            if (tooltipstext != null) tooltipstext.GetComponent<TMP_Text>().text = $"FrameSkip: {next}";
-
-            var mgr = FindObjectOfType<Portal.PortalManager>();
-            if (mgr != null) mgr.SetFrameSkipInterval(next);
+            // If slider exists, drive through slider/handler for consistency
+            if (frameSkipSlider != null) {
+                var s = frameSkipSlider.GetComponent<Slider>();
+                s.value = next;
+                FrameSkipSliderChanged(s.value);
+            } else {
+                PlayerPrefs.SetInt("PortalFrameSkip", next);
+                if (tooltipstext != null) tooltipstext.GetComponent<TMP_Text>().text = $"FrameSkip: {next}";
+                var mgr = FindObjectOfType<Portal.PortalManager>();
+                if (mgr != null) mgr.SetFrameSkipInterval(next);
+            }
         }
 
         // Repurposed: Decrease recursion
         public void NormalDifficulty (){
             int current = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion", 2));
             int next = Mathf.Max(1, current - 1);
-            PlayerPrefs.SetInt("PortalRecursion", next);
-            if (difficultynormaltext != null) difficultynormaltext.GetComponent<TMP_Text>().text = $"Recursion: {next}";
-            var mgr = FindObjectOfType<Portal.PortalManager>();
-            if (mgr != null) mgr.SetRecursionLimit(next);
+            // If slider exists, drive through slider/handler for consistency
+			if (recursionSlider != null) {
+                var s = recursionSlider.GetComponent<Slider>();
+                s.value = next;
+                RecursionSliderChanged(s.value);
+            } else {
+                PlayerPrefs.SetInt("PortalRecursion", next);
+                var mgr = FindObjectOfType<Portal.PortalManager>();
+                if (mgr != null) mgr.SetRecursionLimit(next);
+            }
         }
 
         // Repurposed: Increase recursion
         public void HardcoreDifficulty (){
             int current = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion", 2));
             int next = Mathf.Min(8, current + 1);
-            PlayerPrefs.SetInt("PortalRecursion", next);
-            if (difficultynormaltext != null) difficultynormaltext.GetComponent<TMP_Text>().text = $"Recursion: {next}";
-            var mgr = FindObjectOfType<Portal.PortalManager>();
-            if (mgr != null) mgr.SetRecursionLimit(next);
+            // If slider exists, drive through slider/handler for consistency
+			if (recursionSlider != null) {
+                var s = recursionSlider.GetComponent<Slider>();
+                s.value = next;
+                RecursionSliderChanged(s.value);
+            } else {
+                PlayerPrefs.SetInt("PortalRecursion", next);
+                var mgr = FindObjectOfType<Portal.PortalManager>();
+                if (mgr != null) mgr.SetRecursionLimit(next);
+            }
         }
 
 		public void ShadowsOff (){
@@ -364,16 +427,17 @@ namespace SlimUI.ModernMenu{
 			mobileShadowhightextLINE.gameObject.SetActive(true);
 		}
 
-		public void vsync (){
-			if(QualitySettings.vSyncCount == 0){
-				QualitySettings.vSyncCount = 1;
-				vsynctext.GetComponent<TMP_Text>().text = "on";
-			}
-			else if(QualitySettings.vSyncCount == 1){
-				QualitySettings.vSyncCount = 0;
-				vsynctext.GetComponent<TMP_Text>().text = "off";
-			}
+	public void vsync (){
+		if(QualitySettings.vSyncCount == 0){
+			QualitySettings.vSyncCount = 1;
+			Application.targetFrameRate = -1; // Let VSync control framerate
+			vsynctext.GetComponent<TMP_Text>().text = "on";
 		}
+		else if(QualitySettings.vSyncCount == 1){
+			QualitySettings.vSyncCount = 0;
+			vsynctext.GetComponent<TMP_Text>().text = "off";
+		}
+	}
 
 		public void InvertMouse (){
 			if(PlayerPrefs.GetInt("Inverted")==0){
