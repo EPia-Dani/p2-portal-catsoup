@@ -56,17 +56,29 @@ namespace SlimUI.ModernMenu{
 		private float sliderValueSmoothing = 0.0f;
 		
 
-		public void  Start (){
-			// check difficulty
-			if(PlayerPrefs.GetInt("NormalDifficulty") == 1){
-				difficultynormaltextLINE.gameObject.SetActive(true);
-				difficultyhardcoretextLINE.gameObject.SetActive(false);
-			}
-			else
-			{
-				difficultyhardcoretextLINE.gameObject.SetActive(true);
-				difficultynormaltextLINE.gameObject.SetActive(false);
-			}
+        public void  Start (){
+            // Initialize Show FPS indicator (repurposed from ShowHUD)
+            int showFps = PlayerPrefs.GetInt("ShowFPS", 0);
+            showhudtext.GetComponent<TMP_Text>().text = showFps == 1 ? "on" : "off";
+
+            // Initialize Portal settings UI using difficulty UI lines as indicators
+            int recursion = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion", 2));
+            int frameSkip = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip", 1));
+
+            // Repurpose difficulty line highlights to show that recursion controls are active
+            difficultynormaltextLINE.gameObject.SetActive(true);
+            difficultyhardcoretextLINE.gameObject.SetActive(true);
+
+            // Update the visible text elements to show current values
+            if (difficultynormaltext != null) {
+                difficultynormaltext.GetComponent<TMP_Text>().text = $"Recursion: {recursion}";
+            }
+            if (difficultyhardcoretext != null) {
+                difficultyhardcoretext.GetComponent<TMP_Text>().text = "+1";
+            }
+            if (tooltipstext != null) {
+                tooltipstext.GetComponent<TMP_Text>().text = $"FrameSkip: {frameSkip}";
+            }
 
 			// check slider values
 			musicSlider.GetComponent<Slider>().value = PlayerPrefs.GetFloat("MusicVolume");
@@ -82,21 +94,9 @@ namespace SlimUI.ModernMenu{
 				fullscreentext.GetComponent<TMP_Text>().text = "off";
 			}
 
-			// check hud value
-			if(PlayerPrefs.GetInt("ShowHUD")==0){
-				showhudtext.GetComponent<TMP_Text>().text = "off";
-			}
-			else{
-				showhudtext.GetComponent<TMP_Text>().text = "on";
-			}
+            // (Show FPS text already initialized above)
 
-			// check tool tip value
-			if(PlayerPrefs.GetInt("ToolTips")==0){
-				tooltipstext.GetComponent<TMP_Text>().text = "off";
-			}
-			else{
-				tooltipstext.GetComponent<TMP_Text>().text = "on";
-			}
+            // (ToolTips text repurposed above to show frame skip value)
 
 			// check shadow distance/enabled
 			if(platform == Platform.Desktop){
@@ -235,17 +235,24 @@ namespace SlimUI.ModernMenu{
 			Debug.Log(PlayerPrefs.GetFloat("MouseSmoothing"));
 		}
 
-		// the playerprefs variable that is checked to enable hud while in game
-		public void ShowHUD (){
-			if(PlayerPrefs.GetInt("ShowHUD")==0){
-				PlayerPrefs.SetInt("ShowHUD",1);
-				showhudtext.GetComponent<TMP_Text>().text = "on";
-			}
-			else if(PlayerPrefs.GetInt("ShowHUD")==1){
-				PlayerPrefs.SetInt("ShowHUD",0);
-				showhudtext.GetComponent<TMP_Text>().text = "off";
-			}
-		}
+        // Repurposed: Toggle FPS display instead of HUD
+        public void ShowHUD (){
+            int current = PlayerPrefs.GetInt("ShowFPS", 0);
+            int next = current == 0 ? 1 : 0;
+            PlayerPrefs.SetInt("ShowFPS", next);
+            showhudtext.GetComponent<TMP_Text>().text = next == 1 ? "on" : "off";
+
+            // Ensure an FPSDisplay instance reflects the preference
+            var fps = FindObjectOfType<FPSDisplay>();
+            if (fps == null && next == 1) {
+                var go = new GameObject("FPSDisplay");
+                fps = go.AddComponent<FPSDisplay>();
+                DontDestroyOnLoad(go);
+            }
+            if (fps != null) {
+                fps.enabled = next == 1;
+            }
+        }
 
 		// the playerprefs variable that is checked to enable mobile sfx while in game
 		public void MobileSFXMute (){
@@ -271,30 +278,37 @@ namespace SlimUI.ModernMenu{
 		}
 
 		// show tool tips like: 'How to Play' control pop ups
-		public void ToolTips (){
-			if(PlayerPrefs.GetInt("ToolTips")==0){
-				PlayerPrefs.SetInt("ToolTips",1);
-				tooltipstext.GetComponent<TMP_Text>().text = "on";
-			}
-			else if(PlayerPrefs.GetInt("ToolTips")==1){
-				PlayerPrefs.SetInt("ToolTips",0);
-				tooltipstext.GetComponent<TMP_Text>().text = "off";
-			}
-		}
+        // Repurposed: Cycle portal frame skip interval (1..4) instead of tool tips
+        public void ToolTips (){
+            int current = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip", 1));
+            int next = current + 1;
+            if (next > 4) next = 1;
+            PlayerPrefs.SetInt("PortalFrameSkip", next);
+            if (tooltipstext != null) tooltipstext.GetComponent<TMP_Text>().text = $"FrameSkip: {next}";
 
-		public void NormalDifficulty (){
-			difficultyhardcoretextLINE.gameObject.SetActive(false);
-			difficultynormaltextLINE.gameObject.SetActive(true);
-			PlayerPrefs.SetInt("NormalDifficulty",1);
-			PlayerPrefs.SetInt("HardCoreDifficulty",0);
-		}
+            var mgr = FindObjectOfType<Portal.PortalManager>();
+            if (mgr != null) mgr.SetFrameSkipInterval(next);
+        }
 
-		public void HardcoreDifficulty (){
-			difficultyhardcoretextLINE.gameObject.SetActive(true);
-			difficultynormaltextLINE.gameObject.SetActive(false);
-			PlayerPrefs.SetInt("NormalDifficulty",0);
-			PlayerPrefs.SetInt("HardCoreDifficulty",1);
-		}
+        // Repurposed: Decrease recursion
+        public void NormalDifficulty (){
+            int current = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion", 2));
+            int next = Mathf.Max(1, current - 1);
+            PlayerPrefs.SetInt("PortalRecursion", next);
+            if (difficultynormaltext != null) difficultynormaltext.GetComponent<TMP_Text>().text = $"Recursion: {next}";
+            var mgr = FindObjectOfType<Portal.PortalManager>();
+            if (mgr != null) mgr.SetRecursionLimit(next);
+        }
+
+        // Repurposed: Increase recursion
+        public void HardcoreDifficulty (){
+            int current = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion", 2));
+            int next = Mathf.Min(8, current + 1);
+            PlayerPrefs.SetInt("PortalRecursion", next);
+            if (difficultynormaltext != null) difficultynormaltext.GetComponent<TMP_Text>().text = $"Recursion: {next}";
+            var mgr = FindObjectOfType<Portal.PortalManager>();
+            if (mgr != null) mgr.SetRecursionLimit(next);
+        }
 
 		public void ShadowsOff (){
 			PlayerPrefs.SetInt("Shadows",0);

@@ -49,16 +49,23 @@ namespace Portal {
 		}
 	}
 
-	private void Start() {
-		ApplySettings();
-	}
+    private void Start() {
+        // Load persisted settings if available before applying
+        if (PlayerPrefs.HasKey("PortalRecursion")) {
+            recursionLimit = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion"));
+        }
+        if (PlayerPrefs.HasKey("PortalFrameSkip")) {
+            frameSkipInterval = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip"));
+        }
+        ApplySettings();
+    }
 
-		private void OnValidate() {
+        private void OnValidate() {
 			recursionLimit = Mathf.Max(1, recursionLimit);
 			frameSkipInterval = Mathf.Max(1, frameSkipInterval);
 		}
 
-		private void ApplySettings() {
+        private void ApplySettings() {
 			PortalRenderer[] portals = { bluePortal, orangePortal };
 			foreach (var portal in portals) {
 				if (portal != null) {
@@ -66,6 +73,18 @@ namespace Portal {
 				}
 			}
 		}
+
+        public void SetRecursionLimit(int value) {
+            recursionLimit = Mathf.Max(1, value);
+            PlayerPrefs.SetInt("PortalRecursion", recursionLimit);
+            ApplySettings();
+        }
+
+        public void SetFrameSkipInterval(int value) {
+            frameSkipInterval = Mathf.Max(1, value);
+            PlayerPrefs.SetInt("PortalFrameSkip", frameSkipInterval);
+            ApplySettings();
+        }
 
 	public void PlacePortal(int index, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float wallOffset) {
 		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
