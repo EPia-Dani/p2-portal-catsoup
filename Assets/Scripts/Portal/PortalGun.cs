@@ -177,6 +177,44 @@ namespace Portal {
 			}
 			
 			Vector3 finalPosition = surfaceCenter + placement.right * localPos.x + placement.up * localPos.y;
+			
+			int otherIndex = 1 - index;
+			if (otherIndex >= 0 && otherIndex < portalManager.portalSurfaces.Length) {
+				var otherSurface = portalManager.portalSurfaces[otherIndex];
+				var otherNormal = portalManager.portalNormals[otherIndex];
+				if (otherSurface != null && otherSurface == placement.surface && Vector3.Dot(placement.normal, otherNormal) >= 0.99f) {
+					float otherScale = portalManager.portalScaleMultipliers.Length > otherIndex ? portalManager.portalScaleMultipliers[otherIndex] : 1f;
+					if (otherScale <= 0f) otherScale = 1f;
+					Vector2 otherPortalHalfSize = new Vector2(initialPortalHalfSize.x * otherScale, initialPortalHalfSize.y * otherScale);
+
+					// Ensure the new portal placement would still fit if it used the other portal's scale
+					if (!PortalFitsOnSurface(placement.surface, finalPosition, placement.normal, placement.right, placement.up, otherPortalHalfSize)) {
+						return;
+					}
+
+					// Ensure the existing portal would fit if it used the new portal's scale
+					Vector3 otherPosition = portalManager.portalCenters[otherIndex];
+					Vector3 otherRight = portalManager.portalRights != null && portalManager.portalRights.Length > otherIndex ? portalManager.portalRights[otherIndex] : Vector3.zero;
+					Vector3 otherUp = portalManager.portalUps != null && portalManager.portalUps.Length > otherIndex ? portalManager.portalUps[otherIndex] : Vector3.zero;
+
+					if (otherRight.sqrMagnitude < 1e-4f || otherUp.sqrMagnitude < 1e-4f) {
+						otherUp = Vector3.ProjectOnPlane(Vector3.up, otherNormal);
+						if (otherUp.sqrMagnitude < 1e-4f) {
+							otherUp = GetUpVector(otherNormal);
+						}
+						otherUp.Normalize();
+						otherRight = Vector3.Cross(otherNormal, otherUp).normalized;
+					} else {
+						otherRight = otherRight.normalized;
+						otherUp = otherUp.normalized;
+					}
+
+					if (!PortalFitsOnSurface(otherSurface, otherPosition, otherNormal, otherRight, otherUp, portalHalfSize)) {
+						return;
+					}
+				}
+			}
+
 			portalManager.PlacePortal(index, finalPosition, placement.normal, placement.right, placement.up, placement.surface, wallOffset, currentPortalScale);
 		}
 
@@ -213,10 +251,25 @@ namespace Portal {
 		}
 
 		Vector2 GetClampRange(Bounds b, Vector3 r, Vector3 u) {
+			return GetClampRange(b, r, u, portalHalfSize);
+		}
+
+		Vector2 GetClampRange(Bounds b, Vector3 r, Vector3 u, Vector2 halfSize) {
 			Vector3 e = b.extents;
-			float cr = e.x * Mathf.Abs(r.x) + e.y * Mathf.Abs(r.y) + e.z * Mathf.Abs(r.z) - portalHalfSize.x - clampSkin;
-			float cu = e.x * Mathf.Abs(u.x) + e.y * Mathf.Abs(u.y) + e.z * Mathf.Abs(u.z) - portalHalfSize.y - clampSkin;
+			float cr = e.x * Mathf.Abs(r.x) + e.y * Mathf.Abs(r.y) + e.z * Mathf.Abs(r.z) - halfSize.x - clampSkin;
+			float cu = e.x * Mathf.Abs(u.x) + e.y * Mathf.Abs(u.y) + e.z * Mathf.Abs(u.z) - halfSize.y - clampSkin;
 			return new Vector2(cr, cu);
+		}
+
+		bool PortalFitsOnSurface(Collider surface, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Vector2 halfSize) {
+			if (surface == null) return false;
+
+			Vector3 surfaceCenter = surface.bounds.center + normal * Vector3.Dot(position - surface.bounds.center, normal);
+			Vector3 offset = position - surfaceCenter;
+			Vector2 localPos = new Vector2(Vector3.Dot(offset, right), Vector3.Dot(offset, up));
+			Vector2 clampRange = GetClampRange(surface.bounds, right, up, halfSize);
+			if (clampRange.x <= 0f || clampRange.y <= 0f) return false;
+			return Mathf.Abs(localPos.x) <= clampRange.x && Mathf.Abs(localPos.y) <= clampRange.y;
 		}
 
 		bool ShouldPreventOverlap(int index, Collider surface, Vector3 normal, Vector3 center, Vector3 right, Vector3 up, ref Vector2 localPos, Vector2 clampRange) {

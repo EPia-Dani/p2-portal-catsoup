@@ -18,6 +18,8 @@ namespace Portal {
 	public Collider[] portalSurfaces = new Collider[2];
 	public Vector3[] portalNormals = new Vector3[2];
 	public Vector3[] portalCenters = new Vector3[2];
+	public Vector3[] portalRights = new Vector3[2];
+	public Vector3[] portalUps = new Vector3[2];
 	public float[] portalScaleMultipliers = new float[2] { 1f, 1f };
 
 	private PortalAnimator _blueAnimator;
@@ -124,6 +126,8 @@ namespace Portal {
 		portalSurfaces[index] = surface;
 		portalNormals[index] = normal;
 		portalCenters[index] = position;
+		portalRights[index] = portal.transform.right;
+		portalUps[index] = portal.transform.up;
 
 	
 
@@ -134,6 +138,38 @@ namespace Portal {
 		    _blueAnimator != null && _orangeAnimator != null) {
 			_blueAnimator.StartOpening();
 			_orangeAnimator.StartOpening();
+		}
+	}
+
+	/// <summary>
+	/// Removes a portal by hiding it and clearing its data.
+	/// </summary>
+	public void RemovePortal(int index) {
+		if (index < 0 || index > 1) return;
+		
+		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
+		if (portal != null) {
+			portal.SetVisible(false);
+		}
+		
+		// Clear portal data
+		if (portalSurfaces != null && index < portalSurfaces.Length) {
+			portalSurfaces[index] = null;
+		}
+		if (portalNormals != null && index < portalNormals.Length) {
+			portalNormals[index] = Vector3.zero;
+		}
+		if (portalCenters != null && index < portalCenters.Length) {
+			portalCenters[index] = Vector3.zero;
+		}
+		if (portalRights != null && index < portalRights.Length) {
+			portalRights[index] = Vector3.zero;
+		}
+		if (portalUps != null && index < portalUps.Length) {
+			portalUps[index] = Vector3.zero;
+		}
+		if (portalScaleMultipliers != null && index < portalScaleMultipliers.Length) {
+			portalScaleMultipliers[index] = 1f;
 		}
 	}
 

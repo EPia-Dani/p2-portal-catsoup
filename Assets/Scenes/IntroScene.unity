@@ -1718,7 +1718,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0.1}
-  m_LocalScale: {x: 0.55, y: 0.1, z: 0.8}
+  m_LocalScale: {x: 0.45, y: 0.1, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 118090731}
@@ -5457,7 +5457,7 @@ MonoBehaviour:
   shootDistance: 1000.9
   shootCamera: {fileID: 37313535}
   portalManager: {fileID: 2079793665}
-  portalHalfSize: {x: 0.6, y: 0.9}
+  portalHalfSize: {x: 0.5, y: 0.8}
   wallOffset: 0
   clampSkin: 0.01
   minPortalSize: 0.5
@@ -5978,7 +5978,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0.1}
-  m_LocalScale: {x: 0.55, y: 0.1, z: 0.8}
+  m_LocalScale: {x: 0.45, y: 0.1, z: 0.7}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1858539478}
