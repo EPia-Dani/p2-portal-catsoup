@@ -53,6 +53,7 @@ namespace Portal {
 			Renderer.transform.SetPositionAndRotation(state.Position, Quaternion.LookRotation(-state.Normal, state.Up));
 			Renderer.transform.localScale = _baseScale;
 			Renderer.SetWallCollider(state.Surface);
+			Renderer.PortalScale = state.Scale; // Set portal scale for size-based rendering
 
 			if (Mesh != null) {
 				Mesh.gameObject.SetActive(true);
@@ -65,6 +66,7 @@ namespace Portal {
 			if (Renderer != null) {
 				Renderer.SetVisible(false);
 				Renderer.IsReadyToRender = false;
+				Renderer.PortalScale = 1f; // Reset scale
 			}
 			if (Animator != null) {
 				Animator.HideImmediate();
