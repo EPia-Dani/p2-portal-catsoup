@@ -16,11 +16,16 @@ namespace Portal {
 			Renderer = renderer;
 			Mesh = mesh;
 
-			if (Renderer != null) {
-				Animator = Renderer.GetComponent<PortalAnimator>() ?? Renderer.GetComponentInChildren<PortalAnimator>();
-				Renderer.IsReadyToRender = false;
-				_baseScale = Renderer.transform.localScale;
+		if (Renderer != null) {
+			Animator = Renderer.GetComponent<PortalAnimator>() ?? Renderer.GetComponentInChildren<PortalAnimator>();
+			Renderer.IsReadyToRender = false;
+			_baseScale = Renderer.transform.localScale;
+			
+			// Pass mesh reference to animator if available
+			if (Animator != null && Mesh != null) {
+				Animator.SetMeshTransform(Mesh);
 			}
+		}
 
 			if (Mesh != null) {
 				_meshBaseScale = Mesh.localScale;
@@ -85,9 +90,17 @@ namespace Portal {
 		public void UpdateAnimatorState(bool shouldPlay, bool shouldOpen) {
 			if (Animator == null) return;
 
+			// Calculate target scale before hiding (based on mesh base scale and portal state scale)
+			float targetScaleX = 0f;
+			float targetScaleZ = 0f;
+			if (shouldPlay && Mesh != null && State.IsPlaced) {
+				targetScaleX = _meshBaseScale.x * State.Scale;
+				targetScaleZ = _meshBaseScale.z * State.Scale;
+			}
+
 			Animator.HideImmediate();
 			if (shouldPlay) {
-				Animator.PlayAppear();
+				Animator.PlayAppear(targetScaleX, targetScaleZ);
 				if (shouldOpen) {
 					Animator.StartOpening();
 				}
