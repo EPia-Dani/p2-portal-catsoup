@@ -231,11 +231,13 @@ namespace Portal {
 			Vector3 otherOffset = portalManager.portalCenters[otherIndex] - center;
 			Vector2 otherLocalPos = new Vector2(Vector3.Dot(otherOffset, right), Vector3.Dot(otherOffset, up));
 
-			// Calculate other portal's half size from its transform scale  
-			PortalRenderer otherPortal = otherIndex == 0 ? portalManager.BluePortal : portalManager.OrangePortal;
-			float otherScale = otherPortal != null ? otherPortal.transform.localScale.x / 2f : 1f;
+			// Calculate other portal's half size using its stored scale multiplier
+			float otherScale = portalManager.portalScaleMultipliers.Length > otherIndex ? portalManager.portalScaleMultipliers[otherIndex] : 1f;
+			if (otherScale <= 0f) otherScale = 1f;
 			Vector2 otherPortalHalfSize = new Vector2(initialPortalHalfSize.x * otherScale, initialPortalHalfSize.y * otherScale);
 			Vector2 minSeparation = portalHalfSize + otherPortalHalfSize;
+			if (minSeparation.x < 1e-3f) minSeparation.x = 1e-3f;
+			if (minSeparation.y < 1e-3f) minSeparation.y = 1e-3f;
 
 			Vector2 dist = localPos - otherLocalPos;
 			Vector2 distNormalized = new Vector2(dist.x / minSeparation.x, dist.y / minSeparation.y);

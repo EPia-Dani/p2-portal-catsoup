@@ -6,6 +6,8 @@ namespace Portal {
 	[Header("Portals")]
 	[SerializeField] private PortalRenderer bluePortal;
 	[SerializeField] private PortalRenderer orangePortal;
+	[SerializeField] private Transform bluePortalMesh;
+	[SerializeField] private Transform orangePortalMesh;
 
 	[Header("Settings")]
 	[SerializeField] private int textureWidth = 1024;
@@ -16,11 +18,14 @@ namespace Portal {
 	public Collider[] portalSurfaces = new Collider[2];
 	public Vector3[] portalNormals = new Vector3[2];
 	public Vector3[] portalCenters = new Vector3[2];
+	public float[] portalScaleMultipliers = new float[2] { 1f, 1f };
 
 	private PortalAnimator _blueAnimator;
 	private PortalAnimator _orangeAnimator;
 	private Vector3 bluePortalBaseScale = Vector3.one;
 	private Vector3 orangePortalBaseScale = Vector3.one;
+	private Vector3 bluePortalMeshBaseScale = Vector3.one;
+	private Vector3 orangePortalMeshBaseScale = Vector3.one;
 
 	/// <summary>
 	/// Gets the blue portal renderer.
@@ -39,6 +44,7 @@ namespace Portal {
 			bluePortal.IsReadyToRender = false;
 			// Store the base scale of the blue portal (from prefab/default)
 			bluePortalBaseScale = bluePortal.transform.localScale;
+			if (bluePortalMesh) bluePortalMeshBaseScale = bluePortalMesh.localScale;
 		}
 		if (orangePortal) {
 			_orangeAnimator = orangePortal.GetComponent<PortalAnimator>();
@@ -46,6 +52,7 @@ namespace Portal {
 			orangePortal.IsReadyToRender = false;
 			// Store the base scale of the orange portal (from prefab/default)
 			orangePortalBaseScale = orangePortal.transform.localScale;
+			if (orangePortalMesh) orangePortalMeshBaseScale = orangePortalMesh.localScale;
 		}
 
 		// Link portals as pairs (like in Portals project)
@@ -96,18 +103,21 @@ namespace Portal {
 		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
 		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
 		Vector3 baseScale = index == 0 ? bluePortalBaseScale : orangePortalBaseScale;
+		Transform portalMesh = index == 0 ? bluePortalMesh : orangePortalMesh;
+		Vector3 meshBaseScale = index == 0 ? bluePortalMeshBaseScale : orangePortalMeshBaseScale;
 		if (portal == null) return;
 
 		portal.SetVisible(true);
 		// Place portal at exact same Z position as wall - z-fighting handled by shader depth bias
 		portal.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
-		
-		// Apply scale to portal transform, multiplying by base scale to maintain correct size
-		// scale = 1.0 means use the base/prefab scale, scale = 2.0 means double the base scale, etc.
-		float finalScaleX = baseScale.x * scale;
-		float finalScaleY = baseScale.y * scale;
-		portal.transform.localScale = new Vector3(finalScaleX, finalScaleY, baseScale.z);
-		
+		portal.transform.localScale = baseScale;
+
+		// Scale only the portal mesh (X/Z) while preserving Y scale
+		if (portalMesh) {
+			portalMesh.localScale = new Vector3(meshBaseScale.x * scale, meshBaseScale.y, meshBaseScale.z * scale);
+		}
+		portalScaleMultipliers[index] = scale;
+
 		// Set the wall collider so player can pass through
 		portal.SetWallCollider(surface);
 
