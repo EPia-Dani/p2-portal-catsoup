@@ -11,19 +11,54 @@ namespace Portal {
 		[SerializeField] Vector2 portalHalfSize = new(0.45f, 0.45f);
 		[SerializeField] float wallOffset = 0.02f;
 		[SerializeField] float clampSkin = 0.01f;
+		
+		[Header("Portal Bounds Visualization")]
+		[SerializeField] bool showPlacementBounds = true;
+		[SerializeField] Color boundsColor = new Color(1f, 1f, 0f, 0.8f);
+		[SerializeField] float boundsOffset = 0.001f; // Slight offset from surface to avoid z-fighting
+		[SerializeField] int ellipseSegments = 64; // Number of segments for smooth ellipse
 
 		private PlayerInput input;
+		private LineRenderer boundsRenderer;
 		static readonly Vector3 ViewCenter = new(0.5f, 0.5f, 0f);
 
 		void Start() {
 			if (!shootCamera) shootCamera = Camera.main;
 			if (!portalManager) portalManager = GetComponent<PortalManager>();
 			input = InputManager.PlayerInput;
+			
+			// Initialize LineRenderer for portal bounds visualization
+			boundsRenderer = gameObject.GetComponent<LineRenderer>();
+			if (boundsRenderer == null) {
+				boundsRenderer = gameObject.AddComponent<LineRenderer>();
+			}
+			
+			// Create material for line rendering
+			Shader shader = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default") ?? Shader.Find("Legacy Shaders/Transparent/Diffuse");
+			if (shader != null) {
+				boundsRenderer.material = new Material(shader);
+			}
+			
+			boundsRenderer.startWidth = 0.02f;
+			boundsRenderer.endWidth = 0.02f;
+			boundsRenderer.useWorldSpace = true;
+			boundsRenderer.loop = true;
+			boundsRenderer.positionCount = ellipseSegments + 1;
+			boundsRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+			boundsRenderer.receiveShadows = false;
+			boundsRenderer.enabled = false;
 		}
 
 		void Update() {
 			if (input.Player.ShootBlue.WasPerformedThisFrame())  Fire(0);
 			if (input.Player.ShootOrange.WasPerformedThisFrame()) Fire(1);
+			
+			// Update portal bounds visualization
+			if (showPlacementBounds) {
+				UpdateBoundsVisualization();
+			} else if (boundsRenderer != null) {
+				boundsRenderer.enabled = false;
+			}
 		}
 
 		void Fire(int index) {
@@ -97,6 +132,54 @@ namespace Portal {
 				if (dist.magnitude < 2.05f) return true;
 			}
 			return false;
+		}
+		
+		void UpdateBoundsVisualization() {
+			if (boundsRenderer == null || !shootCamera) {
+				if (boundsRenderer != null) boundsRenderer.enabled = false;
+				return;
+			}
+			
+			// Perform raycast to see where portal would be placed
+			if (!Physics.Raycast(shootCamera.ViewportPointToRay(ViewCenter), out var hit, shootDistance, shootMask, QueryTriggerInteraction.Ignore)) {
+				boundsRenderer.enabled = false;
+				return;
+			}
+			
+			if (hit.collider == null || !hit.collider.enabled) {
+				boundsRenderer.enabled = false;
+				return;
+			}
+			
+			// Calculate portal placement orientation
+			Vector3 normal = hit.normal;
+			Vector3 up = GetUpVector(normal);
+			Vector3 right = Vector3.Cross(normal, up);
+			
+			Vector3 surfaceCenter = GetSurfaceCenter(hit, hit.collider.bounds, normal);
+			Vector2 clampRange = GetClampRange(hit.collider.bounds, right, up);
+			
+			if (clampRange.x <= 0f || clampRange.y <= 0f) {
+				boundsRenderer.enabled = false;
+				return;
+			}
+			
+			Vector2 localPos = GetLocalPosition(hit.point, surfaceCenter, right, up, clampRange);
+			Vector3 ellipseCenter = surfaceCenter + right * localPos.x + up * localPos.y + normal * boundsOffset;
+			
+			// Generate ellipse points
+			boundsRenderer.startColor = boundsColor;
+			boundsRenderer.endColor = boundsColor;
+			
+			for (int i = 0; i <= ellipseSegments; i++) {
+				float angle = 2f * Mathf.PI * i / ellipseSegments;
+				float x = portalHalfSize.x * Mathf.Cos(angle);
+				float y = portalHalfSize.y * Mathf.Sin(angle);
+				Vector3 point = ellipseCenter + right * x + up * y;
+				boundsRenderer.SetPosition(i, point);
+			}
+			
+			boundsRenderer.enabled = true;
 		}
 	}
 }
