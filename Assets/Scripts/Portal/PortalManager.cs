@@ -103,7 +103,6 @@ namespace Portal {
 
 	public void PlacePortal(int index, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float wallOffset, float scale = 1f) {
 		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
-		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
 		Vector3 baseScale = index == 0 ? bluePortalBaseScale : orangePortalBaseScale;
 		Transform portalMesh = index == 0 ? bluePortalMesh : orangePortalMesh;
 		Vector3 meshBaseScale = index == 0 ? bluePortalMeshBaseScale : orangePortalMeshBaseScale;
@@ -116,6 +115,7 @@ namespace Portal {
 
 		// Scale only the portal mesh (X/Z) while preserving Y scale
 		if (portalMesh) {
+			portalMesh.gameObject.SetActive(true);
 			portalMesh.localScale = new Vector3(meshBaseScale.x * scale, meshBaseScale.y, meshBaseScale.z * scale);
 		}
 		portalScaleMultipliers[index] = scale;
@@ -129,16 +129,8 @@ namespace Portal {
 		portalRights[index] = portal.transform.right;
 		portalUps[index] = portal.transform.up;
 
-	
 
-		if (animator != null) animator.PlayAppear();
-
-		if (bluePortal != null && orangePortal != null &&
-		    bluePortal.gameObject.activeInHierarchy && orangePortal.gameObject.activeInHierarchy &&
-		    _blueAnimator != null && _orangeAnimator != null) {
-			_blueAnimator.StartOpening();
-			_orangeAnimator.StartOpening();
-		}
+		UpdatePortalVisualStates();
 	}
 
 	/// <summary>
@@ -148,8 +140,19 @@ namespace Portal {
 		if (index < 0 || index > 1) return;
 		
 		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
+		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
+		Transform portalMesh = index == 0 ? bluePortalMesh : orangePortalMesh;
 		if (portal != null) {
 			portal.SetVisible(false);
+			portal.IsReadyToRender = false;
+		}
+		
+		if (animator != null) {
+			animator.HideImmediate();
+		}
+		
+		if (portalMesh != null) {
+			portalMesh.gameObject.SetActive(false);
 		}
 		
 		// Clear portal data
@@ -171,6 +174,8 @@ namespace Portal {
 		if (portalScaleMultipliers != null && index < portalScaleMultipliers.Length) {
 			portalScaleMultipliers[index] = 1f;
 		}
+
+		UpdatePortalVisualStates();
 	}
 
 
@@ -187,6 +192,43 @@ namespace Portal {
 		if (orangePortal != null && _orangeAnimator != null) {
 			bool ready = _orangeAnimator.IsOpening || _orangeAnimator.IsFullyOpen;
 			orangePortal.IsReadyToRender = ready;
+		}
+	}
+
+	void UpdatePortalVisualStates() {
+		bool bluePlaced = portalSurfaces.Length > 0 && portalSurfaces[0] != null;
+		bool orangePlaced = portalSurfaces.Length > 1 && portalSurfaces[1] != null;
+		bool bothPlaced = bluePlaced && orangePlaced;
+
+		ApplyPortalState(0, bluePlaced, bothPlaced);
+		ApplyPortalState(1, orangePlaced, bothPlaced);
+	}
+
+	void ApplyPortalState(int index, bool placed, bool bothPlaced) {
+		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
+		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
+		Transform portalMesh = index == 0 ? bluePortalMesh : orangePortalMesh;
+
+		if (portalMesh != null) {
+			portalMesh.gameObject.SetActive(placed);
+		}
+
+		if (portal != null) {
+			bool shouldRender = placed && bothPlaced;
+			portal.SetVisible(shouldRender);
+			if (!shouldRender) {
+				portal.IsReadyToRender = false;
+			}
+		}
+
+		if (animator != null) {
+			animator.HideImmediate();
+			if (placed) {
+				animator.PlayAppear();
+				if (bothPlaced) {
+					animator.StartOpening();
+				}
+			}
 		}
 	}
 	}

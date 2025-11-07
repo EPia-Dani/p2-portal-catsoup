@@ -179,6 +179,7 @@ namespace Portal {
 			Vector3 finalPosition = surfaceCenter + placement.right * localPos.x + placement.up * localPos.y;
 			
 			int otherIndex = 1 - index;
+			bool removeOtherPortal = false;
 			if (otherIndex >= 0 && otherIndex < portalManager.portalSurfaces.Length) {
 				var otherSurface = portalManager.portalSurfaces[otherIndex];
 				var otherNormal = portalManager.portalNormals[otherIndex];
@@ -187,32 +188,38 @@ namespace Portal {
 					if (otherScale <= 0f) otherScale = 1f;
 					Vector2 otherPortalHalfSize = new Vector2(initialPortalHalfSize.x * otherScale, initialPortalHalfSize.y * otherScale);
 
-					// Ensure the new portal placement would still fit if it used the other portal's scale
+					// If the new portal placement wouldn't fit with the other portal's scale, mark the other portal for removal
 					if (!PortalFitsOnSurface(placement.surface, finalPosition, placement.normal, placement.right, placement.up, otherPortalHalfSize)) {
-						return;
+						removeOtherPortal = true;
 					}
 
-					// Ensure the existing portal would fit if it used the new portal's scale
-					Vector3 otherPosition = portalManager.portalCenters[otherIndex];
-					Vector3 otherRight = portalManager.portalRights != null && portalManager.portalRights.Length > otherIndex ? portalManager.portalRights[otherIndex] : Vector3.zero;
-					Vector3 otherUp = portalManager.portalUps != null && portalManager.portalUps.Length > otherIndex ? portalManager.portalUps[otherIndex] : Vector3.zero;
+					if (!removeOtherPortal) {
+						// Ensure the existing portal would fit if it used the new portal's scale
+						Vector3 otherPosition = portalManager.portalCenters[otherIndex];
+						Vector3 otherRight = portalManager.portalRights != null && portalManager.portalRights.Length > otherIndex ? portalManager.portalRights[otherIndex] : Vector3.zero;
+						Vector3 otherUp = portalManager.portalUps != null && portalManager.portalUps.Length > otherIndex ? portalManager.portalUps[otherIndex] : Vector3.zero;
 
-					if (otherRight.sqrMagnitude < 1e-4f || otherUp.sqrMagnitude < 1e-4f) {
-						otherUp = Vector3.ProjectOnPlane(Vector3.up, otherNormal);
-						if (otherUp.sqrMagnitude < 1e-4f) {
-							otherUp = GetUpVector(otherNormal);
+						if (otherRight.sqrMagnitude < 1e-4f || otherUp.sqrMagnitude < 1e-4f) {
+							otherUp = Vector3.ProjectOnPlane(Vector3.up, otherNormal);
+							if (otherUp.sqrMagnitude < 1e-4f) {
+								otherUp = GetUpVector(otherNormal);
+							}
+							otherUp.Normalize();
+							otherRight = Vector3.Cross(otherNormal, otherUp).normalized;
+						} else {
+							otherRight = otherRight.normalized;
+							otherUp = otherUp.normalized;
 						}
-						otherUp.Normalize();
-						otherRight = Vector3.Cross(otherNormal, otherUp).normalized;
-					} else {
-						otherRight = otherRight.normalized;
-						otherUp = otherUp.normalized;
-					}
 
-					if (!PortalFitsOnSurface(otherSurface, otherPosition, otherNormal, otherRight, otherUp, portalHalfSize)) {
-						return;
+						if (!PortalFitsOnSurface(otherSurface, otherPosition, otherNormal, otherRight, otherUp, portalHalfSize)) {
+							removeOtherPortal = true;
+						}
 					}
 				}
+			}
+
+			if (removeOtherPortal) {
+				portalManager.RemovePortal(otherIndex);
 			}
 
 			portalManager.PlacePortal(index, finalPosition, placement.normal, placement.right, placement.up, placement.surface, wallOffset, currentPortalScale);
