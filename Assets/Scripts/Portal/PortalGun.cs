@@ -231,16 +231,24 @@ namespace Portal {
 			Vector3 otherOffset = portalManager.portalCenters[otherIndex] - center;
 			Vector2 otherLocalPos = new Vector2(Vector3.Dot(otherOffset, right), Vector3.Dot(otherOffset, up));
 
-			Vector2 dist = (localPos - otherLocalPos) / portalHalfSize;
-			float m = dist.magnitude;
+			// Calculate other portal's half size from its transform scale  
+			PortalRenderer otherPortal = otherIndex == 0 ? portalManager.BluePortal : portalManager.OrangePortal;
+			float otherScale = otherPortal != null ? otherPortal.transform.localScale.x / 2f : 1f;
+			Vector2 otherPortalHalfSize = new Vector2(initialPortalHalfSize.x * otherScale, initialPortalHalfSize.y * otherScale);
+			Vector2 minSeparation = portalHalfSize + otherPortalHalfSize;
 
-			if (m < 2.1f) {
-				float k = m > 1e-3f ? 2.1f / m : 1f;
-				localPos = otherLocalPos + dist * portalHalfSize * k;
+			Vector2 dist = localPos - otherLocalPos;
+			Vector2 distNormalized = new Vector2(dist.x / minSeparation.x, dist.y / minSeparation.y);
+			float m = distNormalized.magnitude;
+
+			if (m < 1.05f) {
+				float k = m > 1e-3f ? 1.05f / m : 1f;
+				localPos = otherLocalPos + distNormalized * minSeparation * k;
 				localPos.x = Mathf.Clamp(localPos.x, -clampRange.x, clampRange.x);
 				localPos.y = Mathf.Clamp(localPos.y, -clampRange.y, clampRange.y);
-				dist = (localPos - otherLocalPos) / portalHalfSize;
-				if (dist.magnitude < 2.05f) return true;
+				dist = localPos - otherLocalPos;
+				distNormalized = new Vector2(dist.x / minSeparation.x, dist.y / minSeparation.y);
+				if (distNormalized.magnitude < 1.05f) return true;
 			}
 			return false;
 		}
