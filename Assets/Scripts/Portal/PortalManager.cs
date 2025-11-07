@@ -86,7 +86,7 @@ namespace Portal {
             ApplySettings();
         }
 
-	public void PlacePortal(int index, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float wallOffset) {
+	public void PlacePortal(int index, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float wallOffset, float scale = 1f) {
 		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
 		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
 		if (portal == null) return;
@@ -94,6 +94,9 @@ namespace Portal {
 		portal.SetVisible(true);
 		// Place portal at exact same Z position as wall - z-fighting handled by shader depth bias
 		portal.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
+		
+		// Apply scale to portal transform (scale uniformly in X and Y, keep Z at 1 for depth)
+		portal.transform.localScale = new Vector3(scale, scale, 1f);
 		
 		// Set the wall collider so player can pass through
 		portal.SetWallCollider(surface);

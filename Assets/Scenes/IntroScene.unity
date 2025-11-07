@@ -5416,7 +5416,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2041440867}
   - component: {fileID: 2041440868}
-  m_Layer: 0
+  m_Layer: 1
   m_Name: PortalGun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5459,6 +5459,14 @@ MonoBehaviour:
   portalHalfSize: {x: 0.6, y: 0.9}
   wallOffset: 0
   clampSkin: 0.01
+  minScale: 0.8
+  maxScale: 1.5
+  resizeSpeed: 0.5
+  basePortalMeshScale: 2
+  showPlacementBounds: 1
+  boundsColor: {r: 0, g: 0, b: 0, a: 0.8}
+  boundsOffset: 0.001
+  ellipseSegments: 64
 --- !u!1 &2079793663
 GameObject:
   m_ObjectHideFlags: 0

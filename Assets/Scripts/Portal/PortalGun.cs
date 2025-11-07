@@ -12,6 +12,12 @@ namespace Portal {
 		[SerializeField] float wallOffset = 0.02f;
 		[SerializeField] float clampSkin = 0.01f;
 		
+		[Header("Portal Resizing")]
+		[SerializeField] float minScale = 0.5f; // Minimum scale multiplier (e.g., 0.5 = 50% of base size)
+		[SerializeField] float maxScale = 2.0f; // Maximum scale multiplier (e.g., 2.0 = 200% of base size)
+		[SerializeField] float resizeSpeed = 0.5f; // How fast the portal resizes per scroll unit
+		[SerializeField] float basePortalMeshScale = 2.0f; // Base scale to apply to portal mesh (mesh radius = portalHalfSize, so full size needs 2x scale)
+		
 		[Header("Portal Bounds Visualization")]
 		[SerializeField] bool showPlacementBounds = true;
 		[SerializeField] Color boundsColor = new Color(1f, 1f, 0f, 0.8f);
@@ -20,6 +26,8 @@ namespace Portal {
 
 		private PlayerInput input;
 		private LineRenderer boundsRenderer;
+		private GameObject boundsRendererObject; // Separate GameObject for LineRenderer
+		private float currentPortalScale = 1f; // Current scale multiplier (1.0 = base size)
 		static readonly Vector3 ViewCenter = new(0.5f, 0.5f, 0f);
 
 		void Start() {
@@ -27,11 +35,18 @@ namespace Portal {
 			if (!portalManager) portalManager = GetComponent<PortalManager>();
 			input = InputManager.PlayerInput;
 			
+			// Create a separate GameObject for the LineRenderer on UI layer
+			boundsRendererObject = new GameObject("PortalBoundsVisualization");
+			boundsRendererObject.transform.SetParent(transform);
+			boundsRendererObject.transform.localPosition = Vector3.zero;
+			boundsRendererObject.transform.localRotation = Quaternion.identity;
+			boundsRendererObject.transform.localScale = Vector3.one;
+			
+			// Set to UI layer so it's only visible to main camera (portal cameras exclude UI layer)
+			boundsRendererObject.layer = LayerMask.NameToLayer("UI");
+			
 			// Initialize LineRenderer for portal bounds visualization
-			boundsRenderer = gameObject.GetComponent<LineRenderer>();
-			if (boundsRenderer == null) {
-				boundsRenderer = gameObject.AddComponent<LineRenderer>();
-			}
+			boundsRenderer = boundsRendererObject.AddComponent<LineRenderer>();
 			
 			// Create material for line rendering
 			Shader shader = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default") ?? Shader.Find("Legacy Shaders/Transparent/Diffuse");
@@ -48,8 +63,18 @@ namespace Portal {
 			boundsRenderer.receiveShadows = false;
 			boundsRenderer.enabled = false;
 		}
+		
+		void OnDestroy() {
+			// Clean up the bounds renderer GameObject
+			if (boundsRendererObject != null) {
+				Destroy(boundsRendererObject);
+			}
+		}
 
 		void Update() {
+			// Handle portal resizing with scroll wheel
+			HandlePortalResize();
+			
 			if (input.Player.ShootBlue.WasPerformedThisFrame())  Fire(0);
 			if (input.Player.ShootOrange.WasPerformedThisFrame()) Fire(1);
 			
@@ -58,6 +83,19 @@ namespace Portal {
 				UpdateBoundsVisualization();
 			} else if (boundsRenderer != null) {
 				boundsRenderer.enabled = false;
+			}
+		}
+		
+		void HandlePortalResize() {
+			if (input == null || input.Player.ResizePortal == null) return;
+			
+			Vector2 scrollDelta = input.Player.ResizePortal.ReadValue<Vector2>();
+			float scrollY = scrollDelta.y;
+			
+			if (Mathf.Abs(scrollY) > 0.001f) {
+				// Update scale multiplier based on scroll input (scrollY is already a delta, typically ~0.1 per scroll tick)
+				float scaleDelta = scrollY * resizeSpeed;
+				currentPortalScale = Mathf.Clamp(currentPortalScale + scaleDelta, minScale, maxScale);
 			}
 		}
 
@@ -78,7 +116,10 @@ namespace Portal {
 			if (ShouldPreventOverlap(index, hit.collider, normal, surfaceCenter, right, up, ref localPos, clampRange)) return;
 
 			Vector3 finalPosition = surfaceCenter + right * localPos.x + up * localPos.y;
-			portalManager.PlacePortal(index, finalPosition, normal, right, up, hit.collider, wallOffset);
+			// Calculate actual transform scale: base scale * current multiplier
+			// The base mesh radius matches portalHalfSize, so we need to scale by 2x to get full size, then apply multiplier
+			float transformScale = basePortalMeshScale * currentPortalScale;
+			portalManager.PlacePortal(index, finalPosition, normal, right, up, hit.collider, wallOffset, transformScale);
 		}
 
 		Vector3 GetUpVector(Vector3 normal) {
@@ -97,8 +138,11 @@ namespace Portal {
 
 		Vector2 GetClampRange(Bounds b, Vector3 r, Vector3 u) {
 			Vector3 e = b.extents;
-			float cr = e.x * Mathf.Abs(r.x) + e.y * Mathf.Abs(r.y) + e.z * Mathf.Abs(r.z) - portalHalfSize.x - clampSkin;
-			float cu = e.x * Mathf.Abs(u.x) + e.y * Mathf.Abs(u.y) + e.z * Mathf.Abs(u.z) - portalHalfSize.y - clampSkin;
+			// Use scaled portal size for bounds calculations
+			float scaledHalfSizeX = portalHalfSize.x * currentPortalScale;
+			float scaledHalfSizeY = portalHalfSize.y * currentPortalScale;
+			float cr = e.x * Mathf.Abs(r.x) + e.y * Mathf.Abs(r.y) + e.z * Mathf.Abs(r.z) - scaledHalfSizeX - clampSkin;
+			float cu = e.x * Mathf.Abs(u.x) + e.y * Mathf.Abs(u.y) + e.z * Mathf.Abs(u.z) - scaledHalfSizeY - clampSkin;
 			return new Vector2(cr, cu);
 		}
 
@@ -120,15 +164,20 @@ namespace Portal {
 			Vector3 otherOffset = portalManager.portalCenters[otherIndex] - center;
 			Vector2 otherLocalPos = new(Vector3.Dot(otherOffset, right), Vector3.Dot(otherOffset, up));
 
-			Vector2 dist = (localPos - otherLocalPos) / portalHalfSize;
+			// Use scaled portal size for overlap calculations
+			float scaledHalfSizeX = portalHalfSize.x * currentPortalScale;
+			float scaledHalfSizeY = portalHalfSize.y * currentPortalScale;
+			Vector2 scaledHalfSize = new Vector2(scaledHalfSizeX, scaledHalfSizeY);
+			
+			Vector2 dist = (localPos - otherLocalPos) / scaledHalfSize;
 			float m = dist.magnitude;
 
 			if (m < 2.1f) {
 				float k = m > 1e-3f ? 2.1f / m : 1f;
-				localPos = otherLocalPos + dist * portalHalfSize * k;
+				localPos = otherLocalPos + dist * scaledHalfSize * k;
 				localPos.x = Mathf.Clamp(localPos.x, -clampRange.x, clampRange.x);
 				localPos.y = Mathf.Clamp(localPos.y, -clampRange.y, clampRange.y);
-				dist = (localPos - otherLocalPos) / portalHalfSize;
+				dist = (localPos - otherLocalPos) / scaledHalfSize;
 				if (dist.magnitude < 2.05f) return true;
 			}
 			return false;
@@ -167,14 +216,18 @@ namespace Portal {
 			Vector2 localPos = GetLocalPosition(hit.point, surfaceCenter, right, up, clampRange);
 			Vector3 ellipseCenter = surfaceCenter + right * localPos.x + up * localPos.y + normal * boundsOffset;
 			
-			// Generate ellipse points
+			// Generate ellipse points using scaled portal size (multiplier applied)
 			boundsRenderer.startColor = boundsColor;
 			boundsRenderer.endColor = boundsColor;
 			
+			// Apply scale multiplier to ellipse size for visualization
+			float ellipseSizeX = portalHalfSize.x * currentPortalScale;
+			float ellipseSizeY = portalHalfSize.y * currentPortalScale;
+			
 			for (int i = 0; i <= ellipseSegments; i++) {
 				float angle = 2f * Mathf.PI * i / ellipseSegments;
-				float x = portalHalfSize.x * Mathf.Cos(angle);
-				float y = portalHalfSize.y * Mathf.Sin(angle);
+				float x = ellipseSizeX * Mathf.Cos(angle);
+				float y = ellipseSizeY * Mathf.Sin(angle);
 				Vector3 point = ellipseCenter + right * x + up * y;
 				boundsRenderer.SetPosition(i, point);
 			}

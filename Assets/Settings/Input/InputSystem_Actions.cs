@@ -183,6 +183,15 @@ namespace Input
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ResizePortal"",
+                    ""type"": ""Value"",
+                    ""id"": ""a1b2c3d4-e5f6-7890-abcd-ef1234567890"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -535,6 +544,17 @@ namespace Input
                     ""processors"": """",
                     ""groups"": """",
                     ""action"": ""ShootOrange"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b2c3d4e5-f6a7-8901-bcde-f12345678901"",
+                    ""path"": ""<Mouse>/scroll"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard&Mouse"",
+                    ""action"": ""ResizePortal"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1132,6 +1152,7 @@ namespace Input
             m_Player_Sprint = m_Player.FindAction("Sprint", throwIfNotFound: true);
             m_Player_ShootBlue = m_Player.FindAction("ShootBlue", throwIfNotFound: true);
             m_Player_ShootOrange = m_Player.FindAction("ShootOrange", throwIfNotFound: true);
+            m_Player_ResizePortal = m_Player.FindAction("ResizePortal", throwIfNotFound: true);
             // UI
             m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
             m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1235,6 +1256,7 @@ namespace Input
         private readonly InputAction m_Player_Sprint;
         private readonly InputAction m_Player_ShootBlue;
         private readonly InputAction m_Player_ShootOrange;
+        private readonly InputAction m_Player_ResizePortal;
         /// <summary>
         /// Provides access to input actions defined in input action map "Player".
         /// </summary>
@@ -1286,6 +1308,10 @@ namespace Input
             /// Provides access to the underlying input action "Player/ShootOrange".
             /// </summary>
             public InputAction @ShootOrange => m_Wrapper.m_Player_ShootOrange;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/ResizePortal".
+            /// </summary>
+            public InputAction @ResizePortal => m_Wrapper.m_Player_ResizePortal;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -1342,6 +1368,9 @@ namespace Input
                 @ShootOrange.started += instance.OnShootOrange;
                 @ShootOrange.performed += instance.OnShootOrange;
                 @ShootOrange.canceled += instance.OnShootOrange;
+                @ResizePortal.started += instance.OnResizePortal;
+                @ResizePortal.performed += instance.OnResizePortal;
+                @ResizePortal.canceled += instance.OnResizePortal;
             }
 
             /// <summary>
@@ -1383,6 +1412,9 @@ namespace Input
                 @ShootOrange.started -= instance.OnShootOrange;
                 @ShootOrange.performed -= instance.OnShootOrange;
                 @ShootOrange.canceled -= instance.OnShootOrange;
+                @ResizePortal.started -= instance.OnResizePortal;
+                @ResizePortal.performed -= instance.OnResizePortal;
+                @ResizePortal.canceled -= instance.OnResizePortal;
             }
 
             /// <summary>
@@ -1753,6 +1785,13 @@ namespace Input
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnShootOrange(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "ResizePortal" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnResizePortal(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
