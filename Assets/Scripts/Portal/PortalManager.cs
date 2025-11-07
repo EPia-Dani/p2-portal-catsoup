@@ -19,6 +19,8 @@ namespace Portal {
 
 	private PortalAnimator _blueAnimator;
 	private PortalAnimator _orangeAnimator;
+	private Vector3 bluePortalBaseScale = Vector3.one;
+	private Vector3 orangePortalBaseScale = Vector3.one;
 
 	/// <summary>
 	/// Gets the blue portal renderer.
@@ -35,11 +37,15 @@ namespace Portal {
 			_blueAnimator = bluePortal.GetComponent<PortalAnimator>();
 			if (_blueAnimator == null) _blueAnimator = bluePortal.GetComponentInChildren<PortalAnimator>();
 			bluePortal.IsReadyToRender = false;
+			// Store the base scale of the blue portal (from prefab/default)
+			bluePortalBaseScale = bluePortal.transform.localScale;
 		}
 		if (orangePortal) {
 			_orangeAnimator = orangePortal.GetComponent<PortalAnimator>();
 			if (_orangeAnimator == null) _orangeAnimator = orangePortal.GetComponentInChildren<PortalAnimator>();
 			orangePortal.IsReadyToRender = false;
+			// Store the base scale of the orange portal (from prefab/default)
+			orangePortalBaseScale = orangePortal.transform.localScale;
 		}
 
 		// Link portals as pairs (like in Portals project)
@@ -89,14 +95,18 @@ namespace Portal {
 	public void PlacePortal(int index, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float wallOffset, float scale = 1f) {
 		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
 		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
+		Vector3 baseScale = index == 0 ? bluePortalBaseScale : orangePortalBaseScale;
 		if (portal == null) return;
 
 		portal.SetVisible(true);
 		// Place portal at exact same Z position as wall - z-fighting handled by shader depth bias
 		portal.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
 		
-		// Apply scale to portal transform (scale uniformly in X and Y, keep Z at 1 for depth)
-		portal.transform.localScale = new Vector3(scale, scale, 1f);
+		// Apply scale to portal transform, multiplying by base scale to maintain correct size
+		// scale = 1.0 means use the base/prefab scale, scale = 2.0 means double the base scale, etc.
+		float finalScaleX = baseScale.x * scale;
+		float finalScaleY = baseScale.y * scale;
+		portal.transform.localScale = new Vector3(finalScaleX, finalScaleY, baseScale.z);
 		
 		// Set the wall collider so player can pass through
 		portal.SetWallCollider(surface);

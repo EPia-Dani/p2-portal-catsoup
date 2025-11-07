@@ -177,12 +177,6 @@ namespace Portal {
 			portalCamera.clearFlags = CameraClearFlags.SolidColor;
 			portalCamera.backgroundColor = Color.black;
 			portalCamera.useOcclusionCulling = false;
-			
-			// Exclude UI layer from portal camera so it doesn't render LineRenderer bounds visualization
-			int uiLayer = LayerMask.NameToLayer("UI");
-			if (uiLayer >= 0) {
-				portalCamera.cullingMask &= ~(1 << uiLayer);
-			}
 
 			var extra = portalCamera.GetUniversalAdditionalCameraData();
 			if (extra != null) {
