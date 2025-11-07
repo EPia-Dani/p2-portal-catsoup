@@ -21,6 +21,8 @@ namespace SlimUI.ModernMenu{
         public GameObject exitMenu;
         [Tooltip("Optional 4th Menu")]
         public GameObject extrasMenu;
+        [Tooltip("The Portal Title UI element")]
+        public GameObject portalTitle;
 
         public enum Theme {custom1, custom2, custom3};
         [Header("THEME SETTINGS")]
@@ -81,8 +83,6 @@ namespace SlimUI.ModernMenu{
         public AudioSource hoverSound;
         [Tooltip("The GameObject holding the Audio Source component for the AUDIO SLIDER")]
         public AudioSource sliderSound;
-        [Tooltip("The GameObject holding the Audio Source component for the SWOOSH SOUND when switching to the Settings Screen")]
-        public AudioSource swooshSound;
 
 		void Start(){
 			CameraObject = transform.GetComponent<Animator>();
@@ -235,10 +235,6 @@ namespace SlimUI.ModernMenu{
 			sliderSound.Play();
 		}
 
-		public void PlaySwoosh(){
-			swooshSound.Play();
-		}
-
 		// Are You Sure - Quit Panel Pop Up
 		public void AreYouSure(){
 			exitMenu.SetActive(true);
@@ -291,6 +287,18 @@ namespace SlimUI.ModernMenu{
 				}
 
 				yield return null;
+			}
+		}
+
+		public void DisablePortalTitle(){
+			if (portalTitle != null) {
+				portalTitle.SetActive(false);
+			}
+		}
+
+		public void EnablePortalTitle(){
+			if (portalTitle != null) {
+				portalTitle.SetActive(true);
 			}
 		}
 	}
