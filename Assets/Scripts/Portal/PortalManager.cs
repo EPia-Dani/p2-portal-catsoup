@@ -1,235 +1,144 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Portal {
-	public class PortalManager : MonoBehaviour
-	{
-	[Header("Portals")]
-	[SerializeField] private PortalRenderer bluePortal;
-	[SerializeField] private PortalRenderer orangePortal;
-	[SerializeField] private Transform bluePortalMesh;
-	[SerializeField] private Transform orangePortalMesh;
+	public class PortalManager : MonoBehaviour {
+		[Header("Portals")]
+		[SerializeField] PortalRenderer bluePortal;
+		[SerializeField] PortalRenderer orangePortal;
+		[SerializeField] Transform bluePortalMesh;
+		[SerializeField] Transform orangePortalMesh;
 
-	[Header("Settings")]
-	[SerializeField] private int textureWidth = 1024;
-	[SerializeField] private int textureHeight = 1024;
-	[SerializeField] private int recursionLimit = 2;
-	[SerializeField] private int frameSkipInterval = 1;
+		[Header("Settings")]
+		[SerializeField] int textureWidth = 1024;
+		[SerializeField] int textureHeight = 1024;
+		[SerializeField] int recursionLimit = 2;
+		[SerializeField] int frameSkipInterval = 1;
 
-	public Collider[] portalSurfaces = new Collider[2];
-	public Vector3[] portalNormals = new Vector3[2];
-	public Vector3[] portalCenters = new Vector3[2];
-	public Vector3[] portalRights = new Vector3[2];
-	public Vector3[] portalUps = new Vector3[2];
-	public float[] portalScaleMultipliers = new float[2] { 1f, 1f };
+		readonly Dictionary<PortalId, PortalSlot> _slots = new Dictionary<PortalId, PortalSlot>(2);
 
-	private PortalAnimator _blueAnimator;
-	private PortalAnimator _orangeAnimator;
-	private Vector3 bluePortalBaseScale = Vector3.one;
-	private Vector3 orangePortalBaseScale = Vector3.one;
-	private Vector3 bluePortalMeshBaseScale = Vector3.one;
-	private Vector3 orangePortalMeshBaseScale = Vector3.one;
+		public PortalRenderer BluePortal => bluePortal;
+		public PortalRenderer OrangePortal => orangePortal;
 
-	/// <summary>
-	/// Gets the blue portal renderer.
-	/// </summary>
-	public PortalRenderer BluePortal => bluePortal;
+		void Awake() {
+			InitializeSlot(PortalId.Blue, bluePortal, bluePortalMesh);
+			InitializeSlot(PortalId.Orange, orangePortal, orangePortalMesh);
 
-	/// <summary>
-	/// Gets the orange portal renderer.
-	/// </summary>
-	public PortalRenderer OrangePortal => orangePortal;
-
-	private void Awake() {
-		if (bluePortal) {
-			_blueAnimator = bluePortal.GetComponent<PortalAnimator>();
-			if (_blueAnimator == null) _blueAnimator = bluePortal.GetComponentInChildren<PortalAnimator>();
-			bluePortal.IsReadyToRender = false;
-			// Store the base scale of the blue portal (from prefab/default)
-			bluePortalBaseScale = bluePortal.transform.localScale;
-			if (bluePortalMesh) bluePortalMeshBaseScale = bluePortalMesh.localScale;
-		}
-		if (orangePortal) {
-			_orangeAnimator = orangePortal.GetComponent<PortalAnimator>();
-			if (_orangeAnimator == null) _orangeAnimator = orangePortal.GetComponentInChildren<PortalAnimator>();
-			orangePortal.IsReadyToRender = false;
-			// Store the base scale of the orange portal (from prefab/default)
-			orangePortalBaseScale = orangePortal.transform.localScale;
-			if (orangePortalMesh) orangePortalMeshBaseScale = orangePortalMesh.localScale;
+			if (_slots.TryGetValue(PortalId.Blue, out PortalSlot blueSlot) && _slots.TryGetValue(PortalId.Orange, out PortalSlot orangeSlot)) {
+				blueSlot.LinkPair(orangeSlot.Renderer);
+				orangeSlot.LinkPair(blueSlot.Renderer);
+			}
 		}
 
-		// Link portals as pairs (like in Portals project)
-		if (bluePortal && orangePortal) {
-			bluePortal.pair = orangePortal;
-			orangePortal.pair = bluePortal;
+		void Start() {
+			if (PlayerPrefs.HasKey("PortalRecursion")) {
+				recursionLimit = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion"));
+			}
+			if (PlayerPrefs.HasKey("PortalFrameSkip")) {
+				frameSkipInterval = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip"));
+			}
+
+			ApplySettings();
 		}
-	}
 
-    private void Start() {
-        // Load persisted settings if available before applying
-        if (PlayerPrefs.HasKey("PortalRecursion")) {
-            recursionLimit = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion"));
-        }
-        if (PlayerPrefs.HasKey("PortalFrameSkip")) {
-            frameSkipInterval = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip"));
-        }
-        ApplySettings();
-    }
-
-        private void OnValidate() {
+		void OnValidate() {
 			recursionLimit = Mathf.Max(1, recursionLimit);
 			frameSkipInterval = Mathf.Max(1, frameSkipInterval);
-		}
-
-        private void ApplySettings() {
-			PortalRenderer[] portals = { bluePortal, orangePortal };
-			foreach (var portal in portals) {
-				if (portal != null) {
-					portal.ConfigurePortal(textureWidth, textureHeight, recursionLimit, frameSkipInterval);
-				}
+			if (Application.isPlaying && _slots.Count > 0) {
+				ApplySettings();
 			}
 		}
 
-        public void SetRecursionLimit(int value) {
-            recursionLimit = Mathf.Max(1, value);
-            PlayerPrefs.SetInt("PortalRecursion", recursionLimit);
-            ApplySettings();
-        }
-
-        public void SetFrameSkipInterval(int value) {
-            frameSkipInterval = Mathf.Max(1, value);
-            PlayerPrefs.SetInt("PortalFrameSkip", frameSkipInterval);
-            ApplySettings();
-        }
-
-	public void PlacePortal(int index, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float wallOffset, float scale = 1f) {
-		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
-		Vector3 baseScale = index == 0 ? bluePortalBaseScale : orangePortalBaseScale;
-		Transform portalMesh = index == 0 ? bluePortalMesh : orangePortalMesh;
-		Vector3 meshBaseScale = index == 0 ? bluePortalMeshBaseScale : orangePortalMeshBaseScale;
-		if (portal == null) return;
-
-		portal.SetVisible(true);
-		// Place portal at exact same Z position as wall - z-fighting handled by shader depth bias
-		portal.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
-		portal.transform.localScale = baseScale;
-
-		// Scale only the portal mesh (X/Z) while preserving Y scale
-		if (portalMesh) {
-			portalMesh.gameObject.SetActive(true);
-			portalMesh.localScale = new Vector3(meshBaseScale.x * scale, meshBaseScale.y, meshBaseScale.z * scale);
-		}
-		portalScaleMultipliers[index] = scale;
-
-		// Set the wall collider so player can pass through
-		portal.SetWallCollider(surface);
-
-		portalSurfaces[index] = surface;
-		portalNormals[index] = normal;
-		portalCenters[index] = position;
-		portalRights[index] = portal.transform.right;
-		portalUps[index] = portal.transform.up;
-
-
-		UpdatePortalVisualStates();
-	}
-
-	/// <summary>
-	/// Removes a portal by hiding it and clearing its data.
-	/// </summary>
-	public void RemovePortal(int index) {
-		if (index < 0 || index > 1) return;
-		
-		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
-		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
-		Transform portalMesh = index == 0 ? bluePortalMesh : orangePortalMesh;
-		if (portal != null) {
-			portal.SetVisible(false);
-			portal.IsReadyToRender = false;
-		}
-		
-		if (animator != null) {
-			animator.HideImmediate();
-		}
-		
-		if (portalMesh != null) {
-			portalMesh.gameObject.SetActive(false);
-		}
-		
-		// Clear portal data
-		if (portalSurfaces != null && index < portalSurfaces.Length) {
-			portalSurfaces[index] = null;
-		}
-		if (portalNormals != null && index < portalNormals.Length) {
-			portalNormals[index] = Vector3.zero;
-		}
-		if (portalCenters != null && index < portalCenters.Length) {
-			portalCenters[index] = Vector3.zero;
-		}
-		if (portalRights != null && index < portalRights.Length) {
-			portalRights[index] = Vector3.zero;
-		}
-		if (portalUps != null && index < portalUps.Length) {
-			portalUps[index] = Vector3.zero;
-		}
-		if (portalScaleMultipliers != null && index < portalScaleMultipliers.Length) {
-			portalScaleMultipliers[index] = 1f;
+		void Update() {
+			UpdateRenderReadiness();
 		}
 
-		UpdatePortalVisualStates();
-	}
+		public void PlacePortal(PortalId id, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float scale = 1f) {
+			if (!_slots.TryGetValue(id, out PortalSlot slot) || slot.Renderer == null) return;
 
+			PortalState state = new PortalState {
+				IsPlaced = true,
+				Surface = surface,
+				Position = position,
+				Normal = normal.normalized,
+				Right = right.normalized,
+				Up = up.normalized,
+				Scale = scale
+			};
 
-	private void Update() {
-		UpdateRenderReadiness();
-	}
-
-	private void UpdateRenderReadiness() {
-		if (bluePortal != null && _blueAnimator != null) {
-			bool ready = _blueAnimator.IsOpening || _blueAnimator.IsFullyOpen;
-			bluePortal.IsReadyToRender = ready;
+			slot.ApplyState(state);
+			UpdatePortalVisualStates();
 		}
 
-		if (orangePortal != null && _orangeAnimator != null) {
-			bool ready = _orangeAnimator.IsOpening || _orangeAnimator.IsFullyOpen;
-			orangePortal.IsReadyToRender = ready;
-		}
-	}
+		public void RemovePortal(PortalId id) {
+			if (!_slots.TryGetValue(id, out PortalSlot slot)) return;
 
-	void UpdatePortalVisualStates() {
-		bool bluePlaced = portalSurfaces.Length > 0 && portalSurfaces[0] != null;
-		bool orangePlaced = portalSurfaces.Length > 1 && portalSurfaces[1] != null;
-		bool bothPlaced = bluePlaced && orangePlaced;
-
-		ApplyPortalState(0, bluePlaced, bothPlaced);
-		ApplyPortalState(1, orangePlaced, bothPlaced);
-	}
-
-	void ApplyPortalState(int index, bool placed, bool bothPlaced) {
-		PortalRenderer portal = index == 0 ? bluePortal : orangePortal;
-		PortalAnimator animator = index == 0 ? _blueAnimator : _orangeAnimator;
-		Transform portalMesh = index == 0 ? bluePortalMesh : orangePortalMesh;
-
-		if (portalMesh != null) {
-			portalMesh.gameObject.SetActive(placed);
+			slot.Clear();
+			UpdatePortalVisualStates();
 		}
 
-		if (portal != null) {
+		public bool TryGetState(PortalId id, out PortalState state) {
+			if (_slots.TryGetValue(id, out PortalSlot slot) && slot.State.IsPlaced) {
+				state = slot.State;
+				return true;
+			}
+
+			state = PortalState.Empty;
+			return false;
+		}
+
+		public PortalState GetState(PortalId id) {
+			return _slots.TryGetValue(id, out PortalSlot slot) ? slot.State : PortalState.Empty;
+		}
+
+		public void SetRecursionLimit(int value) {
+			recursionLimit = Mathf.Max(1, value);
+			PlayerPrefs.SetInt("PortalRecursion", recursionLimit);
+			ApplySettings();
+		}
+
+		public void SetFrameSkipInterval(int value) {
+			frameSkipInterval = Mathf.Max(1, value);
+			PlayerPrefs.SetInt("PortalFrameSkip", frameSkipInterval);
+			ApplySettings();
+		}
+
+		void InitializeSlot(PortalId id, PortalRenderer renderer, Transform mesh) {
+			if (renderer == null) return;
+			_slots[id] = new PortalSlot(id, renderer, mesh);
+		}
+
+		void ApplySettings() {
+			foreach (PortalSlot slot in _slots.Values) {
+				slot?.Configure(textureWidth, textureHeight, recursionLimit, frameSkipInterval);
+			}
+		}
+
+		void UpdateRenderReadiness() {
+			foreach (PortalSlot slot in _slots.Values) {
+				if (slot?.Animator == null || slot.Renderer == null) continue;
+				bool ready = slot.Animator.IsOpening || slot.Animator.IsFullyOpen;
+				slot.SetReadyToRender(ready);
+			}
+		}
+
+		void UpdatePortalVisualStates() {
+			bool bluePlaced = _slots.TryGetValue(PortalId.Blue, out PortalSlot blueSlot) && blueSlot.State.IsPlaced;
+			bool orangePlaced = _slots.TryGetValue(PortalId.Orange, out PortalSlot orangeSlot) && orangeSlot.State.IsPlaced;
+			bool bothPlaced = bluePlaced && orangePlaced;
+
+			ApplyPortalState(PortalId.Blue, bluePlaced, bothPlaced);
+			ApplyPortalState(PortalId.Orange, orangePlaced, bothPlaced);
+		}
+
+		void ApplyPortalState(PortalId id, bool placed, bool bothPlaced) {
+			if (!_slots.TryGetValue(id, out PortalSlot slot)) return;
+
+			slot.SetMeshActive(placed);
+
 			bool shouldRender = placed && bothPlaced;
-			portal.SetVisible(shouldRender);
-			if (!shouldRender) {
-				portal.IsReadyToRender = false;
-			}
+			slot.SetVisible(shouldRender);
+			slot.UpdateAnimatorState(placed, bothPlaced);
 		}
-
-		if (animator != null) {
-			animator.HideImmediate();
-			if (placed) {
-				animator.PlayAppear();
-				if (bothPlaced) {
-					animator.StartOpening();
-				}
-			}
-		}
-	}
 	}
 }
