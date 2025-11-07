@@ -28,6 +28,7 @@ namespace Portal {
 		private float currentPortalScale = 1f;
 		private float portalAspectRatio = 1f;
 		private Vector2 initialPortalHalfSize;
+		private Vector2 placementHalfSize;
 		static readonly Vector3 ViewCenter = new(0.5f, 0.5f, 0f);
 
 		struct PortalPlacement {
@@ -114,6 +115,7 @@ namespace Portal {
 			float scaledHeight = initialPortalHalfSize.y * currentPortalScale;
 			float scaledWidth = scaledHeight * portalAspectRatio;
 			portalHalfSize = new Vector2(scaledWidth, scaledHeight);
+			placementHalfSize = GetEffectiveHalfSize(portalHalfSize);
 		}
 
 		PortalPlacement CalculatePortalPlacement() {
@@ -258,14 +260,19 @@ namespace Portal {
 		}
 
 		Vector2 GetClampRange(Bounds b, Vector3 r, Vector3 u) {
-			return GetClampRange(b, r, u, portalHalfSize);
+			return GetClampRange(b, r, u, placementHalfSize);
 		}
 
 		Vector2 GetClampRange(Bounds b, Vector3 r, Vector3 u, Vector2 halfSize) {
+			Vector2 effectiveHalfSize = GetEffectiveHalfSize(halfSize);
 			Vector3 e = b.extents;
-			float cr = e.x * Mathf.Abs(r.x) + e.y * Mathf.Abs(r.y) + e.z * Mathf.Abs(r.z) - halfSize.x - clampSkin;
-			float cu = e.x * Mathf.Abs(u.x) + e.y * Mathf.Abs(u.y) + e.z * Mathf.Abs(u.z) - halfSize.y - clampSkin;
+			float cr = e.x * Mathf.Abs(r.x) + e.y * Mathf.Abs(r.y) + e.z * Mathf.Abs(r.z) - effectiveHalfSize.x - clampSkin;
+			float cu = e.x * Mathf.Abs(u.x) + e.y * Mathf.Abs(u.y) + e.z * Mathf.Abs(u.z) - effectiveHalfSize.y - clampSkin;
 			return new Vector2(cr, cu);
+		}
+
+		Vector2 GetEffectiveHalfSize(Vector2 halfSize) {
+			return new Vector2(Mathf.Max(halfSize.x, initialPortalHalfSize.x), Mathf.Max(halfSize.y, initialPortalHalfSize.y));
 		}
 
 		bool PortalFitsOnSurface(Collider surface, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Vector2 halfSize) {
