@@ -35,6 +35,7 @@ namespace Portal.Rendering {
 
 		/// <summary>
 		/// Calculates the optimal recursion level based on portal orientation
+		/// This is the base level before applying distance/coverage culling
 		/// </summary>
 		public static int CalculateMaxRecursionLevel(Transform source, Transform destination, int maxLimit) {
 			if (!destination) return maxLimit - 1;
