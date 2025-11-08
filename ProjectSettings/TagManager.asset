@@ -6,11 +6,13 @@ TagManager:
   tags:
   - Portal
   - Portalwall
+  - Cube
+  - Interactable
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Interactable
   - Water
   - UI
   - Portal Wall
@@ -21,7 +23,7 @@ TagManager:
   - World
   - Player
   - Gizmo
-  - 
+  - holdLayer
   - 
   - 
   - 
