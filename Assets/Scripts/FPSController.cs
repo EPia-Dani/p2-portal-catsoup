@@ -155,9 +155,12 @@ public class FPSController : PortalTraveller {
         cam.transform.localEulerAngles = Vector3.right * pitch;
     }
 
-    public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot) {
+    public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot, float scaleRatio = 1f) {
         // Capture velocity BEFORE position change
         Vector3 currentVelocity = velocity;
+        
+        // Scale velocity based on portal size difference
+        currentVelocity *= scaleRatio;
         
         // Teleport the player position
         transform.position = pos;
@@ -200,6 +203,9 @@ public class FPSController : PortalTraveller {
             // For vertical portals (walls), don't inject external momentum so movement stays fluid
             externalVelocity = Vector3.zero;
         }
+
+        // Call base Teleport to handle scaling
+        base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
 
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();

@@ -15,6 +15,9 @@ namespace Portal {
 		[Header("Border Renderer")]
 		[SerializeField] private MeshRenderer borderRenderer;
 
+		[Header("Mesh Scale Animation")]
+		[SerializeField] private Transform meshTransform;
+
 		private static readonly int CircleRadiusId = Shader.PropertyToID("_CircleRadius");
 		private static readonly int PortalOpenId = Shader.PropertyToID("_PortalOpen");
 
@@ -24,6 +27,9 @@ namespace Portal {
 		private Coroutine _appearCoroutine;
 		private float _portalOpenProgress;
 		private float _currentCircleRadius;
+		private Vector3 _meshBaseScale = Vector3.one;
+		private float _targetScaleX;
+		private float _targetScaleZ;
 
 		public bool IsOpening => _openingCoroutine != null;
 		public bool IsFullyOpen => _portalOpenProgress >= openThreshold;
@@ -34,6 +40,12 @@ namespace Portal {
 			if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
 			_currentCircleRadius = 0f;
 			_portalOpenProgress = 0f;
+			
+			// Store base scale if mesh transform is assigned
+			if (meshTransform != null) {
+				_meshBaseScale = meshTransform.localScale;
+			}
+			
 			ApplyToMaterial();
 		}
 
@@ -46,9 +58,30 @@ namespace Portal {
 			openThreshold = Mathf.Clamp01(threshold);
 		}
 
-		public void PlayAppear() {
+		public void PlayAppear(float? targetScaleX = null, float? targetScaleZ = null) {
 			if (_appearCoroutine != null) StopCoroutine(_appearCoroutine);
+			
+			// Use provided target scale, or try to read from mesh's current scale
+			// This ensures the animation scales to whatever size the portal was placed at
+			if (targetScaleX.HasValue && targetScaleZ.HasValue) {
+				_targetScaleX = targetScaleX.Value;
+				_targetScaleZ = targetScaleZ.Value;
+			} else if (meshTransform != null) {
+				_targetScaleX = meshTransform.localScale.x;
+				_targetScaleZ = meshTransform.localScale.z;
+			} else {
+				_targetScaleX = 0f;
+				_targetScaleZ = 0f;
+			}
+			
 			_appearCoroutine = StartCoroutine(AppearRoutine());
+		}
+
+		public void SetMeshTransform(Transform mesh) {
+			meshTransform = mesh;
+			if (meshTransform != null) {
+				_meshBaseScale = meshTransform.localScale;
+			}
 		}
 
 		public void StartOpening() {
@@ -62,18 +95,47 @@ namespace Portal {
 			_portalOpenProgress = 0f;
 			SetCircleRadius(0f);
 			ApplyToMaterial();
+			
+			// Reset mesh scale
+			if (meshTransform != null) {
+				meshTransform.localScale = new Vector3(0f, _meshBaseScale.y, 0f);
+			}
 		}
 
 		private IEnumerator AppearRoutine() {
 			SetCircleRadius(0f);
+			
+			// Initialize mesh scale to 0 for X and Z (preserve Y scale)
+			if (meshTransform != null) {
+				meshTransform.localScale = new Vector3(0f, meshTransform.localScale.y, 0f);
+			}
+			
 			float elapsed = 0f;
 			while (elapsed < portalAppearDuration) {
 				elapsed += Time.deltaTime;
 				float t = Mathf.Clamp01(elapsed / portalAppearDuration);
-				SetCircleRadius(portalTargetRadius * portalAppearCurve.Evaluate(t));
+				float curveValue = portalAppearCurve.Evaluate(t);
+				
+				// Animate circle radius
+				SetCircleRadius(portalTargetRadius * curveValue);
+				
+				// Animate mesh scale (X and Z from 0 to target values based on portal scale)
+				if (meshTransform != null) {
+					float scaleX = _targetScaleX * curveValue;
+					float scaleZ = _targetScaleZ * curveValue;
+					meshTransform.localScale = new Vector3(scaleX, meshTransform.localScale.y, scaleZ);
+				}
+				
 				yield return null;
 			}
+			
 			SetCircleRadius(portalTargetRadius);
+			
+			// Set final mesh scale to the target values
+			if (meshTransform != null) {
+				meshTransform.localScale = new Vector3(_targetScaleX, meshTransform.localScale.y, _targetScaleZ);
+			}
+			
 			_appearCoroutine = null;
 		}
 
