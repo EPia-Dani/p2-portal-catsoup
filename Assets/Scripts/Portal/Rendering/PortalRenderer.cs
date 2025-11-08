@@ -147,7 +147,9 @@ namespace Portal {
 
 			_textureController?.Clear(Color.clear);
 
-			int levelCount = _viewChain.BuildViewChain(mainCamera, this, pair, recursionLimit, _viewMatrices);
+			// Calculate dynamic recursion limit based on portal orientation
+			int effectiveLimit = CalculateEffectiveRecursionLimit();
+			int levelCount = _viewChain.BuildViewChain(mainCamera, this, pair, effectiveLimit, _viewMatrices);
 			if (levelCount == 0) return;
 
 			Vector3 exitPos = pair.transform.position;
@@ -156,6 +158,30 @@ namespace Portal {
 			for (int i = levelCount - 1; i >= 0; i--) {
 				RenderLevel(context, _viewMatrices[i], exitPos, exitFwd);
 			}
+		}
+
+		int CalculateEffectiveRecursionLimit() {
+			if (!pair) return recursionLimit;
+
+			// Calculate angle between portal forward vectors
+			Vector3 thisForward = transform.forward;
+			Vector3 pairForward = pair.transform.forward;
+			float dot = Vector3.Dot(thisForward, pairForward);
+
+			// Portals facing same direction (dot ≈ 1, 0°) - won't see each other, only render first level
+			// Using threshold to account for floating point precision
+			if (dot > 0.9f) {
+				return 1;
+			}
+
+			// Portals at 90° (dot ≈ 0) - render one more time (2 levels total)
+			// Using threshold around 0
+			if (dot > -0.2f && dot < 0.2f) {
+				return 2;
+			}
+
+			// Portals facing each other (dot ≈ -1, 180°) and other angles - use configured recursion limit
+			return recursionLimit;
 		}
 
 		void RenderLevel(ScriptableRenderContext context, Matrix4x4 worldMatrix, Vector3 exitPos, Vector3 exitForward) {
@@ -212,3 +238,4 @@ namespace Portal {
 		}
 	}
 }
+

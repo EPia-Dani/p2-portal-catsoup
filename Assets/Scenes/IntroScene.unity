@@ -5896,9 +5896,7 @@ MonoBehaviour:
   textureWidth: 1024
   textureHeight: 1024
   recursionLimit: 2
-  frameSkipInterval: 2
-  enableCulling: 1
-  minScreenCoverage: 0.001
+  frameSkipInterval: 1
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5918,9 +5916,7 @@ MonoBehaviour:
   textureWidth: 1024
   textureHeight: 1024
   recursionLimit: 2
-  frameSkipInterval: 2
-  enableCulling: 1
-  minScreenCoverage: 0.001
+  frameSkipInterval: 1
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -5948,6 +5944,9 @@ GameObject:
   - component: {fileID: 1937157125335981014}
   - component: {fileID: 8197170447663804483}
   - component: {fileID: 8197170447663804484}
+  - component: {fileID: 8197170447663804486}
+  - component: {fileID: 8197170447663804485}
+  - component: {fileID: 8197170447663804487}
   m_Layer: 7
   m_Name: Blue
   m_TagString: Untagged
@@ -6147,6 +6146,9 @@ GameObject:
   - component: {fileID: 2069985398880840990}
   - component: {fileID: 6690853907733404541}
   - component: {fileID: 6690853907733404543}
+  - component: {fileID: 6690853907733404545}
+  - component: {fileID: 6690853907733404544}
+  - component: {fileID: 6690853907733404546}
   m_Layer: 9
   m_Name: Orange
   m_TagString: Untagged
@@ -6241,6 +6243,52 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.26, y: 0.61, z: 0.75}
   m_Center: {x: 0, y: 0, z: -0.24}
+--- !u!114 &6690853907733404544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6690853907733404540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8660378c30a41b40b5f4498aea03597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6690853907733404545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6690853907733404540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8183d92ffd38a489a8b28a9fe0dcef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textureFormat: 0
+  filterMode: 1
+  wrapMode: 1
+  depthBufferBits: 24
+--- !u!114 &6690853907733404546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6690853907733404540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39a8a87b4b7a65d429958aa8766edb9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableCulling: 1
+  minScreenCoverageFraction: 0.01
+  enableAngleCulling: 1
+  maxViewAngle: 90
+  enableDistanceCulling: 1
+  maxRenderDistance: 100
 --- !u!1 &7219594838380380271
 GameObject:
   m_ObjectHideFlags: 0
@@ -6414,6 +6462,52 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.26, y: 0.61, z: 0.75}
   m_Center: {x: 0, y: 0, z: -0.24}
+--- !u!114 &8197170447663804485
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2522092788412533582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8660378c30a41b40b5f4498aea03597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8197170447663804486
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2522092788412533582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce8183d92ffd38a489a8b28a9fe0dcef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  textureFormat: 0
+  filterMode: 1
+  wrapMode: 1
+  depthBufferBits: 24
+--- !u!114 &8197170447663804487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2522092788412533582}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39a8a87b4b7a65d429958aa8766edb9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  enableCulling: 1
+  minScreenCoverageFraction: 0.01
+  enableAngleCulling: 1
+  maxViewAngle: 90
+  enableDistanceCulling: 1
+  maxRenderDistance: 100
 --- !u!20 &8899481715251803678
 Camera:
   m_ObjectHideFlags: 0
