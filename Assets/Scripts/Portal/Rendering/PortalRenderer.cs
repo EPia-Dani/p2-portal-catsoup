@@ -7,6 +7,8 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 
 namespace Portal {
+	[RequireComponent(typeof(PortalRenderTextureController))]
+	[RequireComponent(typeof(PortalViewChain))]
 	public class PortalRenderer : MonoBehaviour {
 		[SerializeField] public PortalRenderer pair;
 
@@ -21,20 +23,17 @@ namespace Portal {
 		[SerializeField] private int recursionLimit = 2;
 		[SerializeField] private int frameSkipInterval = 1;
 
-		[Header("Culling")]
-		[SerializeField] private bool enableCulling = false;
-		[SerializeField] private float minScreenCoverage = 0.01f;
-
 		/// <summary>
 		/// Exposed so PortalSlot can adjust portal scale for travel/render cohesion.
 		/// </summary>
 		public float PortalScale { get; set; } = 1f;
 
-		private RenderTexture _renderTexture;
+		private PortalRenderTextureController _textureController;
+		private PortalVisibilityCuller _visibilityCuller;
+		private PortalViewChain _viewChain;
+
 		private Material _surfaceMaterial;
 		private Matrix4x4[] _viewMatrices = Array.Empty<Matrix4x4>();
-		private readonly Plane[] _frustumPlanes = new Plane[6];
-		private readonly Matrix4x4 _mirror = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 
 		private bool _visible = true;
 		public bool IsReadyToRender { get; set; }
@@ -50,12 +49,16 @@ namespace Portal {
 			if (!portalCamera) portalCamera = GetComponentInChildren<Camera>(true);
 			if (!surfaceRenderer) surfaceRenderer = GetComponentInChildren<MeshRenderer>(true);
 
+			_textureController = GetComponent<PortalRenderTextureController>();
+			_viewChain = GetComponent<PortalViewChain>();
+			_visibilityCuller = GetComponent<PortalVisibilityCuller>();
+
 			if (surfaceRenderer && !_surfaceMaterial) {
 				_surfaceMaterial = surfaceRenderer.material;
 			}
 
 			SetupCamera();
-			AllocateRenderTexture();
+			ConfigureRenderTargets();
 			EnsureCapacity(recursionLimit);
 
 			_visible = surfaceRenderer && surfaceRenderer.enabled;
@@ -87,31 +90,16 @@ namespace Portal {
 				extra.SetRenderer(0);
 			}
 
-			if (_renderTexture) {
-				portalCamera.targetTexture = _renderTexture;
-				portalCamera.pixelRect = new Rect(0, 0, _renderTexture.width, _renderTexture.height);
-			}
+			_textureController?.BindCamera(portalCamera);
 		}
 
-		void AllocateRenderTexture() {
-			if (_renderTexture) {
-				_renderTexture.Release();
-				Destroy(_renderTexture);
-			}
+		void ConfigureRenderTargets() {
+			if (_textureController == null) return;
 
-			_renderTexture = new RenderTexture(textureWidth, textureHeight, 24, RenderTextureFormat.ARGB32) {
-				wrapMode = TextureWrapMode.Clamp,
-				filterMode = FilterMode.Bilinear
-			};
-			_renderTexture.Create();
-
-			if (portalCamera) {
-				portalCamera.targetTexture = _renderTexture;
-				portalCamera.pixelRect = new Rect(0, 0, textureWidth, textureHeight);
-			}
-
+			_textureController.Configure(textureWidth, textureHeight);
+			_textureController.BindCamera(portalCamera);
 			if (_surfaceMaterial) {
-				_surfaceMaterial.mainTexture = _renderTexture;
+				_textureController.BindMaterial(_surfaceMaterial);
 			}
 		}
 
@@ -119,7 +107,7 @@ namespace Portal {
 			if (textureWidth != width || textureHeight != height) {
 				textureWidth = width;
 				textureHeight = height;
-				AllocateRenderTexture();
+				ConfigureRenderTargets();
 			}
 
 			recursionLimit = Mathf.Max(1, limit);
@@ -137,11 +125,6 @@ namespace Portal {
 		}
 
 		void OnDestroy() {
-			if (_renderTexture) {
-				_renderTexture.Release();
-				Destroy(_renderTexture);
-			}
-
 			if (_surfaceMaterial) {
 				Destroy(_surfaceMaterial);
 			}
@@ -154,132 +137,25 @@ namespace Portal {
 			if (!pair._visible || !pair.IsReadyToRender) return;
 			if ((Time.frameCount % frameSkipInterval) != 0) return;
 
-			if (enableCulling && ShouldCull()) return;
+			if (_visibilityCuller != null && _visibilityCuller.ShouldCull(mainCamera, surfaceRenderer)) return;
 
 			Render(context);
 		}
 
-		bool ShouldCull() {
-			if (!mainCamera || !surfaceRenderer) return true;
-
-			GeometryUtility.CalculateFrustumPlanes(mainCamera, _frustumPlanes);
-			if (!GeometryUtility.TestPlanesAABB(_frustumPlanes, surfaceRenderer.bounds)) {
-				return true;
-			}
-
-			if (minScreenCoverage > 0f) {
-				float coverage = GetScreenSpaceCoverage();
-				if (coverage < minScreenCoverage) return true;
-			}
-
-			return false;
-		}
-
-		float GetScreenSpaceCoverage() {
-			if (!mainCamera || !surfaceRenderer) return 0f;
-
-			var bounds = surfaceRenderer.bounds;
-			Vector3 min = new Vector3(float.MaxValue, float.MaxValue);
-			Vector3 max = new Vector3(float.MinValue, float.MinValue);
-			int visiblePoints = 0;
-
-			Vector3 center = bounds.center;
-			Vector3 extents = bounds.extents;
-			Vector3[] corners = {
-				center + new Vector3(-extents.x, -extents.y, -extents.z),
-				center + new Vector3(-extents.x, -extents.y,  extents.z),
-				center + new Vector3(-extents.x,  extents.y, -extents.z),
-				center + new Vector3(-extents.x,  extents.y,  extents.z),
-				center + new Vector3( extents.x, -extents.y, -extents.z),
-				center + new Vector3( extents.x, -extents.y,  extents.z),
-				center + new Vector3( extents.x,  extents.y, -extents.z),
-				center + new Vector3( extents.x,  extents.y,  extents.z)
-			};
-
-			foreach (var corner in corners) {
-				Vector3 screenPos = mainCamera.WorldToScreenPoint(corner);
-				if (screenPos.z <= 0) continue;
-
-				visiblePoints++;
-				if (screenPos.x < min.x) min.x = screenPos.x;
-				if (screenPos.y < min.y) min.y = screenPos.y;
-				if (screenPos.x > max.x) max.x = screenPos.x;
-				if (screenPos.y > max.y) max.y = screenPos.y;
-			}
-
-			if (visiblePoints == 0) return 0f;
-
-			float area = (max.x - min.x) * (max.y - min.y);
-			return area / (mainCamera.pixelWidth * mainCamera.pixelHeight);
-		}
-
 		void Render(ScriptableRenderContext context) {
-			if (_viewMatrices.Length == 0 || !pair) return;
+			if (_viewMatrices.Length == 0 || !pair || _viewChain == null) return;
 
-			ClearTexture();
+			_textureController?.Clear(Color.clear);
 
-			// Build recursion matrices with step transformation
-			Matrix4x4 step = pair.transform.localToWorldMatrix * _mirror * transform.worldToLocalMatrix;
-			Matrix4x4 cur = mainCamera.transform.localToWorldMatrix;
-			
-			// Track which portal we're at for scale adjustments
-			PortalRenderer currentPortal = this;
-			PortalRenderer nextPortal = pair;
-			
-			// Build recursion matrices by repeatedly applying the step transformation
-			for (int i = 0; i < _viewMatrices.Length; i++) {
-				cur = step * cur;
-				_viewMatrices[i] = cur;
-				
-				// Apply scale adjustment if portals have different sizes
-				float scaleRatio = nextPortal.PortalScale / currentPortal.PortalScale;
-				if (Mathf.Abs(scaleRatio - 1f) > 0.001f) {
-					// Extract position and rotation
-					Vector3 pos = _viewMatrices[i].GetColumn(3);
-					Quaternion rot = _viewMatrices[i].rotation;
-					
-					// Get offset from destination portal center
-					Vector3 offset = pos - nextPortal.transform.position;
-					
-					// Scale offset in destination portal's local space
-					Vector3 offsetLocal = nextPortal.transform.InverseTransformDirection(offset);
-					Vector3 scaledOffsetLocal = offsetLocal * scaleRatio;
-					Vector3 scaledOffsetWorld = nextPortal.transform.TransformDirection(scaledOffsetLocal);
-					
-					// Rebuild with scaled position, same rotation
-					_viewMatrices[i] = Matrix4x4.TRS(
-						nextPortal.transform.position + scaledOffsetWorld,
-						rot,
-						Vector3.one
-					);
-				}
-				
-				// Swap portals for next iteration
-				PortalRenderer temp = currentPortal;
-				currentPortal = nextPortal;
-				nextPortal = temp;
-			}
+			int levelCount = _viewChain.BuildViewChain(mainCamera, this, pair, recursionLimit, _viewMatrices);
+			if (levelCount == 0) return;
 
-			// Always use pair portal for exit position/forward (like the old working code)
 			Vector3 exitPos = pair.transform.position;
 			Vector3 exitFwd = pair.transform.forward;
 
-			int maxLevel = GetMaxRecursionLevel();
-			int startLevel = Mathf.Min(maxLevel, _viewMatrices.Length - 1);
-
-			// Render from deepest to shallowest
-			for (int i = startLevel; i >= 0; i--) {
+			for (int i = levelCount - 1; i >= 0; i--) {
 				RenderLevel(context, _viewMatrices[i], exitPos, exitFwd);
 			}
-		}
-
-		int GetMaxRecursionLevel() {
-			if (!pair) return recursionLimit - 1;
-
-			// Always respect the configured recursion limit
-			// The old optimization logic was too aggressive and prevented recursion from showing
-			// Users can control recursion via PortalManager/UI settings
-			return recursionLimit - 1;
 		}
 
 		void RenderLevel(ScriptableRenderContext context, Matrix4x4 worldMatrix, Vector3 exitPos, Vector3 exitForward) {
@@ -315,21 +191,13 @@ namespace Portal {
 			       !float.IsInfinity(value.x) && !float.IsInfinity(value.y) && !float.IsInfinity(value.z);
 		}
 
-		void ClearTexture() {
-			if (!_renderTexture) return;
-			var previous = RenderTexture.active;
-			RenderTexture.active = _renderTexture;
-			GL.Clear(true, true, Color.clear);
-			RenderTexture.active = previous;
-		}
-
 		public void SetVisible(bool visible) {
 			_visible = visible;
 			if (portalCamera) portalCamera.gameObject.SetActive(visible);
 			if (surfaceRenderer) surfaceRenderer.enabled = visible;
 			if (!visible) {
 				IsReadyToRender = false;
-				ClearTexture();
+				_textureController?.Clear(Color.clear);
 			}
 		}
 

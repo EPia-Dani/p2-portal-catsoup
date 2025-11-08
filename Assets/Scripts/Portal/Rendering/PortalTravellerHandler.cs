@@ -10,12 +10,13 @@ namespace Portal {
 		public Collider wallCollider;
 		
 		private readonly List<PortalTraveller> _trackedTravellers = new List<PortalTraveller>();
-		private readonly Matrix4x4 _mirror = Matrix4x4.Scale(new Vector3(-1, 1, -1));
+		private PortalViewChain _viewChain;
 
 		public List<PortalTraveller> TrackedTravellers => _trackedTravellers;
 
 		void Awake() {
 			if (!portalRenderer) portalRenderer = GetComponent<PortalRenderer>();
+			_viewChain = GetComponent<PortalViewChain>();
 		}
 
 		void LateUpdate() {
@@ -27,57 +28,54 @@ namespace Portal {
 			PortalRenderer pair = portalRenderer.pair;
 			if (!pair) return;
 
-			// Calculate scale ratio for size-based teleportation
 			float scaleRatio = pair.PortalScale / portalRenderer.PortalScale;
 
 			for (int i = 0; i < _trackedTravellers.Count; i++) {
-				var t = _trackedTravellers[i];
-				if (!t) {
+				var traveller = _trackedTravellers[i];
+				if (!traveller) {
 					_trackedTravellers.RemoveAt(i--);
 					continue;
 				}
 
-				// Scale offset from portal center based on portal size ratio
-				Vector3 offset = t.transform.position - transform.position;
-				Vector3 scaledOffset = offset * scaleRatio;
-				
-				// Transform scaled offset through portal
-				Matrix4x4 portalTransform = pair.transform.localToWorldMatrix * _mirror * transform.worldToLocalMatrix;
-				Vector3 transformedOffset = portalTransform.MultiplyVector(scaledOffset);
-				Vector3 newPos = pair.transform.position + transformedOffset;
-				
-				// Get rotation from full transformation
-				Matrix4x4 toDest = pair.transform.localToWorldMatrix * _mirror * 
-				                   transform.worldToLocalMatrix * t.transform.localToWorldMatrix;
-				Quaternion newRot = toDest.rotation;
-
-				float sidePrev = Mathf.Sign(Vector3.Dot(t.previousOffsetFromPortal, transform.forward));
+				Vector3 offset = traveller.transform.position - transform.position;
+				float sidePrev = Mathf.Sign(Vector3.Dot(traveller.previousOffsetFromPortal, transform.forward));
 				float sideNow = Mathf.Sign(Vector3.Dot(offset, transform.forward));
 
 				if (sideNow > 0 && sidePrev < 0) {
-					// Crossed from front to back - teleport
-					Collider playerCollider = t.GetComponent<Collider>();
-					
-					// Handle collision with walls
-					if (wallCollider && playerCollider) {
-						Physics.IgnoreCollision(playerCollider, wallCollider, false);
-					}
-					
-					var pairHandler = pair.GetComponent<PortalTravellerHandler>();
-					if (pairHandler && pairHandler.wallCollider && playerCollider) {
-						Physics.IgnoreCollision(playerCollider, pairHandler.wallCollider, true);
-					}
-
-					// Teleport with scale ratio
-					t.Teleport(transform, pair.transform, newPos, newRot, scaleRatio);
-					
+					TeleportTraveller(traveller, pair, scaleRatio);
 					_trackedTravellers.RemoveAt(i--);
-					pairHandler?.OnTravellerEnterPortal(t, justTeleported: true);
 					continue;
 				}
 
-				t.previousOffsetFromPortal = offset;
+				traveller.previousOffsetFromPortal = offset;
 			}
+		}
+
+		void TeleportTraveller(PortalTraveller traveller, PortalRenderer destination, float scaleRatio) {
+			if (!traveller || !destination) return;
+
+			Collider travellerCollider = traveller.GetComponent<Collider>();
+
+			if (wallCollider && travellerCollider) {
+				Physics.IgnoreCollision(travellerCollider, wallCollider, false);
+			}
+
+			var destinationHandler = destination.GetComponent<PortalTravellerHandler>();
+			if (destinationHandler && destinationHandler.wallCollider && travellerCollider) {
+				Physics.IgnoreCollision(travellerCollider, destinationHandler.wallCollider, true);
+			}
+
+			Vector3 newPos;
+			Quaternion newRot;
+			if (_viewChain) {
+				_viewChain.ComputeTeleportPose(portalRenderer, destination, traveller.transform.position, traveller.transform.rotation, scaleRatio, out newPos, out newRot);
+			} else {
+				newPos = destination.transform.position;
+				newRot = traveller.transform.rotation;
+			}
+
+			traveller.Teleport(transform, destination.transform, newPos, newRot, scaleRatio);
+			destinationHandler?.OnTravellerEnterPortal(traveller, justTeleported: true);
 		}
 
 		public void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
@@ -99,9 +97,9 @@ namespace Portal {
 			_trackedTravellers.Add(traveller);
 
 			if (wallCollider) {
-				Collider playerCollider = traveller.GetComponent<Collider>();
-				if (playerCollider) {
-					Physics.IgnoreCollision(playerCollider, wallCollider, true);
+				Collider travellerCollider = traveller.GetComponent<Collider>();
+				if (travellerCollider) {
+					Physics.IgnoreCollision(travellerCollider, wallCollider, true);
 				}
 			}
 		}
@@ -123,9 +121,9 @@ namespace Portal {
 				_trackedTravellers.Remove(traveller);
 
 				if (wallCollider) {
-					Collider playerCollider = traveller.GetComponent<Collider>();
-					if (playerCollider) {
-						Physics.IgnoreCollision(playerCollider, wallCollider, false);
+					Collider travellerCollider = traveller.GetComponent<Collider>();
+					if (travellerCollider) {
+						Physics.IgnoreCollision(travellerCollider, wallCollider, false);
 					}
 				}
 			}
