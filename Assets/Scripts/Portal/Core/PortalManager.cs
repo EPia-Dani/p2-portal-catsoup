@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Portal.Rendering;
 using UnityEngine;
 
 namespace Portal {

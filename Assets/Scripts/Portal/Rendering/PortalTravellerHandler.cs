@@ -2,6 +2,7 @@
 // Handles traveler teleportation logic separately from rendering
 
 using System.Collections.Generic;
+using Portal.Rendering;
 using UnityEngine;
 
 namespace Portal {
@@ -37,22 +38,22 @@ namespace Portal {
 					continue;
 				}
 
-				// Scale offset from portal center based on portal size ratio
-				Vector3 offset = t.transform.position - transform.position;
-				Vector3 scaledOffset = offset * scaleRatio;
-				
-				// Transform scaled offset through portal
-				Matrix4x4 portalTransform = pair.transform.localToWorldMatrix * _mirror * transform.worldToLocalMatrix;
-				Vector3 transformedOffset = portalTransform.MultiplyVector(scaledOffset);
-				Vector3 newPos = pair.transform.position + transformedOffset;
-				
-				// Get rotation from full transformation
-				Matrix4x4 toDest = pair.transform.localToWorldMatrix * _mirror * 
-				                   transform.worldToLocalMatrix * t.transform.localToWorldMatrix;
-				Quaternion newRot = toDest.rotation;
+			// Scale offset from portal center based on portal size ratio
+			Vector3 offset = t.transform.position - portalRenderer.transform.position;
+			Vector3 scaledOffset = offset * scaleRatio;
+			
+			// Transform scaled offset through portal
+			Matrix4x4 portalTransform = pair.transform.localToWorldMatrix * _mirror * portalRenderer.transform.worldToLocalMatrix;
+			Vector3 transformedOffset = portalTransform.MultiplyVector(scaledOffset);
+			Vector3 newPos = pair.transform.position + transformedOffset;
+			
+			// Get rotation from full transformation
+			Matrix4x4 toDest = pair.transform.localToWorldMatrix * _mirror * 
+			                   portalRenderer.transform.worldToLocalMatrix * t.transform.localToWorldMatrix;
+			Quaternion newRot = toDest.rotation;
 
-				float sidePrev = Mathf.Sign(Vector3.Dot(t.previousOffsetFromPortal, transform.forward));
-				float sideNow = Mathf.Sign(Vector3.Dot(offset, transform.forward));
+			float sidePrev = Mathf.Sign(Vector3.Dot(t.previousOffsetFromPortal, portalRenderer.transform.forward));
+			float sideNow = Mathf.Sign(Vector3.Dot(offset, portalRenderer.transform.forward));
 
 				if (sideNow > 0 && sidePrev < 0) {
 					// Crossed from front to back - teleport
@@ -69,7 +70,7 @@ namespace Portal {
 					}
 
 					// Teleport with scale ratio
-					t.Teleport(transform, pair.transform, newPos, newRot, scaleRatio);
+					t.Teleport(portalRenderer.transform, pair.transform, newPos, newRot, scaleRatio);
 					
 					_trackedTravellers.RemoveAt(i--);
 					pairHandler?.OnTravellerEnterPortal(t, justTeleported: true);
@@ -83,12 +84,12 @@ namespace Portal {
 		public void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
 			if (_trackedTravellers.Contains(traveller)) return;
 
-			Vector3 offsetFromPortal = traveller.transform.position - transform.position;
+			Vector3 offsetFromPortal = traveller.transform.position - portalRenderer.transform.position;
 
 			if (justTeleported) {
-				float currentDot = Vector3.Dot(offsetFromPortal, transform.forward);
+				float currentDot = Vector3.Dot(offsetFromPortal, portalRenderer.transform.forward);
 				if (currentDot >= 0) {
-					traveller.previousOffsetFromPortal = offsetFromPortal - transform.forward * (currentDot + 0.1f);
+					traveller.previousOffsetFromPortal = offsetFromPortal - portalRenderer.transform.forward * (currentDot + 0.1f);
 				} else {
 					traveller.previousOffsetFromPortal = offsetFromPortal;
 				}
