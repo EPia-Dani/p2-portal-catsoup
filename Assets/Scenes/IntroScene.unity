@@ -5897,10 +5897,8 @@ MonoBehaviour:
   textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 2
-  gateByMainCamera: 0
-  gateByScreenCoverage: 1
-  minScreenCoverageFraction: 0.001
-  _trackedTravellers: []
+  enableCulling: 1
+  minScreenCoverage: 0.001
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5921,10 +5919,8 @@ MonoBehaviour:
   textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 2
-  gateByMainCamera: 0
-  gateByScreenCoverage: 1
-  minScreenCoverageFraction: 0.001
-  _trackedTravellers: []
+  enableCulling: 1
+  minScreenCoverage: 0.001
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -6223,6 +6219,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   openThreshold: 0.8
   borderRenderer: {fileID: 1858539480}
+  meshTransform: {fileID: 0}
 --- !u!65 &6690853907733404543
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6301,7 +6298,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 7671
+    m_Bits: 7669
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: fc599718af08d9c48b271e70298be8b9, type: 2}
   m_TargetDisplay: 0
@@ -6395,6 +6392,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   openThreshold: 0.8
   borderRenderer: {fileID: 118090733}
+  meshTransform: {fileID: 0}
 --- !u!65 &8197170447663804484
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6455,7 +6453,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 8055
+    m_Bits: 8053
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: e79cd8f2eac983649845aa1f800dd7a9, type: 2}
   m_TargetDisplay: 0
