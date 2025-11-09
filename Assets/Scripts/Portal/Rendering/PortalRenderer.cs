@@ -18,10 +18,22 @@ namespace Portal {
 		[SerializeField] private MeshRenderer surfaceRenderer;
 
 		[Header("Render Settings")]
-		[SerializeField] private int textureWidth = 1024;
-		[SerializeField] private int textureHeight = 1024;
 		[SerializeField] private int recursionLimit = 2;
 		[SerializeField] private int frameSkipInterval = 1;
+		[SerializeField] private bool autoSizeToScreen = true;
+		[SerializeField, Range(0.25f, 1.5f)] private float screenHeightFraction = 1f;
+		[SerializeField, Range(0.25f, 1.5f)] private float screenWidthFraction = 1f;
+		[SerializeField] private int minTextureSize = 256;
+		[SerializeField] private int maxTextureSize = 2048;
+		[SerializeField, HideInInspector] private Vector2Int manualTextureSize = new Vector2Int(1024, 1024);
+
+		[Header("Adaptive Recursion")]
+		[SerializeField] private bool enableAdaptiveRecursion = true;
+		[SerializeField] private bool useFrameSkipping = false;
+		[SerializeField] private bool adaptiveResolution = true;
+		[SerializeField, Range(0.1f, 1f)] private float perLevelResolutionScale = 0.6f;
+		[SerializeField, Range(0.1f, 1f)] private float minResolutionScale = 0.25f;
+		[SerializeField] private int fullResolutionLevels = 1;
 
 		/// <summary>
 		/// Exposed so PortalSlot can adjust portal scale for travel/render cohesion.
@@ -34,6 +46,13 @@ namespace Portal {
 
 		private Material _surfaceMaterial;
 		private Matrix4x4[] _viewMatrices = Array.Empty<Matrix4x4>();
+		private Vector2Int _currentTextureSize = Vector2Int.zero;
+		private LevelRenderState[] _levelStates = Array.Empty<LevelRenderState>();
+		private struct LevelRenderState {
+			public int lastRenderedFrame;
+			public RenderTexture cachedTexture;
+			public float resolutionScale;
+		}
 		private readonly Plane[] _levelFrustumPlanes = new Plane[6];
 
 		private bool _visible = true;
@@ -59,16 +78,54 @@ namespace Portal {
 			}
 
 			SetupCamera();
-			ConfigureRenderTargets();
+			ConfigureRenderTargets(true);
 			EnsureCapacity(recursionLimit);
 
 			_visible = surfaceRenderer && surfaceRenderer.enabled;
+		}
+
+		void ReleaseLevelTexture(ref LevelRenderState state) {
+			if (state.cachedTexture) {
+				state.cachedTexture.Release();
+				Destroy(state.cachedTexture);
+				state.cachedTexture = null;
+			}
+
+			state.lastRenderedFrame = -1;
+			state.resolutionScale = 1f;
+		}
+
+		void ReleaseLevelTextures(int startIndex = 0) {
+			if (_levelStates == null) return;
+
+			for (int i = startIndex; i < _levelStates.Length; i++) {
+				ReleaseLevelTexture(ref _levelStates[i]);
+			}
 		}
 
 		void EnsureCapacity(int limit) {
 			int length = Mathf.Max(1, limit);
 			if (_viewMatrices.Length != length) {
 				_viewMatrices = new Matrix4x4[length];
+			}
+			if (_levelStates.Length != length) {
+				if (_levelStates.Length > length) {
+					for (int i = length; i < _levelStates.Length; i++) {
+						ReleaseLevelTexture(ref _levelStates[i]);
+					}
+				}
+
+				var newStates = new LevelRenderState[length];
+				int copyLength = Mathf.Min(_levelStates.Length, length);
+				for (int i = 0; i < copyLength; i++) {
+					newStates[i] = _levelStates[i];
+				}
+				for (int i = copyLength; i < length; i++) {
+					newStates[i].lastRenderedFrame = -1;
+					newStates[i].resolutionScale = 1f;
+					newStates[i].cachedTexture = null;
+				}
+				_levelStates = newStates;
 			}
 		}
 
@@ -94,27 +151,110 @@ namespace Portal {
 			_textureController?.BindCamera(portalCamera);
 		}
 
-		void ConfigureRenderTargets() {
+		void ConfigureRenderTargets(bool force = false) {
 			if (_textureController == null) return;
 
-			_textureController.Configure(textureWidth, textureHeight);
+			if (UpdateTextureResolution(force) == false) {
+				_textureController.BindCamera(portalCamera);
+				if (_surfaceMaterial) {
+					_textureController.BindMaterial(_surfaceMaterial);
+				}
+			}
+		}
+
+		bool UpdateTextureResolution(bool force) {
+			if (_textureController == null) return false;
+
+			Vector2Int desiredSize = DetermineTextureSize();
+			if (desiredSize.x <= 0 || desiredSize.y <= 0) return false;
+
+			if (!force && desiredSize == _currentTextureSize && _textureController.Texture != null) {
+				return false;
+			}
+
+			_currentTextureSize = desiredSize;
+			_textureController.Configure(desiredSize.x, desiredSize.y);
 			_textureController.BindCamera(portalCamera);
 			if (_surfaceMaterial) {
 				_textureController.BindMaterial(_surfaceMaterial);
 			}
+
+			return true;
+		}
+
+		Vector2Int DetermineTextureSize() {
+			int minSize = Mathf.Max(16, minTextureSize);
+			int maxSize = Mathf.Max(minSize, maxTextureSize);
+
+			if (!autoSizeToScreen) {
+				int manualWidth = Mathf.Clamp(manualTextureSize.x, minSize, maxSize);
+				int manualHeight = Mathf.Clamp(manualTextureSize.y, minSize, maxSize);
+				return new Vector2Int(manualWidth, manualHeight);
+			}
+
+			int screenWidth = Mathf.Max(1, Screen.width);
+			int screenHeight = Mathf.Max(1, Screen.height);
+			if (!Application.isPlaying && (screenWidth <= 1 || screenHeight <= 1)) {
+				int fallbackWidth = Mathf.Clamp(manualTextureSize.x, minSize, maxSize);
+				int fallbackHeight = Mathf.Clamp(manualTextureSize.y, minSize, maxSize);
+				return new Vector2Int(fallbackWidth, fallbackHeight);
+			}
+
+			float heightFraction = Mathf.Clamp(screenHeightFraction, 0.1f, 2f);
+			float widthFraction = Mathf.Clamp(screenWidthFraction, 0.1f, 2f);
+
+			int targetHeight = Mathf.RoundToInt(screenHeight * heightFraction);
+			if (targetHeight <= 0) {
+				targetHeight = screenHeight;
+			}
+			targetHeight = Mathf.Clamp(targetHeight, minSize, maxSize);
+
+			float aspect = EstimatePortalAspect();
+			int aspectWidth = Mathf.RoundToInt(targetHeight * aspect);
+
+			int widthLimit = Mathf.RoundToInt(screenWidth * widthFraction);
+			widthLimit = Mathf.Clamp(widthLimit <= 0 ? screenWidth : widthLimit, minSize, maxSize);
+
+			int targetWidth = Mathf.Clamp(aspectWidth > 0 ? aspectWidth : widthLimit, minSize, maxSize);
+			targetWidth = Mathf.Min(targetWidth, widthLimit);
+			targetWidth = Mathf.Clamp(targetWidth, minSize, maxSize);
+
+			return new Vector2Int(targetWidth, targetHeight);
+		}
+
+		float EstimatePortalAspect() {
+			if (!surfaceRenderer) return 1f;
+			var meshFilter = surfaceRenderer.GetComponent<MeshFilter>();
+			if (meshFilter && meshFilter.sharedMesh != null) {
+				Bounds meshBounds = meshFilter.sharedMesh.bounds;
+				Vector3 scale = surfaceRenderer.transform.lossyScale;
+				float meshWidth = Mathf.Max(0.001f, Mathf.Abs(meshBounds.size.x * scale.x));
+				float meshHeight = Mathf.Max(0.001f, Mathf.Abs(meshBounds.size.y * scale.y));
+				return Mathf.Clamp(meshWidth / meshHeight, 0.2f, 4f);
+			}
+
+			Bounds bounds = surfaceRenderer.bounds;
+			float height = Mathf.Max(0.001f, bounds.size.y);
+			float width = Mathf.Max(0.001f, bounds.size.x);
+			return Mathf.Clamp(width / height, 0.2f, 4f);
 		}
 
 		public void ConfigurePortal(int width, int height, int limit, int skipInterval) {
-			if (textureWidth != width || textureHeight != height) {
-				textureWidth = width;
-				textureHeight = height;
-				ConfigureRenderTargets();
-			}
-
 			recursionLimit = Mathf.Max(1, limit);
 			EnsureCapacity(recursionLimit);
 
 			frameSkipInterval = Mathf.Max(1, skipInterval);
+
+			if (!autoSizeToScreen) {
+				int minSize = Mathf.Max(16, minTextureSize);
+				int maxSize = Mathf.Max(minSize, maxTextureSize);
+				manualTextureSize = new Vector2Int(
+					Mathf.Clamp(width, minSize, maxSize),
+					Mathf.Clamp(height, minSize, maxSize)
+				);
+			}
+
+			ConfigureRenderTargets(true);
 		}
 
 		void OnEnable() {
@@ -129,6 +269,32 @@ namespace Portal {
 			if (_surfaceMaterial) {
 				Destroy(_surfaceMaterial);
 			}
+			ReleaseLevelTextures();
+		}
+
+		void OnValidate() {
+			recursionLimit = Mathf.Max(1, recursionLimit);
+			frameSkipInterval = Mathf.Max(1, frameSkipInterval);
+			minTextureSize = Mathf.Max(16, minTextureSize);
+			maxTextureSize = Mathf.Max(minTextureSize, maxTextureSize);
+			screenHeightFraction = Mathf.Clamp(screenHeightFraction, 0.1f, 2f);
+			screenWidthFraction = Mathf.Clamp(screenWidthFraction, 0.1f, 2f);
+			manualTextureSize = new Vector2Int(
+				Mathf.Clamp(manualTextureSize.x, minTextureSize, maxTextureSize),
+				Mathf.Clamp(manualTextureSize.y, minTextureSize, maxTextureSize)
+			);
+
+			if (!autoSizeToScreen && Application.isPlaying && _currentTextureSize != Vector2Int.zero) {
+				manualTextureSize = new Vector2Int(
+					Mathf.Clamp(_currentTextureSize.x, minTextureSize, maxTextureSize),
+					Mathf.Clamp(_currentTextureSize.y, minTextureSize, maxTextureSize)
+				);
+			}
+
+			if (Application.isPlaying) {
+				EnsureCapacity(recursionLimit);
+				ConfigureRenderTargets(true);
+			}
 		}
 
 		void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera) {
@@ -136,7 +302,7 @@ namespace Portal {
 			if (!pair) return;
 			if (!_visible || !IsReadyToRender) return;
 			if (!pair._visible || !pair.IsReadyToRender) return;
-			if ((Time.frameCount % frameSkipInterval) != 0) return;
+			if (useFrameSkipping && (Time.frameCount % Mathf.Max(1, frameSkipInterval)) != 0) return;
 
 			if (_visibilityCuller != null && _visibilityCuller.ShouldCull(mainCamera, surfaceRenderer)) return;
 
@@ -146,7 +312,9 @@ namespace Portal {
 		void Render(ScriptableRenderContext context) {
 			if (_viewMatrices.Length == 0 || !pair || _viewChain == null) return;
 
-			_textureController?.Clear(Color.clear);
+			if (!enableAdaptiveRecursion) {
+				ReleaseLevelTextures(1);
+			}
 
 			// Calculate dynamic recursion limit based on portal orientation
 			int effectiveLimit = CalculateEffectiveRecursionLimit();
@@ -159,8 +327,30 @@ namespace Portal {
 			Vector3 exitPos = pair.transform.position;
 			Vector3 exitFwd = pair.transform.forward;
 
+			ConfigureRenderTargets();
+			if (_textureController == null || _textureController.Texture == null || portalCamera == null) return;
+			RenderTexture baseTexture = _textureController.Texture;
+			portalCamera.targetTexture = baseTexture;
+			portalCamera.pixelRect = new Rect(0, 0, baseTexture.width, baseTexture.height);
+
 			for (int i = levelCount - 1; i >= 0; i--) {
-				RenderLevel(context, _viewMatrices[i], exitPos, exitFwd);
+				ref LevelRenderState state = ref _levelStates[i];
+				RenderTexture targetTexture = AcquireTargetTextureForLevel(i, baseTexture);
+				bool forceRender = (i == 0);
+				bool rendered = false;
+
+				if (forceRender || ShouldRenderLevel(i)) {
+					rendered = RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, targetTexture);
+					if (rendered) {
+						state.lastRenderedFrame = Time.frameCount;
+					}
+				}
+
+				if (targetTexture != null && targetTexture != baseTexture) {
+					if (rendered) {
+						Graphics.Blit(targetTexture, baseTexture);
+					}
+				}
 			}
 		}
 
@@ -244,22 +434,33 @@ namespace Portal {
 			return visible;
 		}
 
-		void RenderLevel(ScriptableRenderContext context, Matrix4x4 worldMatrix, Vector3 exitPos, Vector3 exitForward) {
-			if (!portalCamera || !_visible) return;
+		bool RenderLevel(ScriptableRenderContext context, Matrix4x4 worldMatrix, Vector3 exitPos, Vector3 exitForward, RenderTexture targetTexture) {
+			if (!portalCamera || !_visible) return false;
 
 			Vector3 cameraPos = worldMatrix.MultiplyPoint(Vector3.zero);
 			Vector3 cameraForward = worldMatrix.MultiplyVector(Vector3.forward);
 			Vector3 cameraUp = worldMatrix.MultiplyVector(Vector3.up);
 
 			if (!IsValidVector3(cameraPos) || !IsValidVector3(cameraForward) || !IsValidVector3(cameraUp)) {
-				return;
+				return false;
 			}
 
 			portalCamera.transform.SetPositionAndRotation(cameraPos, Quaternion.LookRotation(cameraForward, cameraUp));
 
-			if (portalCamera.targetTexture != null) {
-				portalCamera.pixelRect = new Rect(0, 0, portalCamera.targetTexture.width, portalCamera.targetTexture.height);
+			RenderTexture originalTarget = portalCamera.targetTexture;
+			Rect originalRect = portalCamera.pixelRect;
+
+			RenderTexture destination = targetTexture ? targetTexture : originalTarget;
+			if (!destination) {
+				portalCamera.targetTexture = originalTarget;
+				if (originalTarget) {
+					portalCamera.pixelRect = originalRect;
+				}
+				return false;
 			}
+
+			portalCamera.targetTexture = destination;
+			portalCamera.pixelRect = new Rect(0, 0, destination.width, destination.height);
 
 			Vector3 planePoint = exitPos + exitForward * 0.001f;
 			Matrix4x4 w2c = portalCamera.worldToCameraMatrix;
@@ -270,6 +471,80 @@ namespace Portal {
 			portalCamera.projectionMatrix = mainCamera.CalculateObliqueMatrix(clipPlane);
 			RenderPipeline.SubmitRenderRequest(portalCamera, new UniversalRenderPipeline.SingleCameraRequest());
 			portalCamera.ResetProjectionMatrix();
+			portalCamera.targetTexture = originalTarget;
+			if (originalTarget) {
+				portalCamera.pixelRect = originalRect;
+			}
+
+			return true;
+		}
+
+		bool ShouldRenderLevel(int levelIndex) {
+			if (_levelStates == null || levelIndex < 0 || levelIndex >= _levelStates.Length) return true;
+			if (!enableAdaptiveRecursion) return true;
+			if (!useFrameSkipping) return true;
+
+			int interval = Mathf.Max(1, frameSkipInterval);
+			int lastFrame = _levelStates[levelIndex].lastRenderedFrame;
+			if (lastFrame < 0) return true;
+
+			return (Time.frameCount - lastFrame) >= interval;
+		}
+
+		RenderTexture AcquireTargetTextureForLevel(int levelIndex, RenderTexture baseTexture) {
+			if (levelIndex <= 0) return baseTexture;
+			if (!enableAdaptiveRecursion || !adaptiveResolution) {
+				if (_levelStates != null && levelIndex < _levelStates.Length) {
+					ref LevelRenderState state = ref _levelStates[levelIndex];
+					if (state.cachedTexture) {
+						ReleaseLevelTexture(ref state);
+					}
+				}
+				return baseTexture;
+			}
+
+			if (_textureController == null || baseTexture == null) return baseTexture;
+			if (_levelStates == null || levelIndex >= _levelStates.Length) return baseTexture;
+
+			ref LevelRenderState levelState = ref _levelStates[levelIndex];
+
+			float scale = ComputeResolutionScale(levelIndex);
+			if (scale >= 0.999f) {
+				if (levelState.cachedTexture) {
+					ReleaseLevelTexture(ref levelState);
+				}
+				return baseTexture;
+			}
+
+			int width = Mathf.Max(1, Mathf.RoundToInt(baseTexture.width * scale));
+			int height = Mathf.Max(1, Mathf.RoundToInt(baseTexture.height * scale));
+
+			if (levelState.cachedTexture &&
+			    (levelState.cachedTexture.width != width ||
+			     levelState.cachedTexture.height != height ||
+			     Mathf.Abs(levelState.resolutionScale - scale) > 0.001f)) {
+				ReleaseLevelTexture(ref levelState);
+			}
+
+			if (!levelState.cachedTexture) {
+				var descriptor = _textureController.CreateDescriptor(width, height);
+				var renderTexture = new RenderTexture(descriptor);
+				_textureController.ApplySettings(renderTexture);
+				renderTexture.Create();
+				levelState.cachedTexture = renderTexture;
+			}
+
+			levelState.resolutionScale = scale;
+			return levelState.cachedTexture;
+		}
+
+		float ComputeResolutionScale(int levelIndex) {
+			if (!enableAdaptiveRecursion || !adaptiveResolution) return 1f;
+			if (levelIndex < fullResolutionLevels) return 1f;
+
+			int depth = Mathf.Max(0, levelIndex - fullResolutionLevels + 1);
+			float scale = Mathf.Pow(perLevelResolutionScale, depth);
+			return Mathf.Clamp(scale, minResolutionScale, 1f);
 		}
 
 		bool IsValidVector3(Vector3 value) {

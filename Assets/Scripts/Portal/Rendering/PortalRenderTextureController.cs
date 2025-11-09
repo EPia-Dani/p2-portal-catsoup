@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Portal {
 	[DisallowMultipleComponent]
@@ -13,6 +14,10 @@ namespace Portal {
 		private Material _boundMaterial;
 
 		public RenderTexture Texture => _renderTexture;
+		public RenderTextureFormat TextureFormat => textureFormat;
+		public FilterMode TextureFilterMode => filterMode;
+		public TextureWrapMode TextureWrapMode => wrapMode;
+		public int DepthBufferBits => depthBufferBits;
 
 		public void Configure(int width, int height) {
 			if (width <= 0 || height <= 0) return;
@@ -50,6 +55,22 @@ namespace Portal {
 			RenderTexture.active = _renderTexture;
 			GL.Clear(true, true, color);
 			RenderTexture.active = previous;
+		}
+
+		public RenderTextureDescriptor CreateDescriptor(int width, int height) {
+			var descriptor = new RenderTextureDescriptor(width, height, textureFormat, depthBufferBits) {
+				msaaSamples = 1,
+				useMipMap = false,
+				autoGenerateMips = false,
+				sRGB = QualitySettings.activeColorSpace == ColorSpace.Linear
+			};
+			return descriptor;
+		}
+
+		public void ApplySettings(RenderTexture texture) {
+			if (!texture) return;
+			texture.filterMode = filterMode;
+			texture.wrapMode = wrapMode;
 		}
 
 		public void Release() {

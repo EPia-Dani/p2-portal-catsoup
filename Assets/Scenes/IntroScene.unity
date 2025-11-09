@@ -5893,10 +5893,20 @@ MonoBehaviour:
   mainCamera: {fileID: 37313535}
   portalCamera: {fileID: 8095862263857129310}
   surfaceRenderer: {fileID: 476153942}
-  textureWidth: 1024
-  textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 1
+  autoSizeToScreen: 1
+  screenHeightFraction: 1
+  screenWidthFraction: 1
+  minTextureSize: 256
+  maxTextureSize: 2048
+  manualTextureSize: {x: 1024, y: 1024}
+  enableAdaptiveRecursion: 1
+  useFrameSkipping: 1
+  adaptiveResolution: 1
+  perLevelResolutionScale: 0.932
+  minResolutionScale: 0.25
+  fullResolutionLevels: 1
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5913,10 +5923,20 @@ MonoBehaviour:
   mainCamera: {fileID: 37313535}
   portalCamera: {fileID: 8899481715251803678}
   surfaceRenderer: {fileID: 1747989180196598255}
-  textureWidth: 1024
-  textureHeight: 1024
   recursionLimit: 2
   frameSkipInterval: 1
+  autoSizeToScreen: 1
+  screenHeightFraction: 1
+  screenWidthFraction: 1
+  minTextureSize: 256
+  maxTextureSize: 2048
+  manualTextureSize: {x: 1024, y: 1024}
+  enableAdaptiveRecursion: 1
+  useFrameSkipping: 1
+  adaptiveResolution: 1
+  perLevelResolutionScale: 0.932
+  minResolutionScale: 0.25
+  fullResolutionLevels: 1
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -6286,7 +6306,7 @@ MonoBehaviour:
   enableCulling: 1
   minScreenCoverageFraction: 0.01
   enableAngleCulling: 1
-  maxViewAngle: 90
+  maxViewAngle: 120
   enableDistanceCulling: 1
   maxRenderDistance: 100
 --- !u!1 &7219594838380380271
@@ -6505,7 +6525,7 @@ MonoBehaviour:
   enableCulling: 1
   minScreenCoverageFraction: 0.01
   enableAngleCulling: 1
-  maxViewAngle: 90
+  maxViewAngle: 120
   enableDistanceCulling: 1
   maxRenderDistance: 100
 --- !u!20 &8899481715251803678
