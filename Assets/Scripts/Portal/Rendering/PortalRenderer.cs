@@ -231,33 +231,44 @@ namespace Portal {
 			// Ensure texture resolution is up to date for this portal
 			UpdateTextureResolution(false);
 
-			// Ensure pair portal also has texture configured with same resolution
-			if (pair) {
-				pair.UpdateTextureResolution(false);
-			}
+		// Ensure pair portal also has texture configured with same resolution
+		if (pair) {
+			pair.UpdateTextureResolution(false);
+		}
 
-			// Build view chain
-			int levelCount = _viewChain.BuildViewChain(mainCamera, this, pair, recursionLimit, _viewMatrices);
+		// Disable recursion if portals have different scales (temporary measure)
+		int effectiveRecursionLimit = recursionLimit;
+		if (pair && Mathf.Abs(PortalScale - pair.PortalScale) > 0.001f) {
+			effectiveRecursionLimit = 1; // No recursion when scales differ
+		}
+
+		// Build view chain
+		int levelCount = _viewChain.BuildViewChain(mainCamera, this, pair, effectiveRecursionLimit, _viewMatrices);
 			if (levelCount == 0) return;
 
 			// Cull invisible recursion levels
 			levelCount = CullInvisibleLevels(levelCount);
 			if (levelCount == 0) return;
 
-			// Setup render target
-			RenderTexture baseTexture = _textureController.Texture;
-			if (baseTexture == null) return;
-			
-			portalCamera.targetTexture = baseTexture;
-			portalCamera.pixelRect = new Rect(0, 0, baseTexture.width, baseTexture.height);
+		// Setup render target
+		RenderTexture baseTexture = _textureController.Texture;
+		if (baseTexture == null) return;
+		
+		// Clear render texture with portal color before rendering
+		// This ensures the texture is filled even if nothing renders
+		Color portalColor = GetPortalColor();
+		_textureController.Clear(portalColor);
+		
+		portalCamera.targetTexture = baseTexture;
+		portalCamera.pixelRect = new Rect(0, 0, baseTexture.width, baseTexture.height);
 
-			// Render each recursion level
-			Vector3 exitPos = pair.transform.position;
-			Vector3 exitFwd = pair.transform.forward;
+		// Render each recursion level
+		Vector3 exitPos = pair.transform.position;
+		Vector3 exitFwd = pair.transform.forward;
 
-			for (int i = levelCount - 1; i >= 0; i--) {
-				RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, baseTexture);
-			}
+		for (int i = levelCount - 1; i >= 0; i--) {
+			RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, baseTexture);
+		}
 		}
 
 		int CullInvisibleLevels(int levelCount) {
@@ -402,6 +413,18 @@ namespace Portal {
 		bool IsValidVector3(Vector3 value) {
 			return !float.IsNaN(value.x) && !float.IsNaN(value.y) && !float.IsNaN(value.z) &&
 			       !float.IsInfinity(value.x) && !float.IsInfinity(value.y) && !float.IsInfinity(value.z);
+		}
+
+		Color GetPortalColor() {
+			// Check if this is a blue portal by layer, otherwise it's orange
+			int blueLayer = LayerMask.NameToLayer("Blue");
+			bool isBlue = blueLayer != -1 && gameObject.layer == blueLayer;
+			
+			if (isBlue) {
+				return new Color(0.2f, 0.6f, 1f, 1f); // Blue portal color
+			} else {
+				return new Color(1f, 0.5f, 0f, 1f); // Orange portal color
+			}
 		}
 
 		public void SetVisible(bool visible) {
