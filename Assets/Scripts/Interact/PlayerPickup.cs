@@ -1,14 +1,17 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
+using Portal;
 
 public class PlayerPickup : MonoBehaviour
 {
     [Header("Pickup Settings")]
     public float pickupRange = 5f;         // Max distance for picking up
     public Transform holdParent;           // Empty child of camera for object to float in front
-    public float holdDistance = 2f;        // Distance forward from camera to position holdParent
+    public float holdDistance = 2f;        // Base distance forward from camera to position holdParent (scales with player scale)
     public float moveSpeed = 10f;          // Speed at which object moves to hold position
     public float rotationSpeed = 10f;      // Speed at which object rotates to hold rotation
+    
+    private float _basePlayerScale = 1f;  // Store base player scale for reference
 
     [Header("Debug")]
     public bool debugRay = true;
@@ -17,6 +20,7 @@ public class PlayerPickup : MonoBehaviour
     private Rigidbody heldObjectRb;
     private Collider heldObjectCollider;
     private PortalTraveller heldObjectTraveller;
+    private PortalCloneSystem heldObjectCloneSystem;
     private Vector3 targetPosition;
     private Quaternion targetRotation;
     
@@ -50,6 +54,17 @@ public class PlayerPickup : MonoBehaviour
         
         // Set static instance
         _instance = this;
+        
+        // Store base player scale (use average of x, y, z scales)
+        Vector3 baseScale = transform.localScale;
+        _basePlayerScale = (baseScale.x + baseScale.y + baseScale.z) / 3f;
+        
+        // Subscribe to player teleportation events
+        var fpsController = GetComponent<FPSController>();
+        if (fpsController)
+        {
+            // We'll detect teleportation through PortalTravellerHandler
+        }
     }
     
     private void OnDestroy()
@@ -86,7 +101,18 @@ public class PlayerPickup : MonoBehaviour
 
             // Ensure object has a PortalTraveller component to pass through portals
             heldObjectTraveller = heldObject.GetComponent<PortalTraveller>();
-          
+            if (!heldObjectTraveller)
+            {
+                heldObjectTraveller = heldObject.AddComponent<PortalTraveller>();
+            }
+
+            // Ensure object has PortalCloneSystem for portal clone effect
+            heldObjectCloneSystem = heldObject.GetComponent<PortalCloneSystem>();
+            if (!heldObjectCloneSystem)
+            {
+                heldObjectCloneSystem = heldObject.AddComponent<PortalCloneSystem>();
+            }
+            heldObjectCloneSystem.SetHeld(true);
 
             if (heldObjectRb != null)
             {
@@ -99,7 +125,7 @@ public class PlayerPickup : MonoBehaviour
                 heldObjectRb.angularDamping = 5f;
             }
             
-            // Keep collider enabled so it can collide with walls
+            // Keep collider enabled so it can collide with walls and portals
             // Collider stays enabled - physics will handle collisions
 
             // Don't parent - we'll move it with physics instead
@@ -113,6 +139,13 @@ public class PlayerPickup : MonoBehaviour
     private void DropObject()
     {
         if (heldObject == null) return;
+
+        // Notify clone system that we're dropping (will swap if clone exists)
+        if (heldObjectCloneSystem != null)
+        {
+            heldObjectCloneSystem.SetHeld(false);
+            heldObjectCloneSystem = null;
+        }
 
         // Re-enable physics
         if (heldObjectRb != null)
@@ -134,6 +167,15 @@ public class PlayerPickup : MonoBehaviour
         heldObjectCollider = null;
         heldObjectTraveller = null;
     }
+    
+    // Called when player teleports - swap held object with clone if it exists
+    public void OnPlayerTeleport()
+    {
+        if (heldObjectCloneSystem != null)
+        {
+            heldObjectCloneSystem.OnPlayerTeleport();
+        }
+    }
 
     private void Update()
     {
@@ -146,10 +188,17 @@ public class PlayerPickup : MonoBehaviour
                 DropObject();
         }
 
-        // Position holdParent at holdDistance from camera
+        // Position holdParent at holdDistance from camera (scaled by player scale)
         if (holdParent != null && Camera.main != null)
         {
-            holdParent.position = Camera.main.transform.position + Camera.main.transform.forward * holdDistance;
+            // Calculate current player scale factor
+            Vector3 currentScale = transform.localScale;
+            float currentScaleFactor = (currentScale.x + currentScale.y + currentScale.z) / 3f / _basePlayerScale;
+            
+            // Scale hold distance by player scale
+            float scaledHoldDistance = holdDistance * currentScaleFactor;
+            
+            holdParent.position = Camera.main.transform.position + Camera.main.transform.forward * scaledHoldDistance;
             holdParent.rotation = Camera.main.transform.rotation;
         }
 
@@ -187,7 +236,7 @@ public class PlayerPickup : MonoBehaviour
     {
         if (Camera.main != null)
         {
-            // Use holdParent position directly (it's already positioned at holdDistance)
+            // Use holdParent position directly (it's already positioned at scaled holdDistance)
             if (holdParent != null)
             {
                 targetPosition = holdParent.position;
@@ -195,8 +244,12 @@ public class PlayerPickup : MonoBehaviour
             }
             else
             {
-                // Fallback: calculate from camera if no holdParent assigned
-                targetPosition = Camera.main.transform.position + Camera.main.transform.forward * holdDistance;
+                // Fallback: calculate from camera if no holdParent assigned (scaled by player scale)
+                Vector3 currentScale = transform.localScale;
+                float currentScaleFactor = (currentScale.x + currentScale.y + currentScale.z) / 3f / _basePlayerScale;
+                float scaledHoldDistance = holdDistance * currentScaleFactor;
+                
+                targetPosition = Camera.main.transform.position + Camera.main.transform.forward * scaledHoldDistance;
                 targetRotation = Camera.main.transform.rotation;
             }
         }

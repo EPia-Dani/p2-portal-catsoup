@@ -996,9 +996,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4b8d7d8fabc49f48abd25b2eff97aef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pickupRange: 2
+  pickupRange: 1.5
   holdParent: {fileID: 166760980}
-  holdDistance: 2
+  holdDistance: 1.5
   moveSpeed: 100
   rotationSpeed: 50
   debugRay: 1
@@ -2093,7 +2093,7 @@ GameObject:
   - component: {fileID: 711101613}
   - component: {fileID: 711101612}
   - component: {fileID: 711101611}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: InteractableObject
   m_TagString: Interactable
   m_Icon: {fileID: 0}
@@ -6870,8 +6870,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.26, y: 0.61, z: 0.75}
-  m_Center: {x: 0, y: 0, z: -0.24}
+  m_Size: {x: 0.44, y: 0.67, z: 1}
+  m_Center: {x: 0, y: 0, z: 0.4}
 --- !u!114 &6690853907733404544
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6975,7 +6975,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 7669
+    m_Bits: 24053
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
@@ -7089,8 +7089,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.26, y: 0.61, z: 0.75}
-  m_Center: {x: 0, y: 0, z: -0.24}
+  m_Size: {x: 0.44, y: 0.67, z: 1}
+  m_Center: {x: 0, y: 0, z: 0.4}
 --- !u!114 &8197170447663804485
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7176,7 +7176,7 @@ Camera:
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 8053
+    m_Bits: 24437
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0

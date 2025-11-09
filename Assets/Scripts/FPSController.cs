@@ -207,6 +207,13 @@ public class FPSController : PortalTraveller {
         // Call base Teleport to handle scaling
         base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
 
+        // Notify PlayerPickup that player teleported (for held object clone swap)
+        var playerPickup = GetComponent<PlayerPickup>();
+        if (playerPickup != null)
+        {
+            playerPickup.OnPlayerTeleport();
+        }
+
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();
     }

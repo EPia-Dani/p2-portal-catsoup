@@ -8,11 +8,9 @@ namespace Portal {
 		public Collider wallCollider;
 		
 		private readonly List<PortalTraveller> _trackedTravellers = new List<PortalTraveller>();
-		private PortalViewChain _viewChain;
 
 		void Awake() {
 			if (!portalRenderer) portalRenderer = GetComponent<PortalRenderer>();
-			_viewChain = GetComponent<PortalViewChain>();
 		}
 
 		void LateUpdate() {
@@ -28,6 +26,13 @@ namespace Portal {
 					continue;
 				}
 
+				// Completely ignore held objects - remove them from tracking
+				if (PlayerPickup.IsObjectHeld(traveller.gameObject)) {
+					Debug.LogWarning($"[PortalTravellerHandler] REMOVING held object {traveller.name} from tracking - it shouldn't be here!");
+					_trackedTravellers.RemoveAt(i);
+					continue;
+				}
+
 				Vector3 offset = traveller.transform.position - transform.position;
 				float sidePrev = Mathf.Sign(Vector3.Dot(traveller.previousOffsetFromPortal, transform.forward));
 				float sideNow = Mathf.Sign(Vector3.Dot(offset, transform.forward));
@@ -36,7 +41,7 @@ namespace Portal {
 					TeleportTraveller(traveller, pair, scaleRatio);
 					_trackedTravellers.RemoveAt(i);
 				} else {
-					traveller.previousOffsetFromPortal = offset;
+				traveller.previousOffsetFromPortal = offset;
 				}
 			}
 		}
@@ -57,22 +62,26 @@ namespace Portal {
 				Physics.IgnoreCollision(travellerCollider, destHandler.wallCollider, true);
 			}
 
-			// Calculate teleport position/rotation
-			Vector3 newPos = destination.transform.position;
-			Quaternion newRot = traveller.transform.rotation;
-			if (_viewChain) {
-				_viewChain.ComputeTeleportPose(portalRenderer, destination, traveller.transform.position, traveller.transform.rotation, scaleRatio, out newPos, out newRot);
-			}
+			// Calculate teleport position/rotation using utility
+			PortalTransformUtility.TransformThroughPortal(portalRenderer, destination, 
+				traveller.transform.position, traveller.transform.rotation, scaleRatio, 
+				out Vector3 newPos, out Quaternion newRot);
 
 			traveller.Teleport(transform, destination.transform, newPos, newRot, scaleRatio);
 			destHandler?.OnTravellerEnterPortal(traveller, justTeleported: true);
 		}
 
 		public void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
+			// Never track held objects
+			if (PlayerPickup.IsObjectHeld(traveller.gameObject)) {
+				SetCollisionIgnore(traveller, true);
+				return;
+			}
+
 			if (_trackedTravellers.Contains(traveller)) return;
 
 			Vector3 offset = traveller.transform.position - transform.position;
-			
+
 			// Prevent immediate re-teleport
 			if (justTeleported) {
 				float dot = Vector3.Dot(offset, transform.forward);
@@ -88,10 +97,14 @@ namespace Portal {
 			_trackedTravellers.Add(traveller);
 
 			// Ignore collision with wall
-			if (wallCollider) {
+			SetCollisionIgnore(traveller, true);
+		}
+
+		public void SetCollisionIgnore(PortalTraveller traveller, bool ignore) {
+			if (wallCollider && traveller) {
 				var collider = traveller.GetComponent<Collider>();
 				if (collider) {
-					Physics.IgnoreCollision(collider, wallCollider, true);
+					Physics.IgnoreCollision(collider, wallCollider, ignore);
 				}
 			}
 		}
@@ -99,18 +112,47 @@ namespace Portal {
 		void OnTriggerEnter(Collider other) {
 			var traveller = other.GetComponent<PortalTraveller>();
 			if (traveller) {
+				bool isHeld = PlayerPickup.IsObjectHeld(traveller.gameObject);
+				Debug.Log($"[PortalTravellerHandler] OnTriggerEnter: {traveller.name} (held: {isHeld})");
+				
+				// For held objects, only set up collision ignore (no tracking/teleportation)
+				if (isHeld) {
+					Debug.Log($"[PortalTravellerHandler] Setting collision ignore for held object {traveller.name}");
+					SetCollisionIgnore(traveller, true);
+					// Also ignore collision with destination portal wall
+					if (portalRenderer?.pair) {
+						var destHandler = portalRenderer.pair.GetComponent<PortalTravellerHandler>();
+						if (destHandler) {
+							destHandler.SetCollisionIgnore(traveller, true);
+							Debug.Log($"[PortalTravellerHandler] Also ignoring collision with destination portal for {traveller.name}");
+						}
+					}
+				} else {
 				OnTravellerEnterPortal(traveller);
+				}
 			}
 		}
 
 		void OnTriggerExit(Collider other) {
 			var traveller = other.GetComponent<PortalTraveller>();
-			if (traveller && _trackedTravellers.Remove(traveller)) {
-				if (wallCollider) {
-					var collider = traveller.GetComponent<Collider>();
-					if (collider) {
-						Physics.IgnoreCollision(collider, wallCollider, false);
-					}
+			if (traveller) {
+				bool isHeld = PlayerPickup.IsObjectHeld(traveller.gameObject);
+				Debug.Log($"[PortalTravellerHandler] OnTriggerExit: {traveller.name} (held: {isHeld})");
+				
+				// For held objects, DO NOT restore collision - keep it ignored while held
+				// Collision will be restored when object is dropped (handled by PortalCloneSystem)
+				if (isHeld) {
+					Debug.Log($"[PortalTravellerHandler] Ignoring OnTriggerExit for held object {traveller.name} - keeping collision ignored");
+					return;
+				}
+				
+				// Remove from tracking if it was tracked
+				bool wasTracked = _trackedTravellers.Remove(traveller);
+
+				// Only restore collision for non-held objects
+				if (wasTracked) {
+					Debug.Log($"[PortalTravellerHandler] Restoring collision for {traveller.name}");
+					SetCollisionIgnore(traveller, false);
 				}
 			}
 		}
