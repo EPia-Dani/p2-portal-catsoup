@@ -34,6 +34,7 @@ namespace Portal {
 
 		private Material _surfaceMaterial;
 		private Matrix4x4[] _viewMatrices = Array.Empty<Matrix4x4>();
+		private readonly Plane[] _levelFrustumPlanes = new Plane[6];
 
 		private bool _visible = true;
 		public bool IsReadyToRender { get; set; }
@@ -152,6 +153,9 @@ namespace Portal {
 			int levelCount = _viewChain.BuildViewChain(mainCamera, this, pair, effectiveLimit, _viewMatrices);
 			if (levelCount == 0) return;
 
+			levelCount = TrimInvisibleLevels(levelCount);
+			if (levelCount == 0) return;
+
 			Vector3 exitPos = pair.transform.position;
 			Vector3 exitFwd = pair.transform.forward;
 
@@ -177,11 +181,67 @@ namespace Portal {
 			// Portals at 90° (dot ≈ 0) - render one more time (2 levels total)
 			// Using threshold around 0
 			if (dot > -0.2f && dot < 0.2f) {
-				return 2;
+				return Mathf.Min(2, recursionLimit);
 			}
 
 			// Portals facing each other (dot ≈ -1, 180°) and other angles - use configured recursion limit
 			return recursionLimit;
+		}
+
+		int TrimInvisibleLevels(int levelCount) {
+			if (!portalCamera || levelCount <= 1) return levelCount;
+
+			for (int i = 0; i < levelCount - 1; i++) {
+				PortalRenderer targetPortal = (i % 2 == 0) ? this : pair;
+				if (!targetPortal) continue;
+
+				var targetRenderer = targetPortal.surfaceRenderer;
+				if (!targetRenderer) continue;
+
+				if (!IsPortalVisibleFromLevel(_viewMatrices[i], targetRenderer)) {
+					return i + 1;
+				}
+			}
+
+			return levelCount;
+		}
+
+		bool IsPortalVisibleFromLevel(Matrix4x4 worldMatrix, MeshRenderer targetRenderer) {
+			if (!portalCamera || targetRenderer == null) return true;
+
+			Vector3 position = worldMatrix.MultiplyPoint(Vector3.zero);
+			Vector3 forward = worldMatrix.MultiplyVector(Vector3.forward);
+			Vector3 up = worldMatrix.MultiplyVector(Vector3.up);
+
+			if (!IsValidVector3(position) || !IsValidVector3(forward) || !IsValidVector3(up)) {
+				return false;
+			}
+
+			if (forward.sqrMagnitude < 1e-4f) return false;
+
+			Quaternion rotation;
+			try {
+				rotation = Quaternion.LookRotation(forward, up);
+			} catch (Exception) {
+				return false;
+			}
+
+			Vector3 originalPosition = portalCamera.transform.position;
+			Quaternion originalRotation = portalCamera.transform.rotation;
+
+			portalCamera.transform.SetPositionAndRotation(position, rotation);
+
+			GeometryUtility.CalculateFrustumPlanes(portalCamera, _levelFrustumPlanes);
+
+			Vector3 forwardDir = rotation * Vector3.forward;
+			Bounds expandedBounds = targetRenderer.bounds;
+			expandedBounds.Expand(0.05f);
+			expandedBounds.center += forwardDir * 0.05f;
+			bool visible = GeometryUtility.TestPlanesAABB(_levelFrustumPlanes, expandedBounds);
+
+			portalCamera.transform.SetPositionAndRotation(originalPosition, originalRotation);
+
+			return visible;
 		}
 
 		void RenderLevel(ScriptableRenderContext context, Matrix4x4 worldMatrix, Vector3 exitPos, Vector3 exitForward) {
