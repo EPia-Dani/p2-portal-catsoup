@@ -38,15 +38,28 @@ namespace Portal {
 			Bounds bounds = surface.bounds;
 			Vector3 surfaceCenter = PortalSurfaceMath.ProjectPointToSurfaceCenter(bounds, hit.point, normal);
 			Vector2 clampRange = PortalSurfaceMath.GetClampRange(bounds, right, up, _sizeController.CurrentHalfSize, _sizeController.InitialHalfSize, _clampSkin);
-			if (clampRange.x <= 0f || clampRange.y <= 0f) {
-				return false;
-			}
-
+			
 			Vector3 offset = hit.point - surfaceCenter;
-			Vector2 localPos = new Vector2(
-				Mathf.Clamp(Vector3.Dot(offset, right), -clampRange.x, clampRange.x),
-				Mathf.Clamp(Vector3.Dot(offset, up), -clampRange.y, clampRange.y)
-			);
+			
+			// For small portals, don't clamp to bounds - allow placement anywhere
+			Vector2 localPos;
+			float currentScale = _sizeController.CurrentScale;
+			if (currentScale < 0.5f) {
+				// Small portal - no clamping, skip bounds validation
+				localPos = new Vector2(
+					Vector3.Dot(offset, right),
+					Vector3.Dot(offset, up)
+				);
+			} else {
+				// Normal portal - validate bounds and clamp
+				if (clampRange.x <= 0f || clampRange.y <= 0f) {
+					return false;
+				}
+				localPos = new Vector2(
+					Mathf.Clamp(Vector3.Dot(offset, right), -clampRange.x, clampRange.x),
+					Mathf.Clamp(Vector3.Dot(offset, up), -clampRange.y, clampRange.y)
+				);
+			}
 
 			placement = new PortalPlacement {
 				Surface = surface,

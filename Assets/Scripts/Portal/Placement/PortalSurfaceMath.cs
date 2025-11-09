@@ -20,10 +20,11 @@ namespace Portal {
 		}
 
 		public static Vector2 GetClampRange(Bounds bounds, Vector3 right, Vector3 up, Vector2 halfSize, Vector2 minHalfSize, float clampSkin) {
-			Vector2 effectiveHalfSize = GetEffectiveHalfSize(halfSize, minHalfSize);
+			// Use actual halfSize directly - don't enforce minimum for small portals
+			// This allows small portals to be placed closer to edges
 			Vector3 extents = bounds.extents;
-			float cr = extents.x * Mathf.Abs(right.x) + extents.y * Mathf.Abs(right.y) + extents.z * Mathf.Abs(right.z) - effectiveHalfSize.x - clampSkin;
-			float cu = extents.x * Mathf.Abs(up.x) + extents.y * Mathf.Abs(up.y) + extents.z * Mathf.Abs(up.z) - effectiveHalfSize.y - clampSkin;
+			float cr = extents.x * Mathf.Abs(right.x) + extents.y * Mathf.Abs(right.y) + extents.z * Mathf.Abs(right.z) - halfSize.x;
+			float cu = extents.x * Mathf.Abs(up.x) + extents.y * Mathf.Abs(up.y) + extents.z * Mathf.Abs(up.z) - halfSize.y;
 			return new Vector2(cr, cu);
 		}
 

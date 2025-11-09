@@ -51,8 +51,15 @@ namespace Portal {
 			if (magnitude < 1.05f) {
 				float k = magnitude > 1e-3f ? 1.05f / magnitude : 1f;
 				resolvedLocalPos = otherLocalPos + new Vector2(distNormalized.x * minSeparation.x * k, distNormalized.y * minSeparation.y * k);
-				resolvedLocalPos.x = Mathf.Clamp(resolvedLocalPos.x, -placement.ClampRange.x, placement.ClampRange.x);
-				resolvedLocalPos.y = Mathf.Clamp(resolvedLocalPos.y, -placement.ClampRange.y, placement.ClampRange.y);
+				
+				// For small portals, don't clamp to bounds
+				float currentScale = _sizeController.CurrentScale;
+				if (currentScale >= 0.5f) {
+					// Normal portal - clamp to bounds
+					resolvedLocalPos.x = Mathf.Clamp(resolvedLocalPos.x, -placement.ClampRange.x, placement.ClampRange.x);
+					resolvedLocalPos.y = Mathf.Clamp(resolvedLocalPos.y, -placement.ClampRange.y, placement.ClampRange.y);
+				}
+				// Small portal - no clamping, keep resolved position
 
 				dist = resolvedLocalPos - otherLocalPos;
 				distNormalized = new Vector2(dist.x / minSeparation.x, dist.y / minSeparation.y);

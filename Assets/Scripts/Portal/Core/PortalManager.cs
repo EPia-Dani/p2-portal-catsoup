@@ -18,6 +18,8 @@ namespace Portal {
 		Vector3 _orangeBaseScale = Vector3.one;
 		Vector3 _blueMeshBaseScale = Vector3.one;
 		Vector3 _orangeMeshBaseScale = Vector3.one;
+		Vector3 _blueColliderBaseSize = Vector3.one;
+		Vector3 _orangeColliderBaseSize = Vector3.one;
 
 		public PortalRenderer BluePortal => bluePortal;
 		public PortalRenderer OrangePortal => orangePortal;
@@ -33,10 +35,20 @@ namespace Portal {
 			if (bluePortal) {
 				_blueBaseScale = bluePortal.transform.localScale;
 				bluePortal.IsReadyToRender = false;
+				// Store base collider size if it exists
+				var blueCollider = bluePortal.GetComponent<BoxCollider>();
+				if (blueCollider) {
+					_blueColliderBaseSize = blueCollider.size;
+				}
 			}
 			if (orangePortal) {
 				_orangeBaseScale = orangePortal.transform.localScale;
 				orangePortal.IsReadyToRender = false;
+				// Store base collider size if it exists
+				var orangeCollider = orangePortal.GetComponent<BoxCollider>();
+				if (orangeCollider) {
+					_orangeColliderBaseSize = orangeCollider.size;
+				}
 			}
 			if (bluePortalMesh) {
 				_blueMeshBaseScale = bluePortalMesh.localScale;
@@ -108,6 +120,9 @@ namespace Portal {
 			renderer.SetWallCollider(surface);
 			renderer.PortalScale = scale;
 
+			// Scale trigger collider to match portal size
+			UpdatePortalTriggerCollider(renderer, scale);
+
 			// Apply to mesh
 			if (mesh != null) {
 				mesh.gameObject.SetActive(true);
@@ -167,6 +182,39 @@ namespace Portal {
 
 		public void SetFrameSkipInterval(int value) {
 			// Frame skipping removed for simplicity - this is a no-op for UI compatibility
+		}
+
+		void UpdatePortalTriggerCollider(PortalRenderer renderer, float scale) {
+			if (!renderer) return;
+
+			// Get or create BoxCollider for trigger
+			BoxCollider triggerCollider = renderer.GetComponent<BoxCollider>();
+			if (!triggerCollider) {
+				triggerCollider = renderer.gameObject.AddComponent<BoxCollider>();
+				// Only set defaults if creating new collider
+				triggerCollider.isTrigger = true;
+				triggerCollider.size = new Vector3(0.5f, 0.5f, 1.5f); // Smaller size, centered, with good thickness
+				triggerCollider.center = Vector3.zero;
+			}
+
+			// Get base collider size for this portal
+			Vector3 baseSize = (renderer == bluePortal) ? _blueColliderBaseSize : _orangeColliderBaseSize;
+			
+			// If base size wasn't stored (first time), use current size as base
+			if (baseSize == Vector3.one && triggerCollider.size != Vector3.one) {
+				baseSize = triggerCollider.size;
+				if (renderer == bluePortal) {
+					_blueColliderBaseSize = baseSize;
+				} else {
+					_orangeColliderBaseSize = baseSize;
+				}
+			}
+
+			// Keep collider smaller than portal - don't scale X/Y with portal scale
+			// Just use base size, centered on portal
+			float increasedThickness = baseSize.z * 1.5f;
+			triggerCollider.size = new Vector3(baseSize.x, baseSize.y, increasedThickness);
+			triggerCollider.center = Vector3.zero; // Ensure it's centered
 		}
 
 		void UpdateVisualStates() {
