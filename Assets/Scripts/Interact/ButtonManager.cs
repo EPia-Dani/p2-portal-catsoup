@@ -6,8 +6,7 @@ public class ButtonManager : MonoBehaviour
 {
     public IActionManager actionObject;
     public Animator animator;
-    private bool isPressed;
-    
+    private bool isPressed, wasPressed;
     
     private void OnTriggerEnter(Collider interactable)
     {
@@ -17,16 +16,16 @@ public class ButtonManager : MonoBehaviour
         isPressed = true;
         if(animator != null)
         {
-            animator.SetTrigger("PressButton");
+            animator.SetTrigger("ButtonPressed");
+            Debug.Log("Button pressed, playing animation.");
         }
         else
         { 
             Debug.LogWarning("Animator not assigned on ButtonManager.");
         }
-        
         actionObject?.performAction();
+        wasPressed = true;
     }
-
     private void OnTriggerExit(Collider interactable)
     {
         if(!interactable.CompareTag("Interactable")) return;

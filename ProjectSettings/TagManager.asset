@@ -7,6 +7,8 @@ TagManager:
   - Portal
   - Portalwall
   - Interactable
+  - Cube
+  - Button
   layers:
   - Default
   - TransparentFX
@@ -23,7 +25,7 @@ TagManager:
   - Player
   - Gizmo
   - Interactable
-  - 
+  - Button
   - 
   - 
   - 
