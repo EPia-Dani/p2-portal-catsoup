@@ -59,6 +59,11 @@ namespace Portal {
 
 		public Transform PortalTransform => transform;
 
+		// Performance monitoring
+		private float _lastRenderTime = 0f;
+		private int _lastFrameCount = 0;
+		private int _renderCount = 0;
+
 		void Awake() {
 			Initialize();
 		}
@@ -104,20 +109,27 @@ namespace Portal {
 
 		void EnsureCapacity(int limit) {
 			int length = Mathf.Max(1, limit);
-			if (_viewMatrices.Length < length) {
+			if (_viewMatrices.Length != length) {
 				_viewMatrices = new Matrix4x4[length];
 			}
-			if (_levelStates.Length < length) {
-				if (_levelStates.Length > 0 && _levelStates.Length < length) {
-					Array.Resize(ref _levelStates, length);
-				} else {
-					_levelStates = new LevelRenderState[length];
+			if (_levelStates.Length != length) {
+				if (_levelStates.Length > length) {
+					for (int i = length; i < _levelStates.Length; i++) {
+						ReleaseLevelTexture(ref _levelStates[i]);
+					}
 				}
-			} else if (_levelStates.Length > length) {
-				for (int i = length; i < _levelStates.Length; i++) {
-					ReleaseLevelTexture(ref _levelStates[i]);
+
+				var newStates = new LevelRenderState[length];
+				int copyLength = Mathf.Min(_levelStates.Length, length);
+				for (int i = 0; i < copyLength; i++) {
+					newStates[i] = _levelStates[i];
 				}
-				Array.Resize(ref _levelStates, length);
+				for (int i = copyLength; i < length; i++) {
+					newStates[i].lastRenderedFrame = -1;
+					newStates[i].resolutionScale = 1f;
+					newStates[i].cachedTexture = null;
+				}
+				_levelStates = newStates;
 			}
 		}
 
@@ -175,55 +187,51 @@ namespace Portal {
 		}
 
 		Vector2Int DetermineTextureSize() {
-			int minSize = minTextureSize < 16 ? 16 : minTextureSize;
-			int maxSize = maxTextureSize < minSize ? minSize : maxTextureSize;
+			int minSize = Mathf.Max(16, minTextureSize);
+			int maxSize = Mathf.Max(minSize, maxTextureSize);
 
 			if (!autoSizeToScreen) {
-				return new Vector2Int(
-					manualTextureSize.x < minSize ? minSize : (manualTextureSize.x > maxSize ? maxSize : manualTextureSize.x),
-					manualTextureSize.y < minSize ? minSize : (manualTextureSize.y > maxSize ? maxSize : manualTextureSize.y)
-				);
+				int manualWidth = Mathf.Clamp(manualTextureSize.x, minSize, maxSize);
+				int manualHeight = Mathf.Clamp(manualTextureSize.y, minSize, maxSize);
+				return new Vector2Int(manualWidth, manualHeight);
 			}
 
-			int screenWidth = Screen.width;
-			int screenHeight = Screen.height;
-			if (screenWidth < 1) screenWidth = 1;
-			if (screenHeight < 1) screenHeight = 1;
-
-			if (!Application.isPlaying && screenWidth <= 1 && screenHeight <= 1) {
-				return new Vector2Int(
-					manualTextureSize.x < minSize ? minSize : (manualTextureSize.x > maxSize ? maxSize : manualTextureSize.x),
-					manualTextureSize.y < minSize ? minSize : (manualTextureSize.y > maxSize ? maxSize : manualTextureSize.y)
-				);
+			int screenWidth = Mathf.Max(1, Screen.width);
+			int screenHeight = Mathf.Max(1, Screen.height);
+			if (!Application.isPlaying && (screenWidth <= 1 || screenHeight <= 1)) {
+				int fallbackWidth = Mathf.Clamp(manualTextureSize.x, minSize, maxSize);
+				int fallbackHeight = Mathf.Clamp(manualTextureSize.y, minSize, maxSize);
+				return new Vector2Int(fallbackWidth, fallbackHeight);
 			}
 
-			float heightFrac = screenHeightFraction < 0.1f ? 0.1f : (screenHeightFraction > 2f ? 2f : screenHeightFraction);
-			float widthFrac = screenWidthFraction < 0.1f ? 0.1f : (screenWidthFraction > 2f ? 2f : screenWidthFraction);
+			float heightFraction = Mathf.Clamp(screenHeightFraction, 0.1f, 2f);
+			float widthFraction = Mathf.Clamp(screenWidthFraction, 0.1f, 2f);
 
-			int targetHeight = Mathf.RoundToInt(screenHeight * heightFrac);
-			if (targetHeight < minSize) targetHeight = minSize;
-			else if (targetHeight > maxSize) targetHeight = maxSize;
+			int targetHeight = Mathf.RoundToInt(screenHeight * heightFraction);
+			if (targetHeight <= 0) {
+				targetHeight = screenHeight;
+			}
+			targetHeight = Mathf.Clamp(targetHeight, minSize, maxSize);
 
 			float aspect = EstimatePortalAspect();
 			int aspectWidth = Mathf.RoundToInt(targetHeight * aspect);
-			int widthLimit = Mathf.RoundToInt(screenWidth * widthFrac);
-			if (widthLimit < minSize) widthLimit = minSize;
-			else if (widthLimit > maxSize) widthLimit = maxSize;
 
-			int targetWidth = aspectWidth > 0 && aspectWidth < widthLimit ? aspectWidth : widthLimit;
-			if (targetWidth < minSize) targetWidth = minSize;
-			else if (targetWidth > maxSize) targetWidth = maxSize;
+			int widthLimit = Mathf.RoundToInt(screenWidth * widthFraction);
+			widthLimit = Mathf.Clamp(widthLimit <= 0 ? screenWidth : widthLimit, minSize, maxSize);
+
+			int targetWidth = Mathf.Clamp(aspectWidth > 0 ? aspectWidth : widthLimit, minSize, maxSize);
+			targetWidth = Mathf.Min(targetWidth, widthLimit);
+			targetWidth = Mathf.Clamp(targetWidth, minSize, maxSize);
 
 			return new Vector2Int(targetWidth, targetHeight);
 		}
 
 		float EstimatePortalAspect() {
 			if (!surfaceRenderer) return 1f;
-			Vector3 size = surfaceRenderer.bounds.size;
-			float height = size.y < 0.001f ? 0.001f : size.y;
-			float width = size.x < 0.001f ? 0.001f : size.x;
-			float aspect = width / height;
-			return aspect < 0.2f ? 0.2f : (aspect > 4f ? 4f : aspect);
+			Bounds bounds = surfaceRenderer.bounds;
+			float height = Mathf.Max(0.001f, bounds.size.y);
+			float width = Mathf.Max(0.001f, bounds.size.x);
+			return Mathf.Clamp(width / height, 0.2f, 4f);
 		}
 
 		public void ConfigurePortal(int width, int height, int limit, int skipInterval) {
@@ -285,13 +293,11 @@ namespace Portal {
 		}
 
 		void OnBeginCameraRendering(ScriptableRenderContext context, Camera camera) {
-			if (camera != mainCamera || !pair) return;
-			if (!_visible || !IsReadyToRender || !pair._visible || !pair.IsReadyToRender) return;
-			
-			if (useFrameSkipping) {
-				int interval = frameSkipInterval < 1 ? 1 : frameSkipInterval;
-				if ((Time.frameCount % interval) != 0) return;
-			}
+			if (camera != mainCamera) return;
+			if (!pair) return;
+			if (!_visible || !IsReadyToRender) return;
+			if (!pair._visible || !pair.IsReadyToRender) return;
+			if (useFrameSkipping && (Time.frameCount % Mathf.Max(1, frameSkipInterval)) != 0) return;
 
 			if (_visibilityCuller != null && _visibilityCuller.ShouldCull(mainCamera, surfaceRenderer)) return;
 
@@ -299,6 +305,8 @@ namespace Portal {
 		}
 
 		void Render(ScriptableRenderContext context) {
+			float startTime = Time.realtimeSinceStartup;
+
 			if (_viewMatrices.Length == 0 || !pair || _viewChain == null) return;
 
 			if (!enableAdaptiveRecursion) {
@@ -314,43 +322,45 @@ namespace Portal {
 				if (levelCount == 0) return;
 			}
 
-			RenderTexture baseTexture = _textureController?.Texture;
-			if (baseTexture == null || portalCamera == null) return;
+			_renderCount++;
+			if (_renderCount % 60 == 0) { // Log every 60 frames
+				float renderTime = Time.realtimeSinceStartup - startTime;
+				float fps = 1f / Time.deltaTime;
+				Debug.Log($"PortalRenderer: Rendering {levelCount} levels, FPS: {fps:F1}, Render time: {renderTime*1000:F2}ms");
+			}
 
-			// Cache transform properties and frame count
-			Transform pairTransform = pair.transform;
-			Vector3 exitPos = pairTransform.position;
-			Vector3 exitFwd = pairTransform.forward;
-			int currentFrame = Time.frameCount;
-			int baseWidth = baseTexture.width;
-			int baseHeight = baseTexture.height;
+			Vector3 exitPos = pair.transform.position;
+			Vector3 exitFwd = pair.transform.forward;
 
+			if (_textureController == null || _textureController.Texture == null || portalCamera == null) return;
+			RenderTexture baseTexture = _textureController.Texture;
 			portalCamera.targetTexture = baseTexture;
-			portalCamera.pixelRect = new Rect(0, 0, baseWidth, baseHeight);
+			portalCamera.pixelRect = new Rect(0, 0, baseTexture.width, baseTexture.height);
 
 			for (int i = levelCount - 1; i >= 0; i--) {
 				ref LevelRenderState state = ref _levelStates[i];
 				RenderTexture targetTexture = AcquireTargetTextureForLevel(i, baseTexture);
-				
-				if (i == 0 || ShouldRenderLevel(i)) {
-					if (RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, targetTexture)) {
-						state.lastRenderedFrame = currentFrame;
-						if (targetTexture != baseTexture) {
-							Graphics.Blit(targetTexture, baseTexture);
-						}
+				bool forceRender = (i == 0);
+				bool rendered = false;
+
+				if (forceRender || ShouldRenderLevel(i)) {
+					rendered = RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, targetTexture);
+					if (rendered) {
+						state.lastRenderedFrame = Time.frameCount;
 					}
+				}
+
+				if (targetTexture != null && targetTexture != baseTexture && rendered) {
+					Graphics.Blit(targetTexture, baseTexture);
 				}
 			}
 		}
 
 		int CalculateEffectiveRecursionLimit() {
 			if (!pair) return recursionLimit;
-			// Cache forward vectors to avoid repeated property access
-			Vector3 thisForward = transform.forward;
-			Vector3 pairForward = pair.transform.forward;
-			float dot = Vector3.Dot(thisForward, pairForward);
+			float dot = Vector3.Dot(transform.forward, pair.transform.forward);
 			if (dot > 0.9f) return 1;
-			if (dot > -0.2f && dot < 0.2f) return recursionLimit < 2 ? recursionLimit : 2;
+			if (dot > -0.2f && dot < 0.2f) return Mathf.Min(2, recursionLimit);
 			return recursionLimit;
 		}
 
@@ -358,7 +368,7 @@ namespace Portal {
 			if (!portalCamera || levelCount <= 1) return levelCount;
 
 			for (int i = 0; i < levelCount - 1; i++) {
-				PortalRenderer targetPortal = (i & 1) == 0 ? this : pair; // Bitwise check faster than modulo
+				PortalRenderer targetPortal = (i % 2 == 0) ? this : pair;
 				if (!targetPortal) continue;
 
 				var targetRenderer = targetPortal.surfaceRenderer;
@@ -377,19 +387,31 @@ namespace Portal {
 
 			Vector3 position = worldMatrix.MultiplyPoint(Vector3.zero);
 			Vector3 forward = worldMatrix.MultiplyVector(Vector3.forward);
+			Vector3 up = worldMatrix.MultiplyVector(Vector3.up);
+
+			if (!IsValidVector3(position) || !IsValidVector3(forward) || !IsValidVector3(up)) {
+				return false;
+			}
 
 			if (forward.sqrMagnitude < 1e-4f) return false;
 
-			// Fast distance and angle check - avoid sqrt and normalization
-			Bounds targetBounds = targetRenderer.bounds;
-			Vector3 toPortal = targetBounds.center - position;
-			float distanceSq = toPortal.sqrMagnitude;
-			
-			if (distanceSq > 400f) return false; // Too far
+			// Create temporary camera for frustum calculation
+			portalCamera.transform.position = position;
+			portalCamera.transform.rotation = Quaternion.LookRotation(forward, up);
 
-			// Angle check without sqrt/normalize - use dot product directly
-			float forwardDot = Vector3.Dot(forward, toPortal);
-			if (forwardDot < 0f || forwardDot * forwardDot < distanceSq * 0.01f) { // cos(angle) < 0.1
+			// Calculate frustum planes for this camera position
+			Plane[] frustumPlanes = new Plane[6];
+			GeometryUtility.CalculateFrustumPlanes(portalCamera, frustumPlanes);
+
+			// Check if portal bounds intersect with camera frustum
+			Bounds targetBounds = targetRenderer.bounds;
+			if (!GeometryUtility.TestPlanesAABB(frustumPlanes, targetBounds)) {
+				return false; // Portal is completely outside camera frustum
+			}
+
+			// Additional distance check as a safeguard
+			float distanceSq = (targetBounds.center - position).sqrMagnitude;
+			if (distanceSq > 400f) { // 20 units squared
 				return false;
 			}
 
@@ -397,36 +419,34 @@ namespace Portal {
 		}
 
 		bool RenderLevel(ScriptableRenderContext context, Matrix4x4 worldMatrix, Vector3 exitPos, Vector3 exitForward, RenderTexture targetTexture) {
-			if (!portalCamera || !_visible || !targetTexture) return false;
+			if (!portalCamera || !_visible) return false;
 
 			Vector3 cameraPos = worldMatrix.MultiplyPoint(Vector3.zero);
 			Vector3 cameraForward = worldMatrix.MultiplyVector(Vector3.forward);
 			Vector3 cameraUp = worldMatrix.MultiplyVector(Vector3.up);
 
-			if (cameraForward.sqrMagnitude < 1e-4f) return false;
+			if (!IsValidVector3(cameraPos) || !IsValidVector3(cameraForward) || !IsValidVector3(cameraUp)) {
+				return false;
+			}
 
 			RenderTexture originalTarget = portalCamera.targetTexture;
 			Rect originalRect = portalCamera.pixelRect;
-			Transform camTransform = portalCamera.transform;
 
-			camTransform.SetPositionAndRotation(cameraPos, Quaternion.LookRotation(cameraForward, cameraUp));
+			portalCamera.transform.SetPositionAndRotation(cameraPos, Quaternion.LookRotation(cameraForward, cameraUp));
+
+			if (!targetTexture) targetTexture = originalTarget;
+			if (!targetTexture) return false;
+
 			portalCamera.targetTexture = targetTexture;
-			int texWidth = targetTexture.width;
-			int texHeight = targetTexture.height;
-			portalCamera.pixelRect = new Rect(0, 0, texWidth, texHeight);
+			portalCamera.pixelRect = new Rect(0, 0, targetTexture.width, targetTexture.height);
 
 			Vector3 planePoint = exitPos + exitForward * 0.001f;
 			Matrix4x4 w2c = portalCamera.worldToCameraMatrix;
-			Vector3 clipNormal = -w2c.MultiplyVector(exitForward);
-			float clipNormalMagSq = clipNormal.sqrMagnitude;
-			if (clipNormalMagSq > 1e-8f) {
-				float clipNormalMag = Mathf.Sqrt(clipNormalMagSq);
-				clipNormal /= clipNormalMag;
-				Vector3 clipPoint = w2c.MultiplyPoint(planePoint);
-				Vector4 clipPlane = new Vector4(clipNormal.x, clipNormal.y, clipNormal.z, -Vector3.Dot(clipPoint, clipNormal));
-				portalCamera.projectionMatrix = mainCamera.CalculateObliqueMatrix(clipPlane);
-			}
+			Vector3 clipNormal = -w2c.MultiplyVector(exitForward).normalized;
+			Vector3 clipPoint = w2c.MultiplyPoint(planePoint);
+			Vector4 clipPlane = new Vector4(clipNormal.x, clipNormal.y, clipNormal.z, -Vector3.Dot(clipPoint, clipNormal));
 
+			portalCamera.projectionMatrix = mainCamera.CalculateObliqueMatrix(clipPlane);
 			RenderPipeline.SubmitRenderRequest(portalCamera, new UniversalRenderPipeline.SingleCameraRequest());
 			portalCamera.ResetProjectionMatrix();
 			portalCamera.targetTexture = originalTarget;
@@ -474,11 +494,8 @@ namespace Portal {
 				return baseTexture;
 			}
 
-			// Cache base texture dimensions to avoid repeated property access
-			int baseWidth = baseTexture.width;
-			int baseHeight = baseTexture.height;
-			int width = Mathf.Max(1, Mathf.RoundToInt(baseWidth * scale));
-			int height = Mathf.Max(1, Mathf.RoundToInt(baseHeight * scale));
+			int width = Mathf.Max(1, Mathf.RoundToInt(baseTexture.width * scale));
+			int height = Mathf.Max(1, Mathf.RoundToInt(baseTexture.height * scale));
 
 			if (levelState.cachedTexture &&
 			    (levelState.cachedTexture.width != width ||
@@ -503,16 +520,14 @@ namespace Portal {
 			if (!enableAdaptiveRecursion || !adaptiveResolution) return 1f;
 			if (levelIndex < fullResolutionLevels) return 1f;
 
-			int depth = levelIndex - fullResolutionLevels + 1;
-			if (depth <= 0) return 1f;
+			int depth = Mathf.Max(0, levelIndex - fullResolutionLevels + 1);
+			float scale = Mathf.Pow(perLevelResolutionScale, depth);
+			return Mathf.Clamp(scale, minResolutionScale, 1f);
+		}
 
-			// Avoid expensive Mathf.Pow - use iterative multiplication
-			float scale = 1f;
-			for (int i = 0; i < depth && scale > minResolutionScale; i++) {
-				scale *= perLevelResolutionScale;
-			}
-			
-			return scale < minResolutionScale ? minResolutionScale : scale;
+		bool IsValidVector3(Vector3 value) {
+			return !float.IsNaN(value.x) && !float.IsNaN(value.y) && !float.IsNaN(value.z) &&
+			       !float.IsInfinity(value.x) && !float.IsInfinity(value.y) && !float.IsInfinity(value.z);
 		}
 
 		public void SetVisible(bool visible) {
