@@ -996,10 +996,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d4b8d7d8fabc49f48abd25b2eff97aef, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pickupRange: 25
+  pickupRange: 2
   holdParent: {fileID: 166760980}
-  interactAction: {fileID: 1781555164194001046, guid: 052faaac586de48259a63d0c4782560b,
-    type: 3}
+  holdDistance: 2
+  moveSpeed: 100
+  rotationSpeed: 50
   debugRay: 1
 --- !u!1 &166760979
 GameObject:
@@ -2092,7 +2093,7 @@ GameObject:
   - component: {fileID: 711101613}
   - component: {fileID: 711101612}
   - component: {fileID: 711101611}
-  m_Layer: 14
+  m_Layer: 0
   m_Name: InteractableObject
   m_TagString: Interactable
   m_Icon: {fileID: 0}
@@ -5990,6 +5991,74 @@ Mesh:
     offset: 0
     size: 0
     path: 
+--- !u!1001 &1987442522
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -129.87392
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2.4383993
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -53.539886
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.0000000754979
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ce3a0286ab7972648a352cb7a71d2376,
+        type: 3}
+      propertyPath: m_Name
+      value: TestChamber00
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ce3a0286ab7972648a352cb7a71d2376, type: 3}
 --- !u!1 &2013605200
 GameObject:
   m_ObjectHideFlags: 0
@@ -6205,10 +6274,8 @@ MonoBehaviour:
   orangePortal: {fileID: 2069985398880840990}
   bluePortalMesh: {fileID: 476153941}
   orangePortalMesh: {fileID: 5710452781550541350}
-  textureWidth: 2048
-  textureHeight: 2048
+  textureSize: 1024
   recursionLimit: 7
-  frameSkipInterval: 1
 --- !u!4 &2079793666
 Transform:
   m_ObjectHideFlags: 0
@@ -6458,11 +6525,8 @@ MonoBehaviour:
   portalCamera: {fileID: 8095862263857129310}
   surfaceRenderer: {fileID: 476153942}
   recursionLimit: 2
-  autoSizeToScreen: 1
-  screenHeightFraction: 1
-  minTextureSize: 256
-  maxTextureSize: 2048
-  manualTextureSize: {x: 1024, y: 1024}
+  textureSize: 1024
+  portalColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!114 &2069985398880840990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6480,11 +6544,8 @@ MonoBehaviour:
   portalCamera: {fileID: 8899481715251803678}
   surfaceRenderer: {fileID: 1747989180196598255}
   recursionLimit: 2
-  autoSizeToScreen: 1
-  screenHeightFraction: 1
-  minTextureSize: 256
-  maxTextureSize: 2048
-  manualTextureSize: {x: 1024, y: 1024}
+  textureSize: 1024
+  portalColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!4 &2174037431210880972
 Transform:
   m_ObjectHideFlags: 0
@@ -6854,7 +6915,7 @@ MonoBehaviour:
   enableCulling: 1
   minScreenCoverageFraction: 0.01
   enableAngleCulling: 1
-  maxViewAngle: 90
+  maxViewAngle: 120
   enableDistanceCulling: 1
   maxRenderDistance: 100
 --- !u!1 &7219594838380380271
@@ -7073,7 +7134,7 @@ MonoBehaviour:
   enableCulling: 1
   minScreenCoverageFraction: 0.01
   enableAngleCulling: 1
-  maxViewAngle: 90
+  maxViewAngle: 120
   enableDistanceCulling: 1
   maxRenderDistance: 100
 --- !u!20 &8899481715251803678
@@ -7139,3 +7200,4 @@ SceneRoots:
   - {fileID: 972651031}
   - {fileID: 434592463}
   - {fileID: 60944932}
+  - {fileID: 1987442522}

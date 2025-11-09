@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace Portal {
@@ -10,52 +9,82 @@ namespace Portal {
 		[SerializeField] Transform orangePortalMesh;
 
 		[Header("Settings")]
-		[SerializeField] int textureWidth = 1024;
-		[SerializeField] int textureHeight = 1024;
+		[SerializeField] int textureSize = 1024;
 		[SerializeField] int recursionLimit = 2;
-		[SerializeField] int frameSkipInterval = 1;
 
-		readonly Dictionary<PortalId, PortalSlot> _slots = new Dictionary<PortalId, PortalSlot>(2);
+		PortalState _blueState;
+		PortalState _orangeState;
+		Vector3 _blueBaseScale = Vector3.one;
+		Vector3 _orangeBaseScale = Vector3.one;
+		Vector3 _blueMeshBaseScale = Vector3.one;
+		Vector3 _orangeMeshBaseScale = Vector3.one;
 
 		public PortalRenderer BluePortal => bluePortal;
 		public PortalRenderer OrangePortal => orangePortal;
 
 		void Awake() {
-			InitializeSlot(PortalId.Blue, bluePortal, bluePortalMesh);
-			InitializeSlot(PortalId.Orange, orangePortal, orangePortalMesh);
-
-			if (_slots.TryGetValue(PortalId.Blue, out PortalSlot blueSlot) && _slots.TryGetValue(PortalId.Orange, out PortalSlot orangeSlot)) {
-				blueSlot.LinkPair(orangeSlot.Renderer);
-				orangeSlot.LinkPair(blueSlot.Renderer);
+			// Link portals together
+			if (bluePortal && orangePortal) {
+				bluePortal.pair = orangePortal;
+				orangePortal.pair = bluePortal;
 			}
+
+			// Store base scales
+			if (bluePortal) {
+				_blueBaseScale = bluePortal.transform.localScale;
+				bluePortal.IsReadyToRender = false;
+			}
+			if (orangePortal) {
+				_orangeBaseScale = orangePortal.transform.localScale;
+				orangePortal.IsReadyToRender = false;
+			}
+			if (bluePortalMesh) {
+				_blueMeshBaseScale = bluePortalMesh.localScale;
+				bluePortalMesh.gameObject.SetActive(false);
+			}
+			if (orangePortalMesh) {
+				_orangeMeshBaseScale = orangePortalMesh.localScale;
+				orangePortalMesh.gameObject.SetActive(false);
+			}
+
+			// Setup animators
+			var blueAnimator = bluePortal?.GetComponent<PortalAnimator>() ?? bluePortal?.GetComponentInChildren<PortalAnimator>();
+			var orangeAnimator = orangePortal?.GetComponent<PortalAnimator>() ?? orangePortal?.GetComponentInChildren<PortalAnimator>();
+			if (blueAnimator && bluePortalMesh) blueAnimator.SetMeshTransform(bluePortalMesh);
+			if (orangeAnimator && orangePortalMesh) orangeAnimator.SetMeshTransform(orangePortalMesh);
 		}
 
 		void Start() {
-			if (PlayerPrefs.HasKey("PortalRecursion")) {
-				recursionLimit = Mathf.Max(1, PlayerPrefs.GetInt("PortalRecursion"));
-			}
-			if (PlayerPrefs.HasKey("PortalFrameSkip")) {
-				frameSkipInterval = Mathf.Max(1, PlayerPrefs.GetInt("PortalFrameSkip"));
-			}
-
 			ApplySettings();
 		}
 
 		void OnValidate() {
 			recursionLimit = Mathf.Max(1, recursionLimit);
-			frameSkipInterval = Mathf.Max(1, frameSkipInterval);
-			if (Application.isPlaying && _slots.Count > 0) {
+			textureSize = Mathf.Clamp(textureSize, 256, 4096);
+			if (Application.isPlaying) {
 				ApplySettings();
 			}
 		}
 
-		void Update() {
-			UpdateRenderReadiness();
+		void LateUpdate() {
+			// Update render readiness based on animator state
+			UpdateRenderReadiness(bluePortal, PortalId.Blue);
+			UpdateRenderReadiness(orangePortal, PortalId.Orange);
+		}
+
+		void UpdateRenderReadiness(PortalRenderer renderer, PortalId id) {
+			if (renderer == null) return;
+			var animator = renderer.GetComponent<PortalAnimator>() ?? renderer.GetComponentInChildren<PortalAnimator>();
+			if (animator == null) return;
+			renderer.IsReadyToRender = animator.IsOpening || animator.IsFullyOpen;
 		}
 
 		public void PlacePortal(PortalId id, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float scale = 1f) {
-			if (!_slots.TryGetValue(id, out PortalSlot slot) || slot.Renderer == null) return;
+			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			Transform mesh = id == PortalId.Blue ? bluePortalMesh : orangePortalMesh;
+			if (renderer == null) return;
 
+			// Update state
 			PortalState state = new PortalState {
 				IsPlaced = true,
 				Surface = surface,
@@ -66,79 +95,124 @@ namespace Portal {
 				Scale = scale
 			};
 
-			slot.ApplyState(state);
-			UpdatePortalVisualStates();
+			if (id == PortalId.Blue) {
+				_blueState = state;
+			} else {
+				_orangeState = state;
+			}
+
+			// Apply to renderer
+			renderer.SetVisible(true);
+			renderer.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
+			renderer.transform.localScale = id == PortalId.Blue ? _blueBaseScale : _orangeBaseScale;
+			renderer.SetWallCollider(surface);
+			renderer.PortalScale = scale;
+
+			// Apply to mesh
+			if (mesh != null) {
+				mesh.gameObject.SetActive(true);
+				Vector3 meshBaseScale = id == PortalId.Blue ? _blueMeshBaseScale : _orangeMeshBaseScale;
+				mesh.localScale = new Vector3(meshBaseScale.x * scale, meshBaseScale.y, meshBaseScale.z * scale);
+			}
+
+			UpdateVisualStates();
 		}
 
 		public void RemovePortal(PortalId id) {
-			if (!_slots.TryGetValue(id, out PortalSlot slot)) return;
+			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			Transform mesh = id == PortalId.Blue ? bluePortalMesh : orangePortalMesh;
 
-			slot.Clear();
-			UpdatePortalVisualStates();
+			if (id == PortalId.Blue) {
+				_blueState = PortalState.Empty;
+			} else {
+				_orangeState = PortalState.Empty;
+			}
+
+			if (renderer != null) {
+				renderer.SetVisible(false);
+				renderer.IsReadyToRender = false;
+				renderer.PortalScale = 1f;
+			}
+
+			var animator = renderer?.GetComponent<PortalAnimator>() ?? renderer?.GetComponentInChildren<PortalAnimator>();
+			if (animator != null) {
+				animator.HideImmediate();
+			}
+
+			if (mesh != null) {
+				mesh.gameObject.SetActive(false);
+			}
+
+			UpdateVisualStates();
 		}
 
 		public bool TryGetState(PortalId id, out PortalState state) {
-			if (_slots.TryGetValue(id, out PortalSlot slot) && slot.State.IsPlaced) {
-				state = slot.State;
-				return true;
-			}
-
-			state = PortalState.Empty;
-			return false;
+			state = id == PortalId.Blue ? _blueState : _orangeState;
+			return state.IsPlaced;
 		}
 
 		public PortalState GetState(PortalId id) {
-			return _slots.TryGetValue(id, out PortalSlot slot) ? slot.State : PortalState.Empty;
+			return id == PortalId.Blue ? _blueState : _orangeState;
+		}
+
+		void ApplySettings() {
+			if (bluePortal) bluePortal.ConfigurePortal(textureSize, textureSize, recursionLimit, 1);
+			if (orangePortal) orangePortal.ConfigurePortal(textureSize, textureSize, recursionLimit, 1);
 		}
 
 		public void SetRecursionLimit(int value) {
 			recursionLimit = Mathf.Max(1, value);
-			PlayerPrefs.SetInt("PortalRecursion", recursionLimit);
 			ApplySettings();
 		}
 
 		public void SetFrameSkipInterval(int value) {
-			frameSkipInterval = Mathf.Max(1, value);
-			PlayerPrefs.SetInt("PortalFrameSkip", frameSkipInterval);
-			ApplySettings();
+			// Frame skipping removed for simplicity - this is a no-op for UI compatibility
 		}
 
-		void InitializeSlot(PortalId id, PortalRenderer renderer, Transform mesh) {
-			if (renderer == null) return;
-			_slots[id] = new PortalSlot(id, renderer, mesh);
-		}
-
-		void ApplySettings() {
-			foreach (PortalSlot slot in _slots.Values) {
-				slot?.Configure(textureWidth, textureHeight, recursionLimit, frameSkipInterval);
-			}
-		}
-
-		void UpdateRenderReadiness() {
-			foreach (PortalSlot slot in _slots.Values) {
-				if (slot?.Animator == null || slot.Renderer == null) continue;
-				bool ready = slot.Animator.IsOpening || slot.Animator.IsFullyOpen;
-				slot.SetReadyToRender(ready);
-			}
-		}
-
-		void UpdatePortalVisualStates() {
-			bool bluePlaced = _slots.TryGetValue(PortalId.Blue, out PortalSlot blueSlot) && blueSlot.State.IsPlaced;
-			bool orangePlaced = _slots.TryGetValue(PortalId.Orange, out PortalSlot orangeSlot) && orangeSlot.State.IsPlaced;
+		void UpdateVisualStates() {
+			bool bluePlaced = _blueState.IsPlaced;
+			bool orangePlaced = _orangeState.IsPlaced;
 			bool bothPlaced = bluePlaced && orangePlaced;
 
-			ApplyPortalState(PortalId.Blue, bluePlaced, bothPlaced);
-			ApplyPortalState(PortalId.Orange, orangePlaced, bothPlaced);
+			UpdatePortalVisuals(PortalId.Blue, bluePlaced, bothPlaced);
+			UpdatePortalVisuals(PortalId.Orange, orangePlaced, bothPlaced);
 		}
 
-		void ApplyPortalState(PortalId id, bool placed, bool bothPlaced) {
-			if (!_slots.TryGetValue(id, out PortalSlot slot)) return;
+		void UpdatePortalVisuals(PortalId id, bool placed, bool bothPlaced) {
+			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			Transform mesh = id == PortalId.Blue ? bluePortalMesh : orangePortalMesh;
+			if (renderer == null) return;
 
-			slot.SetMeshActive(placed);
+			if (mesh != null) {
+				mesh.gameObject.SetActive(placed);
+			}
 
 			bool shouldRender = placed && bothPlaced;
-			slot.SetVisible(shouldRender);
-			slot.UpdateAnimatorState(placed, bothPlaced);
+			renderer.SetVisible(shouldRender);
+			if (!shouldRender) {
+				renderer.IsReadyToRender = false;
+			}
+
+			var animator = renderer.GetComponent<PortalAnimator>() ?? renderer.GetComponentInChildren<PortalAnimator>();
+			if (animator == null) return;
+
+			// Calculate target scale
+			float targetScaleX = 0f;
+			float targetScaleZ = 0f;
+			if (placed && mesh != null) {
+				PortalState state = id == PortalId.Blue ? _blueState : _orangeState;
+				Vector3 meshBaseScale = id == PortalId.Blue ? _blueMeshBaseScale : _orangeMeshBaseScale;
+				targetScaleX = meshBaseScale.x * state.Scale;
+				targetScaleZ = meshBaseScale.z * state.Scale;
+			}
+
+			animator.HideImmediate();
+			if (placed) {
+				animator.PlayAppear(targetScaleX, targetScaleZ);
+				if (bothPlaced) {
+					animator.StartOpening();
+				}
+			}
 		}
 	}
 }

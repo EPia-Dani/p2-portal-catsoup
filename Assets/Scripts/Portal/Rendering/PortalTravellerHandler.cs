@@ -1,6 +1,4 @@
-// PortalTravellerHandler.cs
-// Handles traveler teleportation logic separately from rendering
-
+// PortalTravellerHandler.cs - Simple teleportation handler
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,28 +10,21 @@ namespace Portal {
 		private readonly List<PortalTraveller> _trackedTravellers = new List<PortalTraveller>();
 		private PortalViewChain _viewChain;
 
-		public List<PortalTraveller> TrackedTravellers => _trackedTravellers;
-
 		void Awake() {
 			if (!portalRenderer) portalRenderer = GetComponent<PortalRenderer>();
 			_viewChain = GetComponent<PortalViewChain>();
 		}
 
 		void LateUpdate() {
-			if (!portalRenderer || !portalRenderer.pair) return;
-			HandleTravellers();
-		}
+			if (!portalRenderer?.pair) return;
 
-		void HandleTravellers() {
 			PortalRenderer pair = portalRenderer.pair;
-			if (!pair) return;
-
 			float scaleRatio = pair.PortalScale / portalRenderer.PortalScale;
 
-			for (int i = 0; i < _trackedTravellers.Count; i++) {
+			for (int i = _trackedTravellers.Count - 1; i >= 0; i--) {
 				var traveller = _trackedTravellers[i];
 				if (!traveller) {
-					_trackedTravellers.RemoveAt(i--);
+					_trackedTravellers.RemoveAt(i);
 					continue;
 				}
 
@@ -43,11 +34,10 @@ namespace Portal {
 
 				if (sideNow > 0 && sidePrev < 0) {
 					TeleportTraveller(traveller, pair, scaleRatio);
-					_trackedTravellers.RemoveAt(i--);
-					continue;
+					_trackedTravellers.RemoveAt(i);
+				} else {
+					traveller.previousOffsetFromPortal = offset;
 				}
-
-				traveller.previousOffsetFromPortal = offset;
 			}
 		}
 
@@ -56,56 +46,54 @@ namespace Portal {
 
 			Collider travellerCollider = traveller.GetComponent<Collider>();
 
+			// Disable collision with source wall
 			if (wallCollider && travellerCollider) {
 				Physics.IgnoreCollision(travellerCollider, wallCollider, false);
 			}
 
-			var destinationHandler = destination.GetComponent<PortalTravellerHandler>();
-			if (destinationHandler && destinationHandler.wallCollider && travellerCollider) {
-				Physics.IgnoreCollision(travellerCollider, destinationHandler.wallCollider, true);
+			// Enable collision ignore with destination wall
+			var destHandler = destination.GetComponent<PortalTravellerHandler>();
+			if (destHandler?.wallCollider && travellerCollider) {
+				Physics.IgnoreCollision(travellerCollider, destHandler.wallCollider, true);
 			}
 
-			Vector3 newPos;
-			Quaternion newRot;
+			// Calculate teleport position/rotation
+			Vector3 newPos = destination.transform.position;
+			Quaternion newRot = traveller.transform.rotation;
 			if (_viewChain) {
 				_viewChain.ComputeTeleportPose(portalRenderer, destination, traveller.transform.position, traveller.transform.rotation, scaleRatio, out newPos, out newRot);
-			} else {
-				newPos = destination.transform.position;
-				newRot = traveller.transform.rotation;
 			}
 
 			traveller.Teleport(transform, destination.transform, newPos, newRot, scaleRatio);
-			destinationHandler?.OnTravellerEnterPortal(traveller, justTeleported: true);
+			destHandler?.OnTravellerEnterPortal(traveller, justTeleported: true);
 		}
 
 		public void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
 			if (_trackedTravellers.Contains(traveller)) return;
 
-			Vector3 offsetFromPortal = traveller.transform.position - transform.position;
-
+			Vector3 offset = traveller.transform.position - transform.position;
+			
+			// Prevent immediate re-teleport
 			if (justTeleported) {
-				float currentDot = Vector3.Dot(offsetFromPortal, transform.forward);
-				if (currentDot >= 0) {
-					traveller.previousOffsetFromPortal = offsetFromPortal - transform.forward * (currentDot + 0.1f);
+				float dot = Vector3.Dot(offset, transform.forward);
+				if (dot >= 0) {
+					traveller.previousOffsetFromPortal = offset - transform.forward * (dot + 0.1f);
 				} else {
-					traveller.previousOffsetFromPortal = offsetFromPortal;
+					traveller.previousOffsetFromPortal = offset;
 				}
 			} else {
-				traveller.previousOffsetFromPortal = offsetFromPortal;
+				traveller.previousOffsetFromPortal = offset;
 			}
 
 			_trackedTravellers.Add(traveller);
 
+			// Ignore collision with wall
 			if (wallCollider) {
-				Collider travellerCollider = traveller.GetComponent<Collider>();
-				if (travellerCollider) {
-					Physics.IgnoreCollision(travellerCollider, wallCollider, true);
+				var collider = traveller.GetComponent<Collider>();
+				if (collider) {
+					Physics.IgnoreCollision(collider, wallCollider, true);
 				}
 			}
-		}
-
-		public void SetWallCollider(Collider col) {
-			wallCollider = col;
 		}
 
 		void OnTriggerEnter(Collider other) {
@@ -117,13 +105,11 @@ namespace Portal {
 
 		void OnTriggerExit(Collider other) {
 			var traveller = other.GetComponent<PortalTraveller>();
-			if (traveller && _trackedTravellers.Contains(traveller)) {
-				_trackedTravellers.Remove(traveller);
-
+			if (traveller && _trackedTravellers.Remove(traveller)) {
 				if (wallCollider) {
-					Collider travellerCollider = traveller.GetComponent<Collider>();
-					if (travellerCollider) {
-						Physics.IgnoreCollision(travellerCollider, wallCollider, false);
+					var collider = traveller.GetComponent<Collider>();
+					if (collider) {
+						Physics.IgnoreCollision(collider, wallCollider, false);
 					}
 				}
 			}
