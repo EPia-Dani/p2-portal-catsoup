@@ -62,12 +62,59 @@ namespace Portal {
 				Physics.IgnoreCollision(travellerCollider, destHandler.wallCollider, true);
 			}
 
+			// Capture velocity BEFORE teleporting (for Rigidbody objects)
+			Rigidbody rb = traveller.GetComponent<Rigidbody>();
+			Vector3 velocityBeforeTeleport = Vector3.zero;
+			Vector3 angularVelocityBeforeTeleport = Vector3.zero;
+			if (rb) {
+				velocityBeforeTeleport = rb.linearVelocity;
+				angularVelocityBeforeTeleport = rb.angularVelocity;
+			}
+
 			// Calculate teleport position/rotation using utility
 			PortalTransformUtility.TransformThroughPortal(portalRenderer, destination, 
 				traveller.transform.position, traveller.transform.rotation, scaleRatio, 
 				out Vector3 newPos, out Quaternion newRot);
 
 			traveller.Teleport(transform, destination.transform, newPos, newRot, scaleRatio);
+
+			// Apply velocity transformation (same as player)
+			// Determine if the source portal is 'non-vertical' (e.g. on the floor/ceiling)
+			float portalUpDot = Mathf.Abs(Vector3.Dot(transform.forward.normalized, Vector3.up));
+			const float nonVerticalThreshold = 0.5f;
+			bool isHorizontalPortal = portalUpDot > nonVerticalThreshold;
+			
+			if (rb) {
+				if (velocityBeforeTeleport.sqrMagnitude > 0.001f) {
+					// Scale velocity by portal size difference
+					Vector3 transformedVelocity = velocityBeforeTeleport * scaleRatio;
+					
+					// Rotate velocity through portal (same transformation as player)
+					Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+					Quaternion relativeRotation = destination.transform.rotation * flipLocal * Quaternion.Inverse(transform.rotation);
+					transformedVelocity = relativeRotation * transformedVelocity;
+					
+					// Apply transformed velocity
+					rb.linearVelocity = transformedVelocity;
+					
+					// Transform angular velocity too
+					if (angularVelocityBeforeTeleport.sqrMagnitude > 0.001f) {
+						Vector3 transformedAngularVelocity = relativeRotation * angularVelocityBeforeTeleport;
+						rb.angularVelocity = transformedAngularVelocity;
+					}
+				} else if (isHorizontalPortal) {
+					// For horizontal portals, even if object has no velocity, give it a small push
+					// in the direction of the portal's forward to ensure it appears on the other side
+					Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+					Quaternion relativeRotation = destination.transform.rotation * flipLocal * Quaternion.Inverse(transform.rotation);
+					Vector3 exitDirection = relativeRotation * transform.forward;
+					
+					// Give a small forward push (horizontal only)
+					Vector3 horizontalPush = new Vector3(exitDirection.x, 0, exitDirection.z).normalized * 2f;
+					rb.linearVelocity = horizontalPush;
+				}
+			}
+
 			destHandler?.OnTravellerEnterPortal(traveller, justTeleported: true);
 		}
 
@@ -78,19 +125,25 @@ namespace Portal {
 				return;
 			}
 
+			// If already tracked, don't add again (prevents duplicate tracking)
 			if (_trackedTravellers.Contains(traveller)) return;
 
 			Vector3 offset = traveller.transform.position - transform.position;
 
-			// Prevent immediate re-teleport
+			// Prevent immediate re-teleport - set previousOffsetFromPortal to be on the "entering" side
 			if (justTeleported) {
+				// Object just teleported here, ensure it's marked as being on the "entering" side
+				// so it won't teleport again until it crosses to the "exiting" side
 				float dot = Vector3.Dot(offset, transform.forward);
 				if (dot >= 0) {
+					// Object is on exiting side, push previousOffset to entering side
 					traveller.previousOffsetFromPortal = offset - transform.forward * (dot + 0.1f);
 				} else {
+					// Object is already on entering side, set previousOffset to match
 					traveller.previousOffsetFromPortal = offset;
 				}
 			} else {
+				// Object naturally entered portal, initialize tracking
 				traveller.previousOffsetFromPortal = offset;
 			}
 

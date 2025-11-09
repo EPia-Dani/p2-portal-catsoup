@@ -60,13 +60,56 @@ namespace Portal {
 		public void SetHeld(bool held) {
 			_isHeld = held;
 			if (!held) {
-				// When dropped, restore collisions first, then swap with clone if it exists
+				// When dropped, restore collisions first
 				RestorePortalCollisions();
 				
-				if (_clone) {
-					SwapWithClone();
+				if (_clone && _currentPortal && _currentDestination) {
+					// Only swap with clone if we're actually on the destination side (where clone is)
+					// Check which side of the portal we're on
+					Vector3 offsetFromPortal = transform.position - _currentPortal.transform.position;
+					float dot = Vector3.Dot(offsetFromPortal, _currentPortal.transform.forward);
+					
+					// If dot > 0, we're on the "exiting" side (where clone is) - swap
+					// If dot <= 0, we're on the "entering" side - don't swap, just destroy clone
+					if (dot > 0) {
+						// We're on the destination side, swap with clone
+						SwapWithClone();
+					} else {
+						// We're still on the source side, just destroy the clone
+						Debug.Log($"[PortalCloneSystem] Dropped on source side, destroying clone for {gameObject.name}");
+						DestroyClone();
+						
+						// Properly initialize portal tracking so it doesn't immediately teleport
+						InitializePortalTracking();
+					}
 				} else {
 					DestroyClone();
+					
+					// If no clone but we might be in a portal, initialize tracking
+					InitializePortalTracking();
+				}
+			}
+		}
+		
+		void InitializePortalTracking() {
+			// Check if we're inside any portal trigger and properly initialize tracking
+			Collider[] nearby = Physics.OverlapSphere(transform.position, 0.5f);
+			foreach (var col in nearby) {
+				var portal = col.GetComponent<PortalRenderer>();
+				if (portal != null) {
+					var handler = portal.GetComponent<PortalTravellerHandler>();
+					if (handler != null) {
+						var traveller = GetComponent<PortalTraveller>();
+						if (traveller != null) {
+							// Initialize previousOffsetFromPortal to current position
+							// This prevents immediate teleportation when dropped
+							Vector3 offset = transform.position - portal.transform.position;
+							traveller.previousOffsetFromPortal = offset;
+							
+							// Add to tracking if not already tracked
+							handler.OnTravellerEnterPortal(traveller, justTeleported: false);
+						}
+					}
 				}
 			}
 		}
