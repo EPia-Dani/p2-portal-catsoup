@@ -5,7 +5,7 @@ using UnityEngine;
 public class ButtonManager : MonoBehaviour
 {
     public Animator animator;
-    public bool isPressed, wasPressed;
+    public bool isPressed;
     public SpawnerManager spawner;
     
     private void OnTriggerEnter(Collider interactable)
@@ -24,8 +24,6 @@ public class ButtonManager : MonoBehaviour
         { 
             Debug.LogWarning("Animator not assigned on ButtonManager.");
         }
-        wasPressed = true;
-        
         
     }
     private void OnTriggerExit(Collider interactable)
