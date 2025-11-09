@@ -6,13 +6,17 @@ namespace Portal {
 		private readonly Matrix4x4 _mirror = Matrix4x4.Scale(new Vector3(-1f, 1f, -1f));
 
 		public int BuildViewChain(Camera mainCamera, PortalRenderer source, PortalRenderer destination, int recursionLimit, Matrix4x4[] buffer) {
-			if (!mainCamera || !source || !destination) return 0;
-			if (buffer == null || buffer.Length == 0) return 0;
+			if (!mainCamera || !source || !destination || buffer == null || buffer.Length == 0) return 0;
 
-			int count = Mathf.Clamp(recursionLimit, 1, buffer.Length);
+			int count = recursionLimit > buffer.Length ? buffer.Length : (recursionLimit < 1 ? 1 : recursionLimit);
 
-			Matrix4x4 step = destination.transform.localToWorldMatrix * _mirror * source.transform.worldToLocalMatrix;
-			Matrix4x4 current = mainCamera.transform.localToWorldMatrix;
+			// Cache transforms to avoid repeated property access
+			Transform sourceTransform = source.transform;
+			Transform destTransform = destination.transform;
+			Transform mainCamTransform = mainCamera.transform;
+
+			Matrix4x4 step = destTransform.localToWorldMatrix * _mirror * sourceTransform.worldToLocalMatrix;
+			Matrix4x4 current = mainCamTransform.localToWorldMatrix;
 
 			PortalRenderer currentPortal = source;
 			PortalRenderer nextPortal = destination;
@@ -21,9 +25,9 @@ namespace Portal {
 				current = step * current;
 				buffer[i] = ApplyScaleAdjustment(current, currentPortal, nextPortal);
 
-				PortalRenderer temp = currentPortal;
+				PortalRenderer swap = currentPortal;
 				currentPortal = nextPortal;
-				nextPortal = temp;
+				nextPortal = swap;
 			}
 
 			return count;
@@ -50,18 +54,19 @@ namespace Portal {
 			if (!currentPortal || !nextPortal) return matrix;
 
 			float scaleRatio = nextPortal.PortalScale / currentPortal.PortalScale;
-			if (Mathf.Abs(scaleRatio - 1f) <= 0.001f) {
-				return matrix;
-			}
+			if (Mathf.Abs(scaleRatio - 1f) <= 0.001f) return matrix;
 
+			Transform nextTransform = nextPortal.transform;
+			Vector3 nextPos = nextTransform.position;
 			Vector3 position = matrix.GetColumn(3);
 			Quaternion rotation = matrix.rotation;
-			Vector3 offset = position - nextPortal.transform.position;
-			Vector3 localOffset = nextPortal.transform.InverseTransformDirection(offset);
+			
+			Vector3 offset = position - nextPos;
+			Vector3 localOffset = nextTransform.InverseTransformDirection(offset);
 			Vector3 scaledOffset = localOffset * scaleRatio;
-			Vector3 scaledWorldOffset = nextPortal.transform.TransformDirection(scaledOffset);
+			Vector3 scaledWorldOffset = nextTransform.TransformDirection(scaledOffset);
 
-			return Matrix4x4.TRS(nextPortal.transform.position + scaledWorldOffset, rotation, Vector3.one);
+			return Matrix4x4.TRS(nextPos + scaledWorldOffset, rotation, Vector3.one);
 		}
 	}
 }

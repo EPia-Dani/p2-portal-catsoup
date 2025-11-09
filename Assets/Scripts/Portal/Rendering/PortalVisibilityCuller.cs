@@ -26,30 +26,39 @@ namespace Portal {
 			if (!enableCulling) return false;
 			if (!mainCamera || !surfaceRenderer) return true;
 
+			// Cache bounds once
+			Bounds bounds = surfaceRenderer.bounds;
+			Vector3 boundsCenter = bounds.center;
+
 			// Frustum culling
 			GeometryUtility.CalculateFrustumPlanes(mainCamera, _frustumPlanes);
-			if (!GeometryUtility.TestPlanesAABB(_frustumPlanes, surfaceRenderer.bounds)) {
+			if (!GeometryUtility.TestPlanesAABB(_frustumPlanes, bounds)) {
 				return true;
 			}
 
-			// Distance culling
+			// Distance culling - use sqrMagnitude to avoid sqrt
 			if (enableDistanceCulling && maxRenderDistance > 0f) {
-				float distance = Vector3.Distance(mainCamera.transform.position, surfaceRenderer.bounds.center);
-				if (distance > maxRenderDistance) {
+				Vector3 camPos = mainCamera.transform.position;
+				float distanceSq = (boundsCenter - camPos).sqrMagnitude;
+				float maxDistSq = maxRenderDistance * maxRenderDistance;
+				if (distanceSq > maxDistSq) {
 					return true;
 				}
 			}
 
 			// Angle culling - check if camera is facing the portal
-			if (enableCulling && enableAngleCulling) {
-				Vector3 toPortal = surfaceRenderer.bounds.center - mainCamera.transform.position;
-				float distanceToPortal = toPortal.magnitude;
-				if (distanceToPortal > 0.01f) {
-					Vector3 dirToPortal = toPortal / distanceToPortal;
-					float facingDot = Vector3.Dot(mainCamera.transform.forward, dirToPortal);
-					float minFacingDot = Mathf.Cos(Mathf.Deg2Rad * maxViewAngle);
-					if (facingDot < minFacingDot) {
-						return true; // Camera is not facing the portal enough
+			if (enableAngleCulling) {
+				Transform camTransform = mainCamera.transform;
+				Vector3 toPortal = boundsCenter - camTransform.position;
+				float distanceToPortalSq = toPortal.sqrMagnitude;
+				if (distanceToPortalSq > 0.0001f) {
+					Vector3 camForward = camTransform.forward;
+					float forwardDot = Vector3.Dot(camForward, toPortal);
+					// Check angle: forwardDot^2 / distanceSq < cos^2(angle) => forwardDot^2 < distanceSq * cos^2(angle)
+					float cosAngle = Mathf.Cos(Mathf.Deg2Rad * maxViewAngle);
+					float minFacingDotSq = distanceToPortalSq * cosAngle * cosAngle;
+					if (forwardDot < 0f || forwardDot * forwardDot < minFacingDotSq) {
+						return true;
 					}
 				}
 			}
@@ -66,39 +75,42 @@ namespace Portal {
 		public float GetScreenSpaceCoverage(Camera mainCamera, MeshRenderer surfaceRenderer) {
 			if (!mainCamera || !surfaceRenderer) return 0f;
 
-			var bounds = surfaceRenderer.bounds;
-			Vector3 min = new Vector3(float.MaxValue, float.MaxValue);
-			Vector3 max = new Vector3(float.MinValue, float.MinValue);
-			int visiblePoints = 0;
-
+			Bounds bounds = surfaceRenderer.bounds;
 			Vector3 center = bounds.center;
 			Vector3 extents = bounds.extents;
-			Vector3[] corners = {
-				center + new Vector3(-extents.x, -extents.y, -extents.z),
-				center + new Vector3(-extents.x, -extents.y,  extents.z),
-				center + new Vector3(-extents.x,  extents.y, -extents.z),
-				center + new Vector3(-extents.x,  extents.y,  extents.z),
-				center + new Vector3( extents.x, -extents.y, -extents.z),
-				center + new Vector3( extents.x, -extents.y,  extents.z),
-				center + new Vector3( extents.x,  extents.y, -extents.z),
-				center + new Vector3( extents.x,  extents.y,  extents.z)
-			};
+			
+			float minX = float.MaxValue, minY = float.MaxValue;
+			float maxX = float.MinValue, maxY = float.MinValue;
+			int visiblePoints = 0;
 
-			foreach (var corner in corners) {
-				Vector3 screenPos = mainCamera.WorldToScreenPoint(corner);
-				if (screenPos.z <= 0) continue;
-
-				visiblePoints++;
-				if (screenPos.x < min.x) min.x = screenPos.x;
-				if (screenPos.y < min.y) min.y = screenPos.y;
-				if (screenPos.x > max.x) max.x = screenPos.x;
-				if (screenPos.y > max.y) max.y = screenPos.y;
-			}
+			// Process 8 corners without array allocation
+			ProcessCorner(mainCamera, center, extents, -1, -1, -1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
+			ProcessCorner(mainCamera, center, extents, -1, -1,  1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
+			ProcessCorner(mainCamera, center, extents, -1,  1, -1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
+			ProcessCorner(mainCamera, center, extents, -1,  1,  1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
+			ProcessCorner(mainCamera, center, extents,  1, -1, -1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
+			ProcessCorner(mainCamera, center, extents,  1, -1,  1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
+			ProcessCorner(mainCamera, center, extents,  1,  1, -1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
+			ProcessCorner(mainCamera, center, extents,  1,  1,  1, ref minX, ref minY, ref maxX, ref maxY, ref visiblePoints);
 
 			if (visiblePoints == 0) return 0f;
 
-			float area = (max.x - min.x) * (max.y - min.y);
-			return area / (mainCamera.pixelWidth * mainCamera.pixelHeight);
+			int screenWidth = mainCamera.pixelWidth;
+			int screenHeight = mainCamera.pixelHeight;
+			float area = (maxX - minX) * (maxY - minY);
+			return area / (screenWidth * screenHeight);
+		}
+
+		void ProcessCorner(Camera cam, Vector3 center, Vector3 extents, float sx, float sy, float sz, ref float minX, ref float minY, ref float maxX, ref float maxY, ref int visiblePoints) {
+			Vector3 corner = center + new Vector3(extents.x * sx, extents.y * sy, extents.z * sz);
+			Vector3 screenPos = cam.WorldToScreenPoint(corner);
+			if (screenPos.z > 0) {
+				visiblePoints++;
+				if (screenPos.x < minX) minX = screenPos.x;
+				if (screenPos.y < minY) minY = screenPos.y;
+				if (screenPos.x > maxX) maxX = screenPos.x;
+				if (screenPos.y > maxY) maxY = screenPos.y;
+			}
 		}
 	}
 }

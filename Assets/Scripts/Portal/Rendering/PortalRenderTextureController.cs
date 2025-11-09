@@ -23,15 +23,26 @@ namespace Portal {
 			if (width <= 0 || height <= 0) return;
 			if (_renderTexture != null && _renderTexture.width == width && _renderTexture.height == height) return;
 
-			Release();
+			if (_renderTexture != null) {
+				if (_boundCamera && _boundCamera.targetTexture == _renderTexture) {
+					_boundCamera.targetTexture = null;
+				}
+				_renderTexture.Release();
+				Destroy(_renderTexture);
+			}
 
-			_renderTexture = new RenderTexture(width, height, depthBufferBits, textureFormat) {
-				filterMode = filterMode,
-				wrapMode = wrapMode
-			};
+			_renderTexture = new RenderTexture(width, height, depthBufferBits, textureFormat);
+			_renderTexture.filterMode = filterMode;
+			_renderTexture.wrapMode = wrapMode;
 			_renderTexture.Create();
 
-			RebindTargets();
+			if (_boundCamera) {
+				_boundCamera.targetTexture = _renderTexture;
+				_boundCamera.pixelRect = new Rect(0, 0, width, height);
+			}
+			if (_boundMaterial) {
+				_boundMaterial.mainTexture = _renderTexture;
+			}
 		}
 
 		public void BindCamera(Camera portalCamera) {
@@ -86,16 +97,6 @@ namespace Portal {
 
 		void OnDestroy() {
 			Release();
-		}
-
-		void RebindTargets() {
-			if (_boundCamera) {
-				BindCamera(_boundCamera);
-			}
-
-			if (_boundMaterial) {
-				BindMaterial(_boundMaterial);
-			}
 		}
 	}
 }

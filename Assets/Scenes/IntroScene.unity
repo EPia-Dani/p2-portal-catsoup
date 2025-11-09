@@ -5904,7 +5904,7 @@ MonoBehaviour:
   enableAdaptiveRecursion: 1
   useFrameSkipping: 1
   adaptiveResolution: 1
-  perLevelResolutionScale: 0.932
+  perLevelResolutionScale: 0.1
   minResolutionScale: 0.25
   fullResolutionLevels: 1
 --- !u!114 &2069985398880840990
@@ -5934,7 +5934,7 @@ MonoBehaviour:
   enableAdaptiveRecursion: 1
   useFrameSkipping: 1
   adaptiveResolution: 1
-  perLevelResolutionScale: 0.932
+  perLevelResolutionScale: 0.1
   minResolutionScale: 0.25
   fullResolutionLevels: 1
 --- !u!4 &2174037431210880972
