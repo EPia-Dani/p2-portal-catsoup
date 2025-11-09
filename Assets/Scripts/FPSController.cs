@@ -32,6 +32,9 @@ public class FPSController : PortalTraveller {
     float lastGroundedTime;
     bool disabled;
     
+    // Store horizontal velocity when jumping to preserve momentum
+    Vector3 airHorizontalVelocity = Vector3.zero;
+    
     
     private Input.PlayerInput _controls;
 
@@ -85,7 +88,8 @@ public class FPSController : PortalTraveller {
         // Apply sprint multiplier when sprinting
         float speedMultiplier = isSprinting ? sprintMultiplier : 1f;
         float currentSpeed = walkSpeed * speedMultiplier;
-        // Compute player's input-based horizontal velocity (reduced in air)
+        
+        // Compute player's input-based horizontal velocity
         Vector3 inputVel = new Vector3(worldInputDir.x * currentSpeed * controlMultiplier, 0, worldInputDir.z * currentSpeed * controlMultiplier);
 
         // Check if player is actively providing movement input
@@ -121,8 +125,26 @@ public class FPSController : PortalTraveller {
             externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
         }
 
-        // Combine input velocity with any external (portal) momentum
-        Vector3 horizontal = inputVel + externalVelocity;
+        Vector3 horizontal;
+        
+        if (isGrounded) {
+            // Grounded: input directly sets velocity
+            horizontal = inputVel + externalVelocity;
+        } else {
+            // In air: preserve momentum, input adds acceleration
+            // Start with preserved horizontal velocity
+            horizontal = airHorizontalVelocity;
+            
+            // Input adds velocity change (doesn't replace, just adds)
+            // Use full speed for acceleration, airControl determines how much influence
+            if (moveInput.sqrMagnitude > 0.01f) {
+                Vector3 inputAccel = new Vector3(worldInputDir.x * currentSpeed, 0, worldInputDir.z * currentSpeed);
+                horizontal += inputAccel * airControl * Time.deltaTime;
+            }
+            
+            // Store for next frame
+            airHorizontalVelocity = horizontal;
+        }
 
         velocity = new Vector3(horizontal.x, verticalVelocity, horizontal.z);
 
@@ -140,6 +162,7 @@ public class FPSController : PortalTraveller {
             jumping = false;
             lastGroundedTime = Time.time;
             verticalVelocity = 0;
+            airHorizontalVelocity = Vector3.zero; // Reset when landing
         }
 
         if (jumpPressed) {
@@ -147,6 +170,8 @@ public class FPSController : PortalTraveller {
             if (controller.isGrounded || (!jumping && timeSinceLastTouchedGround < 0.15f)) {
                 jumping = true;
                 verticalVelocity = jumpForce;
+                // Capture horizontal velocity at moment of jump
+                airHorizontalVelocity = new Vector3(velocity.x, 0, velocity.z);
             }
         }
 

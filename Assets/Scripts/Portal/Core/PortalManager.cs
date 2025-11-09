@@ -35,25 +35,29 @@ namespace Portal {
 				orangePortal.pair = bluePortal;
 			}
 
-			// Store base scales
-			if (bluePortal) {
-				_blueBaseScale = bluePortal.transform.localScale;
-				bluePortal.IsReadyToRender = false;
-				// Store base collider size if it exists
-				var blueCollider = bluePortal.GetComponent<BoxCollider>();
+		// Store base scales
+		if (bluePortal) {
+			_blueBaseScale = bluePortal.transform.localScale;
+			bluePortal.IsReadyToRender = false;
+			// Store base collider size if it exists (from colliders transform)
+			if (blueCollidersTransform) {
+				var blueCollider = blueCollidersTransform.GetComponent<BoxCollider>();
 				if (blueCollider) {
 					_blueColliderBaseSize = blueCollider.size;
 				}
 			}
-			if (orangePortal) {
-				_orangeBaseScale = orangePortal.transform.localScale;
-				orangePortal.IsReadyToRender = false;
-				// Store base collider size if it exists
-				var orangeCollider = orangePortal.GetComponent<BoxCollider>();
+		}
+		if (orangePortal) {
+			_orangeBaseScale = orangePortal.transform.localScale;
+			orangePortal.IsReadyToRender = false;
+			// Store base collider size if it exists (from colliders transform)
+			if (orangeCollidersTransform) {
+				var orangeCollider = orangeCollidersTransform.GetComponent<BoxCollider>();
 				if (orangeCollider) {
 					_orangeColliderBaseSize = orangeCollider.size;
 				}
 			}
+		}
 			if (bluePortalMesh) {
 				_blueMeshBaseScale = bluePortalMesh.localScale;
 				bluePortalMesh.gameObject.SetActive(false);
@@ -204,15 +208,12 @@ namespace Portal {
 		void UpdatePortalTriggerCollider(PortalRenderer renderer, float scale) {
 			if (!renderer) return;
 
-			// Get or create BoxCollider for trigger
-			BoxCollider triggerCollider = renderer.GetComponent<BoxCollider>();
-			if (!triggerCollider) {
-				triggerCollider = renderer.gameObject.AddComponent<BoxCollider>();
-				// Only set defaults if creating new collider
-				triggerCollider.isTrigger = true;
-				triggerCollider.size = new Vector3(0.5f, 0.5f, 1.5f); // Smaller size, centered, with good thickness
-				triggerCollider.center = Vector3.zero;
-			}
+			// Get BoxCollider from colliders transform (manually added, scales with portal)
+			Transform collidersTransform = (renderer == bluePortal) ? blueCollidersTransform : orangeCollidersTransform;
+			if (!collidersTransform) return;
+
+			BoxCollider triggerCollider = collidersTransform.GetComponent<BoxCollider>();
+			if (!triggerCollider) return; // Collider will be manually added
 
 			// Get base collider size for this portal
 			Vector3 baseSize = (renderer == bluePortal) ? _blueColliderBaseSize : _orangeColliderBaseSize;
