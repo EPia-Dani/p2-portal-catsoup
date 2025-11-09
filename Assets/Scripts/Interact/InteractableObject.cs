@@ -1,10 +1,6 @@
 using UnityEngine;
 using Portal;
 
-/// <summary>
-/// Self-managing interactable object that handles its own pickup, physics, portal behavior, and terminal velocity.
-/// Attach this to any object that can be picked up and interact with portals.
-/// </summary>
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Collider))]
 public class InteractableObject : MonoBehaviour
