@@ -208,23 +208,15 @@ namespace Portal {
 			float widthFraction = Mathf.Clamp(screenWidthFraction, 0.1f, 2f);
 
 			int targetHeight = Mathf.RoundToInt(screenHeight * heightFraction);
-			if (targetHeight <= 0) {
-				targetHeight = screenHeight;
-			}
 			targetHeight = Mathf.Clamp(targetHeight, minSize, maxSize);
 
 			float aspect = EstimatePortalAspect();
-			int aspectWidth = Mathf.RoundToInt(targetHeight * aspect);
-
-			int widthLimit = Mathf.RoundToInt(screenWidth * widthFraction);
-			widthLimit = Mathf.Clamp(widthLimit <= 0 ? screenWidth : widthLimit, minSize, maxSize);
-
-			int targetWidth = Mathf.Clamp(aspectWidth > 0 ? aspectWidth : widthLimit, minSize, maxSize);
-			targetWidth = Mathf.Min(targetWidth, widthLimit);
+			int targetWidth = Mathf.RoundToInt(targetHeight * aspect);
 			targetWidth = Mathf.Clamp(targetWidth, minSize, maxSize);
 
 			return new Vector2Int(targetWidth, targetHeight);
 		}
+
 
 		float EstimatePortalAspect() {
 			if (!surfaceRenderer) return 1f;
