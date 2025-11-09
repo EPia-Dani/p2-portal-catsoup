@@ -110,7 +110,20 @@ namespace Portal {
 		}
 
 		void OnTriggerEnter(Collider other) {
+			// Check if object has PortalTraveller component, if not, try to add it for interactable objects
 			var traveller = other.GetComponent<PortalTraveller>();
+			if (!traveller && other.CompareTag("Interactable")) {
+				// Check if object has InteractableObject (which should already have PortalTraveller)
+				var interactable = other.GetComponent<InteractableObject>();
+				if (interactable != null && interactable.PortalTraveller != null) {
+					traveller = interactable.PortalTraveller;
+				} else {
+					// Fallback: automatically add PortalTraveller to interactable objects so they can teleport
+					traveller = other.gameObject.AddComponent<PortalTraveller>();
+					Debug.Log($"[PortalTravellerHandler] Auto-added PortalTraveller to {other.name}");
+				}
+			}
+			
 			if (traveller) {
 				bool isHeld = PlayerPickup.IsObjectHeld(traveller.gameObject);
 				Debug.Log($"[PortalTravellerHandler] OnTriggerEnter: {traveller.name} (held: {isHeld})");

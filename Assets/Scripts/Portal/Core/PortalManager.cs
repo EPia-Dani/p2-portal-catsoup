@@ -7,6 +7,8 @@ namespace Portal {
 		[SerializeField] PortalRenderer orangePortal;
 		[SerializeField] Transform bluePortalMesh;
 		[SerializeField] Transform orangePortalMesh;
+		[SerializeField] Transform blueCollidersTransform;
+		[SerializeField] Transform orangeCollidersTransform;
 
 		[Header("Settings")]
 		[SerializeField] int textureSize = 1024;
@@ -20,6 +22,8 @@ namespace Portal {
 		Vector3 _orangeMeshBaseScale = Vector3.one;
 		Vector3 _blueColliderBaseSize = Vector3.one;
 		Vector3 _orangeColliderBaseSize = Vector3.one;
+		Vector3 _blueCollidersBaseScale = Vector3.one;
+		Vector3 _orangeCollidersBaseScale = Vector3.one;
 
 		public PortalRenderer BluePortal => bluePortal;
 		public PortalRenderer OrangePortal => orangePortal;
@@ -54,12 +58,18 @@ namespace Portal {
 				_blueMeshBaseScale = bluePortalMesh.localScale;
 				bluePortalMesh.gameObject.SetActive(false);
 			}
-			if (orangePortalMesh) {
-				_orangeMeshBaseScale = orangePortalMesh.localScale;
-				orangePortalMesh.gameObject.SetActive(false);
-			}
+		if (orangePortalMesh) {
+			_orangeMeshBaseScale = orangePortalMesh.localScale;
+			orangePortalMesh.gameObject.SetActive(false);
+		}
+		if (blueCollidersTransform) {
+			_blueCollidersBaseScale = blueCollidersTransform.localScale;
+		}
+		if (orangeCollidersTransform) {
+			_orangeCollidersBaseScale = orangeCollidersTransform.localScale;
+		}
 
-			// Setup animators
+		// Setup animators
 			var blueAnimator = bluePortal?.GetComponent<PortalAnimator>() ?? bluePortal?.GetComponentInChildren<PortalAnimator>();
 			var orangeAnimator = orangePortal?.GetComponent<PortalAnimator>() ?? orangePortal?.GetComponentInChildren<PortalAnimator>();
 			if (blueAnimator && bluePortalMesh) blueAnimator.SetMeshTransform(bluePortalMesh);
@@ -120,18 +130,25 @@ namespace Portal {
 			renderer.SetWallCollider(surface);
 			renderer.PortalScale = scale;
 
-			// Scale trigger collider to match portal size
-			UpdatePortalTriggerCollider(renderer, scale);
+		// Scale trigger collider to match portal size
+		UpdatePortalTriggerCollider(renderer, scale);
 
-			// Apply to mesh
-			if (mesh != null) {
-				mesh.gameObject.SetActive(true);
-				Vector3 meshBaseScale = id == PortalId.Blue ? _blueMeshBaseScale : _orangeMeshBaseScale;
-				mesh.localScale = new Vector3(meshBaseScale.x * scale, meshBaseScale.y, meshBaseScale.z * scale);
-			}
-
-			UpdateVisualStates();
+		// Apply to mesh
+		if (mesh != null) {
+			mesh.gameObject.SetActive(true);
+			Vector3 meshBaseScale = id == PortalId.Blue ? _blueMeshBaseScale : _orangeMeshBaseScale;
+			mesh.localScale = new Vector3(meshBaseScale.x * scale, meshBaseScale.y, meshBaseScale.z * scale);
 		}
+
+		// Scale colliders child transform
+		Transform collidersTransform = id == PortalId.Blue ? blueCollidersTransform : orangeCollidersTransform;
+		if (collidersTransform != null) {
+			Vector3 collidersBaseScale = id == PortalId.Blue ? _blueCollidersBaseScale : _orangeCollidersBaseScale;
+			collidersTransform.localScale = collidersBaseScale * scale;
+		}
+
+		UpdateVisualStates();
+	}
 
 		public void RemovePortal(PortalId id) {
 			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;

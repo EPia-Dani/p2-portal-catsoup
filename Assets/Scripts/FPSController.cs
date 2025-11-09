@@ -10,6 +10,7 @@ public class FPSController : PortalTraveller {
     public float gravity = 18;
     [Range(0f, 1f)]
     public float airControl = 0.3f; // 0 = no control, 1 = full control (grounded). Lower = harder to maneuver in air
+    public float terminalVelocity = 50f; // Maximum velocity magnitude to prevent physics breaking
 
     public bool lockCursor;
     public float mouseSensitivity = 10;
@@ -127,6 +128,12 @@ public class FPSController : PortalTraveller {
 
         verticalVelocity -= gravity * Time.deltaTime;
         velocity = new Vector3 (velocity.x, verticalVelocity, velocity.z);
+
+        // Clamp velocity to terminal velocity to prevent physics breaking
+        if (velocity.magnitude > terminalVelocity) {
+            velocity = velocity.normalized * terminalVelocity;
+            verticalVelocity = velocity.y;
+        }
 
         var flags = controller.Move (velocity * Time.deltaTime);
         if (flags == CollisionFlags.Below) {
