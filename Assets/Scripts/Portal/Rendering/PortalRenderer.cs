@@ -244,17 +244,63 @@ namespace Portal {
 
 		int CullInvisibleLevels(int levelCount) {
 			if (!portalCamera || levelCount <= 1) return levelCount;
+			if (!pair) return levelCount;
 
-			for (int i = 0; i < levelCount - 1; i++) {
+			// Calculate angle between portal normals
+			Vector3 thisNormal = transform.forward;
+			Vector3 pairNormal = pair.transform.forward;
+			float dot = Vector3.Dot(thisNormal, pairNormal);
+			
+			// Limit recursion based on portal angle
+			// dot = 1 → 0° (same direction) → no recursion
+			// dot = 0 → 90° (perpendicular) → max 1 recursion
+			// dot = -1 → 180° (opposite) → full recursion
+			int maxAllowedLevels = levelCount;
+			
+			if (dot > 0.9f) {
+				// 0° (same direction/complanar) - no recursion
+				maxAllowedLevels = 1;
+			}
+			else if (Mathf.Abs(dot) < 0.1f) {
+				// 90° (perpendicular) - maximum 1 recursion
+				maxAllowedLevels = Mathf.Min(2, levelCount);
+			}
+			else if (dot < -0.9f) {
+				// 180° (opposite directions) - full recursion
+				maxAllowedLevels = levelCount;
+			}
+			else {
+				// Interpolate between thresholds
+				if (dot > 0f) {
+					// Between 0° and 90°: interpolate from no recursion (dot=0.9) to 1 recursion (dot=0.1)
+					float t = (0.9f - dot) / (0.9f - 0.1f); // Map from [0.1, 0.9] to [1, 0]
+					t = Mathf.Clamp01(t);
+					maxAllowedLevels = Mathf.RoundToInt(Mathf.Lerp(1, 2, t));
+				}
+				else {
+					// Between 90° and 180°: interpolate from 1 recursion (dot=-0.1) to full recursion (dot=-0.9)
+					float t = (-dot - 0.1f) / (0.9f - 0.1f); // Map from [0.1, 0.9] to [0, 1]
+					t = Mathf.Clamp01(t);
+					maxAllowedLevels = Mathf.RoundToInt(Mathf.Lerp(2, levelCount, t));
+				}
+			}
+
+			// Apply visibility culling for allowed levels
+			// For each level, check if we can see the next portal before rendering it
+			for (int i = 0; i < maxAllowedLevels - 1; i++) {
 				PortalRenderer targetPortal = (i % 2 == 0) ? this : pair;
-				if (!targetPortal || !targetPortal.surfaceRenderer) continue;
+				if (!targetPortal || !targetPortal.surfaceRenderer) {
+					return i + 1; // Can't continue if portal is missing
+				}
 
+				// Check if the next portal (at level i+1) is visible from level i
 				if (!IsPortalVisibleFromLevel(_viewMatrices[i], targetPortal.surfaceRenderer)) {
 					return i + 1; // Stop at first invisible level
 				}
 			}
 
-			return levelCount;
+			// All checked levels are visible, return the angle-limited count
+			return maxAllowedLevels;
 		}
 
 		bool IsPortalVisibleFromLevel(Matrix4x4 worldMatrix, MeshRenderer targetRenderer) {
@@ -283,8 +329,8 @@ namespace Portal {
 			if (distance > 0.01f) {
 				Vector3 dirToPortal = toPortal / distance;
 				float dot = Vector3.Dot(forward.normalized, dirToPortal);
-				// Only cull if portal is significantly behind camera (more than 45 degrees)
-				if (dot < 0.5f) { // cos(60°) ≈ 0.5, so we allow portals up to 60° off-axis
+				// More strict culling - only allow portals that are clearly in front (within ~45 degrees)
+				if (dot < 0.7f) { // cos(45°) ≈ 0.707, so we only allow portals within 45° of forward
 					return false;
 				}
 			}
