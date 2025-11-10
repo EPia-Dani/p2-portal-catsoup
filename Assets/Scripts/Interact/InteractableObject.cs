@@ -140,26 +140,61 @@ public class InteractableObject : PortalTraveller
         
         _isHeld = false;
         
+        // CRITICAL: Restore physics BEFORE clone system operations
+        // This ensures gravity and physics work even if object is inside portal
+        _rigidbody.useGravity = _originalUseGravity;
+        _rigidbody.linearDamping = _originalLinearDamping;
+        _rigidbody.angularDamping = _originalAngularDamping;
+        
+        // Capture player's HORIZONTAL velocity to preserve momentum when dropping
+        // We only preserve horizontal momentum - let gravity handle vertical naturally
+        Vector3 playerHorizontalVelocity = Vector3.zero;
+        if (_holder != null)
+        {
+            var playerController = _holder.GetComponent<FPSController>();
+            if (playerController != null)
+            {
+                // Get player's current velocity from FPSController
+                Vector3 playerVelocity = playerController.CurrentVelocity;
+                
+                // Extract only horizontal components (X and Z, ignore Y)
+                playerHorizontalVelocity = new Vector3(playerVelocity.x, 0, playerVelocity.z);
+            }
+            
+            // Fallback: if no horizontal velocity, use forward direction
+            if (playerHorizontalVelocity.sqrMagnitude < 0.01f && Camera.main != null)
+            {
+                Vector3 forward = Camera.main.transform.forward;
+                playerHorizontalVelocity = new Vector3(forward.x, 0, forward.z).normalized * 2f; // Small forward push
+            }
+        }
+        
+        // Apply player's horizontal velocity to object (preserve horizontal momentum)
+        // Vertical velocity starts at zero - gravity will handle it naturally
+        if (playerHorizontalVelocity.sqrMagnitude > 0.01f)
+        {
+            _rigidbody.linearVelocity = playerHorizontalVelocity; // Only horizontal, Y = 0
+        }
+        else
+        {
+            // If no player velocity, give a small forward push (horizontal only)
+            if (Camera.main != null)
+            {
+                Vector3 forward = Camera.main.transform.forward;
+                _rigidbody.linearVelocity = new Vector3(forward.x, 0, forward.z).normalized * dropForce;
+            }
+        }
+        
         // Notify clone system that we're dropping (will swap if clone exists)
+        // This happens AFTER we've set velocity so SwapWithClone can preserve it
         if (_portalCloneSystem != null)
         {
             _portalCloneSystem.SetHeld(false);
         }
         
-        // Restore physics
-        _rigidbody.useGravity = _originalUseGravity;
-        _rigidbody.linearDamping = _originalLinearDamping;
-        _rigidbody.angularDamping = _originalAngularDamping;
-        
-        // Give a small forward push
-        if (Camera.main != null)
-        {
-            _rigidbody.AddForce(Camera.main.transform.forward * dropForce, ForceMode.VelocityChange);
-        }
-        
         _holder = null;
         
-        Debug.Log($"[InteractableObject] {gameObject.name} dropped");
+        Debug.Log($"[InteractableObject] {gameObject.name} dropped with velocity: {_rigidbody.linearVelocity}");
     }
 
     /// <summary>

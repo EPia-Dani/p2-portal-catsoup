@@ -23,6 +23,9 @@ public class FPSController : PortalTraveller {
 
     float verticalVelocity;
     Vector3 velocity;
+    
+    // Public property to access current velocity (for objects to inherit momentum when dropped)
+    public Vector3 CurrentVelocity => velocity;
 
     // External horizontal momentum applied after teleport (preserved across frames)
     Vector3 externalVelocity = Vector3.zero;

@@ -1063,7 +1063,7 @@ GameObject:
   - component: {fileID: 361448954}
   m_Layer: 0
   m_Name: Cube (3)
-  m_TagString: Portal Wall
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -5980,10 +5980,9 @@ GameObject:
   - component: {fileID: 1646607696}
   - component: {fileID: 1646607699}
   - component: {fileID: 1646607698}
-  - component: {fileID: 1646607697}
   m_Layer: 5
   m_Name: Crosshair
-  m_TagString: Portalwall
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6023,18 +6022,6 @@ MonoBehaviour:
   blueOnlySprite: {fileID: 21300000, guid: cc7037bba0a5f86459702197ec697a66, type: 3}
   orangeOnlySprite: {fileID: 21300000, guid: 5e94f694b000e2e4985c5b79347c2f74, type: 3}
   bothSprite: {fileID: 21300000, guid: 8a81d4c668a07384cbb4ec76e1a78117, type: 3}
---- !u!114 &1646607697
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1646607694}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e9f1b4251c0f4392b31a47a837334950, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1646607698
 MonoBehaviour:
   m_ObjectHideFlags: 0

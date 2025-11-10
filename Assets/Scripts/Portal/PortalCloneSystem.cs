@@ -289,6 +289,20 @@ namespace Portal {
 				angularVelocityBeforeTeleport = rb.angularVelocity;
 			}
 			
+			// CRITICAL: Ensure gravity is enabled before teleporting
+			// This prevents objects from floating after swap
+			if (rb) {
+				// Check if this is an InteractableObject and preserve its gravity setting
+				var interactable = GetComponent<InteractableObject>();
+				if (interactable != null) {
+					// InteractableObject manages its own gravity in OnDropped()
+					// But ensure it's enabled here as a safeguard
+					if (!rb.useGravity) {
+						rb.useGravity = true;
+					}
+				}
+			}
+			
 			// Move real object to clone's position using PortalTraveller.Teleport
 			// This ensures proper scaling and portal tracking
 			var traveller = GetComponent<PortalTraveller>();
@@ -296,20 +310,42 @@ namespace Portal {
 				traveller.Teleport(_currentPortal.transform, _currentDestination.transform, clonePos, cloneRot, scaleRatio);
 				
 				// Transform velocity through portal (same as player does)
-				if (rb && velocityBeforeTeleport.sqrMagnitude > 0.001f) {
-					// Scale velocity by portal size difference
-					Vector3 transformedVelocity = velocityBeforeTeleport * scaleRatio;
+				if (rb) {
+					Vector3 transformedVelocity = Vector3.zero;
 					
-					// Rotate velocity through portal (same transformation as player)
-					Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
-					Quaternion relativeRotation = _currentDestination.transform.rotation * flipLocal * Quaternion.Inverse(_currentPortal.transform.rotation);
-					transformedVelocity = relativeRotation * transformedVelocity;
+					if (velocityBeforeTeleport.sqrMagnitude > 0.001f) {
+						// Scale velocity by portal size difference
+						transformedVelocity = velocityBeforeTeleport * scaleRatio;
+						
+						// Rotate velocity through portal (same transformation as player)
+						Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+						Quaternion relativeRotation = _currentDestination.transform.rotation * flipLocal * Quaternion.Inverse(_currentPortal.transform.rotation);
+						transformedVelocity = relativeRotation * transformedVelocity;
+						
+						// Apply minimum exit velocity if needed
+						transformedVelocity = traveller.ApplyMinimumExitVelocity(_currentPortal.transform, _currentDestination.transform, transformedVelocity);
+					} else {
+						// If velocity is zero, ensure minimum exit velocity to prevent floating
+						// Calculate exit direction (away from portal)
+						Vector3 exitDirection = -_currentDestination.transform.forward;
+						Vector3 horizontalExit = new Vector3(exitDirection.x, 0, exitDirection.z).normalized;
+						
+						// Apply minimum horizontal velocity away from portal
+						transformedVelocity = horizontalExit * 1.5f; // Minimum 1.5 units/sec
+						
+						// Preserve any existing vertical velocity (for gravity)
+						if (rb.linearVelocity.y < 0) {
+							transformedVelocity.y = rb.linearVelocity.y;
+						}
+					}
 					
 					// Apply transformed velocity
 					rb.linearVelocity = transformedVelocity;
 					
 					// Transform angular velocity too
 					if (angularVelocityBeforeTeleport.sqrMagnitude > 0.001f) {
+						Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+						Quaternion relativeRotation = _currentDestination.transform.rotation * flipLocal * Quaternion.Inverse(_currentPortal.transform.rotation);
 						Vector3 transformedAngularVelocity = relativeRotation * angularVelocityBeforeTeleport;
 						rb.angularVelocity = transformedAngularVelocity;
 					}
