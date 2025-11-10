@@ -182,6 +182,68 @@ public class InteractableObject : PortalTraveller
         }
     }
 
+    /// <summary>
+    /// Override Teleport to properly transform velocity through portals
+    /// This is critical for objects falling through floor portals to maintain momentum
+    /// </summary>
+    public override void Teleport(Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot, float scaleRatio = 1f)
+    {
+        if (_rigidbody == null)
+        {
+            // If no rigidbody, just use base teleport
+            base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
+            return;
+        }
+
+        // Don't transform velocity if object is being held (it's handled by clone system)
+        if (_isHeld)
+        {
+            base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
+            return;
+        }
+
+        // Capture velocity BEFORE teleporting
+        Vector3 velocityBeforeTeleport = _rigidbody.linearVelocity;
+        Vector3 angularVelocityBeforeTeleport = _rigidbody.angularVelocity;
+
+        // Call base Teleport to handle position, rotation, and scaling
+        base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
+
+        // Calculate portal transformation for velocity
+        Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+        Quaternion relativeRotation = toPortal.rotation * flipLocal * Quaternion.Inverse(fromPortal.rotation);
+
+        // Transform velocity through portal
+        Vector3 finalVelocity = Vector3.zero;
+        if (velocityBeforeTeleport.sqrMagnitude > 0.001f)
+        {
+            // Scale velocity by portal size difference
+            Vector3 transformedVelocity = velocityBeforeTeleport * scaleRatio;
+
+            // Rotate velocity through portal (same transformation as player)
+            // Include 180° flip so 'entering' becomes 'exiting'
+            transformedVelocity = relativeRotation * transformedVelocity;
+
+            finalVelocity = transformedVelocity;
+
+            // Transform angular velocity too
+            if (angularVelocityBeforeTeleport.sqrMagnitude > 0.001f)
+            {
+                Vector3 transformedAngularVelocity = relativeRotation * angularVelocityBeforeTeleport;
+                _rigidbody.angularVelocity = transformedAngularVelocity;
+            }
+        }
+
+        // Apply minimum exit velocity using base class method (handles non-vertical to vertical transitions)
+        finalVelocity = ApplyMinimumExitVelocity(fromPortal, toPortal, finalVelocity);
+
+        // Apply final velocity
+        _rigidbody.linearVelocity = finalVelocity;
+
+        // Sync physics to prevent collision detection issues
+        Physics.SyncTransforms();
+    }
+
     void UpdateHeldMovement()
     {
         if (_rigidbody == null) return;

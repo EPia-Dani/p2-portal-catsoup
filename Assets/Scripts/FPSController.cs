@@ -220,17 +220,24 @@ public class FPSController : PortalTraveller {
         // Rotate the captured world-space velocity into the destination orientation
         velocity = relativeRotation * currentVelocity;
 
+        // Apply minimum exit velocity using base class method (handles non-vertical to vertical transitions)
+        velocity = ApplyMinimumExitVelocity(fromPortal, toPortal, velocity);
+
         // Update verticalVelocity to match the new world-space Y component
         verticalVelocity = velocity.y;
 
         // Determine if the source portal is 'non-vertical' (e.g. on the floor/ceiling).
         // We treat portals whose forward/normal has a significant Y component as non-vertical.
-        float portalUpDot = Mathf.Abs(Vector3.Dot(fromPortal.forward.normalized, Vector3.up));
+        float fromPortalUpDot = Mathf.Abs(Vector3.Dot(fromPortal.forward.normalized, Vector3.up));
         const float nonVerticalThreshold = 0.5f; // tweakable: >0.5 means noticeably tilted towards horizontal plane
+        bool fromPortalIsNonVertical = fromPortalUpDot > nonVerticalThreshold;
 
-        if (portalUpDot > nonVerticalThreshold) {
+        if (fromPortalIsNonVertical) {
             // Preserve horizontal components as external momentum so Update doesn't overwrite them
             externalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+            
+            // Also update airHorizontalVelocity to ensure momentum is preserved in air
+            airHorizontalVelocity = externalVelocity;
         } else {
             // For vertical portals (walls), don't inject external momentum so movement stays fluid
             externalVelocity = Vector3.zero;
