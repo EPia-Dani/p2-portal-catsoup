@@ -693,6 +693,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b59e5688fa094f88b4fa97e0bc349d03, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minPortalExitVelocity: 3
   walkSpeed: 3
   sprintMultiplier: 1.5
   jumpForce: 6
@@ -1762,6 +1763,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 082df5768b0bab7419e52fab8ae4479c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minPortalExitVelocity: 3
   terminalVelocity: 50
   maxAngularVelocity: 50
   moveSpeed: 10
@@ -2962,6 +2964,11 @@ PrefabInstance:
     - target: {fileID: 4389748191052850, guid: 9eddf26057390cb40a4f054ef935c559, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 54089449008270882, guid: 9eddf26057390cb40a4f054ef935c559,
+        type: 3}
+      propertyPath: m_CollisionDetection
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6983,6 +6990,11 @@ PrefabInstance:
       propertyPath: m_ImplicitCom
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 54089449008270882, guid: 9eddf26057390cb40a4f054ef935c559,
+        type: 3}
+      propertyPath: m_CollisionDetection
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -7937,7 +7949,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 0.44, y: 0.67, z: 1}
-  m_Center: {x: 0, y: 0, z: 0.4}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &6690853907733404544
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8157,7 +8169,7 @@ BoxCollider:
   m_Enabled: 1
   serializedVersion: 3
   m_Size: {x: 0.44, y: 0.67, z: 1}
-  m_Center: {x: 0, y: 0, z: 0.4}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &8197170447663804485
 MonoBehaviour:
   m_ObjectHideFlags: 0
