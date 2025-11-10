@@ -41,6 +41,40 @@ public class FPSController : PortalTraveller {
     bool jumping;
     float lastGroundedTime;
     bool disabled;
+    bool cameraRotationEnabled = true;
+    
+    /// <summary>
+    /// Disables player control (e.g., when dead or in menu).
+    /// </summary>
+    public void SetDisabled(bool value)
+    {
+        disabled = value;
+        
+        // Unlock cursor when disabled
+        if (disabled)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else if (lockCursor)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+    
+    /// <summary>
+    /// Checks if player control is currently disabled.
+    /// </summary>
+    public bool IsDisabled => disabled;
+    
+    /// <summary>
+    /// Enables or disables camera rotation (pitch/yaw).
+    /// </summary>
+    public void SetCameraRotationEnabled(bool enabled)
+    {
+        cameraRotationEnabled = enabled;
+    }
     
     // Store horizontal velocity when jumping to preserve momentum
     Vector3 airHorizontalVelocity = Vector3.zero;
@@ -232,15 +266,19 @@ public class FPSController : PortalTraveller {
         }
 
         // Accumulate mouse input (frame-rate independent)
-        float mX = lookInput.x * mouseSensitivity;
-        float mY = lookInput.y * mouseSensitivity;
+        // Only apply rotation if camera rotation is enabled
+        if (cameraRotationEnabled)
+        {
+            float mX = lookInput.x * mouseSensitivity;
+            float mY = lookInput.y * mouseSensitivity;
 
-        yaw += mX;
-        pitch -= mY;
-        pitch = Mathf.Clamp (pitch, pitchMinMax.x, pitchMinMax.y);
+            yaw += mX;
+            pitch -= mY;
+            pitch = Mathf.Clamp (pitch, pitchMinMax.x, pitchMinMax.y);
 
-        transform.eulerAngles = Vector3.up * yaw;
-        cam.transform.localEulerAngles = Vector3.right * pitch;
+            transform.eulerAngles = Vector3.up * yaw;
+            cam.transform.localEulerAngles = Vector3.right * pitch;
+        }
     }
 
     public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot, float scaleRatio = 1f) {

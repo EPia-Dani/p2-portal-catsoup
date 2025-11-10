@@ -141,19 +141,16 @@ public class SurfacePhysics : MonoBehaviour
         // Only handle destructive surfaces in collision
         if (surfaceType != SurfaceType.Destructive) return;
 
-        // Check if the colliding object is a cube
         GameObject otherObject = collision.gameObject;
-        if (!otherObject.CompareTag("Cube"))
+        
+        // Check if the colliding object is a cube (by tag or InteractableObject component)
+        var interactable = otherObject.GetComponent<InteractableObject>();
+        if (!otherObject.CompareTag("Cube") && interactable == null)
         {
-            // Also check if it has InteractableObject component (cubes should have this)
-            if (otherObject.GetComponent<InteractableObject>() == null)
-            {
-                return;
-            }
+            return;
         }
 
         // Check if cube is being held
-        var interactable = otherObject.GetComponent<InteractableObject>();
         if (interactable != null && interactable.IsHeld && !destroyHeldCubes)
         {
             return; // Don't destroy held cubes unless explicitly allowed
@@ -203,5 +200,3 @@ public class SurfacePhysics : MonoBehaviour
         return surfaceType;
     }
 }
-
-

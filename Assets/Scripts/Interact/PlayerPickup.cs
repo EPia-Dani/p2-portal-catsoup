@@ -49,13 +49,6 @@ public class PlayerPickup : MonoBehaviour
         // Store base player scale (use average of x, y, z scales)
         Vector3 baseScale = transform.localScale;
         _basePlayerScale = (baseScale.x + baseScale.y + baseScale.z) / 3f;
-        
-        // Subscribe to player teleportation events
-        var fpsController = GetComponent<FPSController>();
-        if (fpsController)
-        {
-            // We'll detect teleportation through PortalTravellerHandler
-        }
     }
     
     private void OnDestroy()
@@ -175,5 +168,4 @@ public class PlayerPickup : MonoBehaviour
             _heldObject.SetTargetTransform(targetPos, targetRot);
         }
     }
-
 }

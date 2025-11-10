@@ -48,7 +48,6 @@ namespace Portal {
 			
 			// If object is too far from the portal, it probably teleported normally - destroy clone
 			if (distanceToPortal > 2f) {
-				Debug.Log($"[PortalCloneSystem] Object too far from tracked portal ({distanceToPortal}m), destroying clone for {gameObject.name}");
 				DestroyClone();
 				return;
 			}
@@ -59,7 +58,6 @@ namespace Portal {
 			// If we were on the entering side (negative) and now we're on the exiting side (positive),
 			// we've crossed the portal - swap with clone
 			if (_lastSideCheck < 0 && dot > 0.01f) {
-				Debug.Log($"[PortalCloneSystem] Object crossed portal (dot changed from {_lastSideCheck} to {dot}), swapping with clone for {gameObject.name}");
 				SwapWithClone();
 				return;
 			}
@@ -83,18 +81,15 @@ namespace Portal {
 			
 			// Only create ONE clone if touching a portal and we don't have one yet
 			if (touchingPortal != null && _clone == null) {
-				Debug.Log($"[PortalCloneSystem] Creating clone for {gameObject.name} touching portal {touchingPortal.name}");
 				CreateClone(touchingPortal);
 			}
 			// If touching a different portal, destroy old clone and create new one
 			else if (touchingPortal != null && touchingPortal != _currentPortal && _clone != null) {
-				Debug.Log($"[PortalCloneSystem] Switching clone from {_currentPortal?.name} to {touchingPortal.name}");
 				DestroyClone();
 				CreateClone(touchingPortal);
 			}
 			// Destroy clone if not touching any portal
 			else if (touchingPortal == null && _clone != null) {
-				Debug.Log($"[PortalCloneSystem] No portal contact, destroying clone for {gameObject.name}");
 				DestroyClone();
 			}
 		}
@@ -115,13 +110,11 @@ namespace Portal {
 					// If dot > threshold, we're clearly on the "exiting" side (where clone is) - swap
 					if (dot > threshold) {
 						// We're on the destination side, swap with clone
-						Debug.Log($"[PortalCloneSystem] Dropped on destination side (dot={dot}), swapping with clone for {gameObject.name}");
 						SwapWithClone();
 					} 
 					// If dot < -threshold, we're clearly on the "entering" side
 					else if (dot < -threshold) {
 						// We're still on the source side, destroy clone
-						Debug.Log($"[PortalCloneSystem] Dropped on source side (dot={dot}), destroying clone for {gameObject.name}");
 						DestroyClone();
 						
 						// Properly initialize portal tracking so it doesn't immediately teleport
@@ -130,7 +123,6 @@ namespace Portal {
 					// If -threshold <= dot <= threshold, object is crossing/intersecting portal
 					// Keep the clone alive - it will be handled by portal teleportation system
 					else {
-						Debug.Log($"[PortalCloneSystem] Dropped while crossing portal (dot={dot}), keeping clone alive for {gameObject.name}");
 						// Don't destroy clone - let portal teleportation system handle it
 						// Clone will update in Update() and swap will happen when object fully crosses
 						
@@ -242,14 +234,12 @@ namespace Portal {
 			// Ignore collision with source portal wall
 			var sourceHandler = _currentPortal.GetComponent<PortalTravellerHandler>();
 			if (sourceHandler) {
-				Debug.Log($"[PortalCloneSystem] Ignoring collision with source portal wall for {gameObject.name}");
 				SetPortalCollisionState(sourceHandler, true);
 			}
 			
 			// Ignore collision with destination portal wall
 			var destHandler = _currentDestination.GetComponent<PortalTravellerHandler>();
 			if (destHandler) {
-				Debug.Log($"[PortalCloneSystem] Ignoring collision with destination portal wall for {gameObject.name}");
 				SetPortalCollisionState(destHandler, true);
 			}
 		}
@@ -408,7 +398,6 @@ namespace Portal {
 			}
 			
 			_ignoredPortalHandlers.Clear();
-			Debug.Log($"[PortalCloneSystem] Restored collisions for {gameObject.name}");
 		}
 
 		void DestroyClone() {

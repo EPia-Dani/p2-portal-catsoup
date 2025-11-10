@@ -41,7 +41,7 @@ namespace Portal {
 					TeleportTraveller(traveller, pair, scaleRatio);
 					_trackedTravellers.RemoveAt(i);
 				} else {
-				traveller.previousOffsetFromPortal = offset;
+					traveller.previousOffsetFromPortal = offset;
 				}
 			}
 		}
@@ -166,27 +166,23 @@ namespace Portal {
 				// InteractableObject now inherits from PortalTraveller, so GetComponent should find it
 				// Fallback: automatically add PortalTraveller to interactable objects so they can teleport
 				traveller = other.gameObject.AddComponent<PortalTraveller>();
-				Debug.Log($"[PortalTravellerHandler] Auto-added PortalTraveller to {other.name}");
 			}
 			
 			if (traveller) {
 				bool isHeld = PlayerPickup.IsObjectHeld(traveller.gameObject);
-				Debug.Log($"[PortalTravellerHandler] OnTriggerEnter: {traveller.name} (held: {isHeld})");
 				
 				// For held objects, only set up collision ignore (no tracking/teleportation)
 				if (isHeld) {
-					Debug.Log($"[PortalTravellerHandler] Setting collision ignore for held object {traveller.name}");
 					SetCollisionIgnore(traveller, true);
 					// Also ignore collision with destination portal wall
 					if (portalRenderer?.pair) {
 						var destHandler = portalRenderer.pair.GetComponent<PortalTravellerHandler>();
 						if (destHandler) {
 							destHandler.SetCollisionIgnore(traveller, true);
-							Debug.Log($"[PortalTravellerHandler] Also ignoring collision with destination portal for {traveller.name}");
 						}
 					}
 				} else {
-				OnTravellerEnterPortal(traveller);
+					OnTravellerEnterPortal(traveller);
 				}
 			}
 		}
@@ -195,12 +191,10 @@ namespace Portal {
 			var traveller = other.GetComponent<PortalTraveller>();
 			if (traveller) {
 				bool isHeld = PlayerPickup.IsObjectHeld(traveller.gameObject);
-				Debug.Log($"[PortalTravellerHandler] OnTriggerExit: {traveller.name} (held: {isHeld})");
 				
 				// For held objects, DO NOT restore collision - keep it ignored while held
 				// Collision will be restored when object is dropped (handled by PortalCloneSystem)
 				if (isHeld) {
-					Debug.Log($"[PortalTravellerHandler] Ignoring OnTriggerExit for held object {traveller.name} - keeping collision ignored");
 					return;
 				}
 				
@@ -209,7 +203,6 @@ namespace Portal {
 
 				// Only restore collision for non-held objects
 				if (wasTracked) {
-					Debug.Log($"[PortalTravellerHandler] Restoring collision for {traveller.name}");
 					SetCollisionIgnore(traveller, false);
 				}
 			}

@@ -58,24 +58,17 @@ namespace Portal {
 			// First raycast to check what we're looking at (all surfaces)
 			Ray ray = shootCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
 			if (!Physics.Raycast(ray, out RaycastHit hit, shootDistance, ~0, QueryTriggerInteraction.Ignore)) {
-				Debug.Log("[PortalGun] No raycast hit");
 				HideBoundsRenderer();
 				UpdateCrosshair(false, false);
 				return;
 			}
-
-			// Debug what we hit
-			Debug.Log($"[PortalGun] Raycast hit: {hit.collider?.name}, Tag: {hit.collider?.tag}, Layer: {LayerMask.LayerToName(hit.collider?.gameObject.layer ?? 0)}");
 
 			// Check if it's a portal wall - if not, show empty
 			if (hit.collider == null || !hit.collider.CompareTag("Portal Wall")) {
-				Debug.Log($"[PortalGun] Not a portal wall - tag check failed. Tag is: '{hit.collider?.tag}'");
 				HideBoundsRenderer();
 				UpdateCrosshair(false, false);
 				return;
 			}
-
-			Debug.Log("[PortalGun] Portal wall detected!");
 
 			// It's a portal wall - get placement info using shootMask
 			if (!_placementCalculator.TryCalculate(out PortalPlacement placement) || !placement.IsValid) {
