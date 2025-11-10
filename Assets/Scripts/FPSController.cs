@@ -4,12 +4,19 @@ using UnityEngine;
 
 public class FPSController : PortalTraveller {
 
-    public float walkSpeed = 3;
+    [Header("Movement")]
+    public float walkSpeed = 5f;
     public float sprintMultiplier = 1.5f; // Speed multiplier when sprinting
-    public float jumpForce = 8;
-    public float gravity = 18;
+    public float groundAcceleration = 50f; // How quickly you reach max speed on ground (higher = more responsive)
+    public float groundFriction = 30f; // How quickly you stop on ground (higher = less sliding)
+    
+    [Header("Air Movement")]
+    public float jumpForce = 8f;
+    public float gravity = 18f;
     [Range(0f, 1f)]
-    public float airControl = 0.3f; // 0 = no control, 1 = full control (grounded). Lower = harder to maneuver in air
+    public float airControl = 0.5f; // 0 = no control, 1 = full control. Controls how much you can accelerate in air
+    public float airAcceleration = 15f; // How quickly you can change direction in air
+    public float airDrag = 0.1f; // Air resistance (0 = no drag, 1 = full drag)
     public float terminalVelocity = 50f; // Maximum velocity magnitude to prevent physics breaking
 
     public bool lockCursor;
@@ -81,69 +88,114 @@ public class FPSController : PortalTraveller {
         bool jumpPressed = _controls.Player.Jump.WasPerformedThisFrame();
         bool isSprinting = _controls.Player.Sprint.IsPressed();
 
-        Vector3 inputDir = new Vector3 (moveInput.x, 0, moveInput.y).normalized;
-        Vector3 worldInputDir = transform.TransformDirection (inputDir);
+        // Get input direction in world space
+        Vector3 inputDir = new Vector3(moveInput.x, 0, moveInput.y).normalized;
+        Vector3 worldInputDir = transform.TransformDirection(inputDir);
 
         // Check if player is grounded (with small buffer for edge cases)
         bool isGrounded = controller.isGrounded || (Time.time - lastGroundedTime < 0.1f);
-        float controlMultiplier = isGrounded ? 1f : airControl;
         
         // Apply sprint multiplier when sprinting
         float speedMultiplier = isSprinting ? sprintMultiplier : 1f;
-        float currentSpeed = walkSpeed * speedMultiplier;
+        float targetSpeed = walkSpeed * speedMultiplier;
         
-        // Compute player's input-based horizontal velocity
-        Vector3 inputVel = new Vector3(worldInputDir.x * currentSpeed * controlMultiplier, 0, worldInputDir.z * currentSpeed * controlMultiplier);
-
-        // Check if player is actively providing movement input
+        // Get current horizontal velocity
+        Vector3 currentHorizontal = isGrounded ? new Vector3(velocity.x, 0, velocity.z) : airHorizontalVelocity;
+        
+        // Calculate desired velocity based on input
+        Vector3 desiredVelocity = Vector3.zero;
+        if (moveInput.sqrMagnitude > 0.01f) {
+            desiredVelocity = worldInputDir * targetSpeed;
+        }
+        
+        // Handle external velocity damping (from portals)
         bool isActivelyMoving = moveInput.sqrMagnitude > 0.01f;
-        
-        // Smart damping: only damp external velocity when player isn't moving, or damp it more gently
         if (isActivelyMoving && externalVelocity.sqrMagnitude > 0.01f) {
-            // When player is moving, only damp the component of external velocity that opposes player input
-            float inputVelMagnitude = inputVel.magnitude;
+            // When player is moving, damp external velocity that opposes input
+            float inputVelMagnitude = desiredVelocity.magnitude;
             if (inputVelMagnitude > 0.01f) {
-                Vector3 inputDirNormalized = inputVel / inputVelMagnitude;
+                Vector3 inputDirNormalized = desiredVelocity / inputVelMagnitude;
                 float alignment = Vector3.Dot(externalVelocity.normalized, inputDirNormalized);
                 
-                // If external velocity aligns with input (both going same direction), damp less
-                // If external velocity opposes input, damp more aggressively
                 float dampingFactor = alignment > 0.3f ? portalMomentumDamping * 0.3f : portalMomentumDamping * 1.5f;
                 
-                // Project external velocity onto input direction and perpendicular to it
                 Vector3 parallelComponent = Vector3.Project(externalVelocity, inputDirNormalized);
                 Vector3 perpendicularComponent = externalVelocity - parallelComponent;
                 
-                // Damp perpendicular component more aggressively, parallel component less so
                 perpendicularComponent = Vector3.Lerp(perpendicularComponent, Vector3.zero, portalMomentumDamping * Time.deltaTime);
                 parallelComponent = Vector3.Lerp(parallelComponent, Vector3.zero, dampingFactor * Time.deltaTime);
                 
                 externalVelocity = parallelComponent + perpendicularComponent;
             } else {
-                // Fallback: if input velocity is somehow zero, apply normal damping
                 externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
             }
         } else {
-            // When player isn't moving, apply normal damping
             externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
         }
 
         Vector3 horizontal;
         
         if (isGrounded) {
-            // Grounded: input directly sets velocity
-            horizontal = inputVel + externalVelocity;
-        } else {
-            // In air: preserve momentum, input adds acceleration
-            // Start with preserved horizontal velocity
-            horizontal = airHorizontalVelocity;
-            
-            // Input adds velocity change (doesn't replace, just adds)
-            // Use full speed for acceleration, airControl determines how much influence
+            // Grounded movement: responsive acceleration with strong friction
             if (moveInput.sqrMagnitude > 0.01f) {
-                Vector3 inputAccel = new Vector3(worldInputDir.x * currentSpeed, 0, worldInputDir.z * currentSpeed);
-                horizontal += inputAccel * airControl * Time.deltaTime;
+                // Accelerate towards desired velocity quickly for responsive feel
+                Vector3 velocityDiff = desiredVelocity - currentHorizontal;
+                float acceleration = groundAcceleration * Time.deltaTime;
+                horizontal = Vector3.MoveTowards(currentHorizontal, desiredVelocity, acceleration);
+            } else {
+                // Strong friction when not moving - stop quickly
+                float friction = groundFriction * Time.deltaTime;
+                horizontal = Vector3.MoveTowards(currentHorizontal, Vector3.zero, friction);
+                
+                // If velocity is very small, snap to zero to prevent micro-sliding
+                if (horizontal.magnitude < 0.1f) {
+                    horizontal = Vector3.zero;
+                }
             }
+            
+            // Add external velocity (from portals) - but apply friction to it too
+            if (externalVelocity.sqrMagnitude > 0.01f) {
+                // Damp external velocity more aggressively when grounded
+                externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, groundFriction * Time.deltaTime);
+                if (externalVelocity.magnitude < 0.1f) {
+                    externalVelocity = Vector3.zero;
+                }
+            }
+            
+            horizontal += externalVelocity;
+            
+            // Reset air velocity when grounded
+            airHorizontalVelocity = horizontal;
+        } else {
+            // Air movement: Source-engine style air control
+            // You can accelerate in any direction, but speed is limited
+            Vector3 currentVel = airHorizontalVelocity;
+            
+            if (moveInput.sqrMagnitude > 0.01f) {
+                // Calculate acceleration in desired direction
+                Vector3 desiredDir = desiredVelocity.normalized;
+                float accel = airAcceleration * airControl * Time.deltaTime;
+                
+                // Accelerate in the desired direction
+                Vector3 accelVector = desiredDir * accel;
+                horizontal = currentVel + accelVector;
+                
+                // Limit horizontal speed to prevent infinite acceleration
+                // Allow slightly higher speed than ground speed for air strafing
+                float maxAirSpeed = targetSpeed * 1.2f;
+                if (horizontal.magnitude > maxAirSpeed) {
+                    horizontal = horizontal.normalized * maxAirSpeed;
+                }
+            } else {
+                // No input, just apply air drag
+                horizontal = currentVel;
+            }
+            
+            // Apply air drag (gradual slowdown)
+            horizontal *= (1f - airDrag * Time.deltaTime);
+            
+            // Add external velocity (from portals)
+            horizontal += externalVelocity;
             
             // Store for next frame
             airHorizontalVelocity = horizontal;
@@ -165,7 +217,8 @@ public class FPSController : PortalTraveller {
             jumping = false;
             lastGroundedTime = Time.time;
             verticalVelocity = 0;
-            airHorizontalVelocity = Vector3.zero; // Reset when landing
+            // Reset air velocity when landing (will be set from ground movement next frame)
+            airHorizontalVelocity = horizontal;
         }
 
         if (jumpPressed) {
@@ -173,8 +226,8 @@ public class FPSController : PortalTraveller {
             if (controller.isGrounded || (!jumping && timeSinceLastTouchedGround < 0.15f)) {
                 jumping = true;
                 verticalVelocity = jumpForce;
-                // Capture horizontal velocity at moment of jump
-                airHorizontalVelocity = new Vector3(velocity.x, 0, velocity.z);
+                // Capture horizontal velocity at moment of jump (use the calculated horizontal, not velocity)
+                airHorizontalVelocity = horizontal;
             }
         }
 
