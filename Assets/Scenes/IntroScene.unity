@@ -2577,6 +2577,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 10670345582875169, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
+        type: 3}
+      propertyPath: m_Radius
+      value: 26.618546
+      objectReference: {fileID: 0}
+    - target: {fileID: 10670345582875169, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
+        type: 3}
+      propertyPath: m_Center.x
+      value: -0.0051498953
+      objectReference: {fileID: 0}
+    - target: {fileID: 10670345582875169, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
+        type: 3}
+      propertyPath: m_Center.y
+      value: 3.6557364
+      objectReference: {fileID: 0}
+    - target: {fileID: 10670345582875169, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
+        type: 3}
+      propertyPath: m_Center.z
+      value: 0.019249247
+      objectReference: {fileID: 0}
     - target: {fileID: 949937439461576242, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -2632,7 +2652,23 @@ PrefabInstance:
       propertyPath: m_Name
       value: portalbutton
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 985564975102284924, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
+        type: 3}
+      propertyPath: spawner
+      value: 
+      objectReference: {fileID: 6231775120775316457}
+    - target: {fileID: 5116984687149761753, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
+        type: 3}
+      propertyPath: m_Radius
+      value: 80.238266
+      objectReference: {fileID: 0}
+    - target: {fileID: 5116984687149761753, guid: 4f24ed484b95e2b4f8e3c9502b886b69,
+        type: 3}
+      propertyPath: m_Center.z
+      value: -79.73826
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 5116984687149761753, guid: 4f24ed484b95e2b4f8e3c9502b886b69, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -7710,6 +7746,18 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5979101503272710188}
   m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &6231775120775316457 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5412628513851458697, guid: ccc483815eed8ca46aa11a7873045271,
+    type: 3}
+  m_PrefabInstance: {fileID: 3090262430767407989}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 544754fba95a4f098ee8bd58727a3bfd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &6690853907733404540
 GameObject:
   m_ObjectHideFlags: 0
