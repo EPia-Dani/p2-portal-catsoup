@@ -295,6 +295,13 @@ public class InteractableObject : PortalTraveller
         // Call base Teleport to handle scaling (exact same as FPSController)
         base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
 
+        // CRITICAL: Notify clone system that we teleported via PortalTravellerHandler
+        // This prevents clone system from interfering and causing object to disappear
+        if (_portalCloneSystem != null)
+        {
+            _portalCloneSystem.OnObjectTeleported(fromPortal, toPortal);
+        }
+
         // Sync physics to prevent collision detection issues (exact same as FPSController)
         Physics.SyncTransforms();
     }

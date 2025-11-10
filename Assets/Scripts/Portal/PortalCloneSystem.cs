@@ -35,8 +35,19 @@ namespace Portal {
 		void CheckForPortalCrossing() {
 			if (!_clone || !_currentPortal || !_currentDestination) return;
 			
-			// Check which side of the portal we're on now
+			// Verify we're still near the portal we're tracking
+			// If object teleported via PortalTravellerHandler, we might be at a different portal now
 			Vector3 offsetFromPortal = transform.position - _currentPortal.transform.position;
+			float distanceToPortal = offsetFromPortal.magnitude;
+			
+			// If object is too far from the portal, it probably teleported normally - destroy clone
+			if (distanceToPortal > 2f) {
+				Debug.Log($"[PortalCloneSystem] Object too far from tracked portal ({distanceToPortal}m), destroying clone for {gameObject.name}");
+				DestroyClone();
+				return;
+			}
+			
+			// Check which side of the portal we're on now
 			float dot = Vector3.Dot(offsetFromPortal, _currentPortal.transform.forward);
 			
 			// If we were on the entering side (negative) and now we're on the exiting side (positive),
@@ -156,6 +167,32 @@ namespace Portal {
 			// When player teleports, swap with clone if it exists
 			if (_clone) {
 				SwapWithClone();
+			}
+		}
+
+		/// <summary>
+		/// Called when object teleports via PortalTravellerHandler (normal teleportation, not clone swap)
+		/// This prevents clone system from interfering and causing object to disappear
+		/// </summary>
+		public void OnObjectTeleported(Transform fromPortal, Transform toPortal) {
+			// If we have a clone, destroy it since normal teleportation already happened
+			// The clone system should not interfere with normal teleportation
+			if (_clone != null) {
+				Debug.Log($"[PortalCloneSystem] Object teleported via PortalTravellerHandler, destroying clone for {gameObject.name}");
+				DestroyClone();
+			}
+			
+			// Reset side check to prevent immediate re-teleportation
+			// Find which portal we're now at
+			Collider[] nearby = Physics.OverlapSphere(transform.position, 0.5f);
+			foreach (var col in nearby) {
+				var portal = col.GetComponent<PortalRenderer>();
+				if (portal != null && (portal.transform == toPortal || portal.pair?.transform == toPortal)) {
+					// Initialize side check for the portal we're now at
+					Vector3 offsetFromPortal = transform.position - portal.transform.position;
+					_lastSideCheck = Vector3.Dot(offsetFromPortal, portal.transform.forward);
+					break;
+				}
 			}
 		}
 
