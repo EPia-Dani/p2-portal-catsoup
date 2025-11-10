@@ -1,5 +1,6 @@
 using Input;
 using UnityEngine;
+using UI;
 
 namespace Portal {
 	public class PortalGun : MonoBehaviour {
@@ -27,6 +28,7 @@ namespace Portal {
 		PortalSizeController _sizeController;
 		PortalPlacementCalculator _placementCalculator;
 		PortalOverlapGuard _overlapGuard;
+		Crosshair _crosshair;
 
 		void OnValidate() {
 			if (!showPlacementBounds) showPlacementBounds = true;
@@ -42,13 +44,43 @@ namespace Portal {
 			_placementCalculator = new PortalPlacementCalculator(shootCamera, shootMask, shootDistance, clampSkin, _sizeController);
 			_overlapGuard = new PortalOverlapGuard(portalManager, _sizeController, clampSkin);
 			InitializeBoundsRenderer();
+			
+			#if UNITY_2023_1_OR_NEWER
+			_crosshair = FindFirstObjectByType<Crosshair>();
+			#else
+			_crosshair = FindObjectOfType<Crosshair>();
+			#endif
 		}
 
 		void Update() {
 			HandlePortalResize();
 
-			if (!_placementCalculator.TryCalculate(out PortalPlacement placement)) {
+			// First raycast to check what we're looking at (all surfaces)
+			Ray ray = shootCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+			if (!Physics.Raycast(ray, out RaycastHit hit, shootDistance, ~0, QueryTriggerInteraction.Ignore)) {
+				Debug.Log("[PortalGun] No raycast hit");
 				HideBoundsRenderer();
+				UpdateCrosshair(false, false);
+				return;
+			}
+
+			// Debug what we hit
+			Debug.Log($"[PortalGun] Raycast hit: {hit.collider?.name}, Tag: {hit.collider?.tag}, Layer: {LayerMask.LayerToName(hit.collider?.gameObject.layer ?? 0)}");
+
+			// Check if it's a portal wall - if not, show empty
+			if (hit.collider == null || !hit.collider.CompareTag("Portal Wall")) {
+				Debug.Log($"[PortalGun] Not a portal wall - tag check failed. Tag is: '{hit.collider?.tag}'");
+				HideBoundsRenderer();
+				UpdateCrosshair(false, false);
+				return;
+			}
+
+			Debug.Log("[PortalGun] Portal wall detected!");
+
+			// It's a portal wall - get placement info using shootMask
+			if (!_placementCalculator.TryCalculate(out PortalPlacement placement) || !placement.IsValid) {
+				HideBoundsRenderer();
+				UpdateCrosshair(false, false);
 				return;
 			}
 
@@ -57,6 +89,16 @@ namespace Portal {
 			} else {
 				HideBoundsRenderer();
 			}
+
+			// Check overlap with existing portals
+			Vector2 localPos = placement.LocalPosition;
+			bool overlappingBlue = IsOverlappingPortal(PortalId.Blue, placement, localPos);
+			bool overlappingOrange = IsOverlappingPortal(PortalId.Orange, placement, localPos);
+
+			// Update crosshair: if overlapping blue, hide orange; if overlapping orange, hide blue; otherwise show both
+			bool canPlaceBlue = !overlappingBlue;
+			bool canPlaceOrange = !overlappingOrange;
+			UpdateCrosshair(canPlaceBlue, canPlaceOrange);
 
 			if (_input.Player.ShootBlue.WasPerformedThisFrame()) {
 				TryPlacePortal(PortalId.Blue, placement);
@@ -131,6 +173,48 @@ namespace Portal {
 		void HideBoundsRenderer() {
 			if (boundsRenderer != null) {
 				boundsRenderer.enabled = false;
+			}
+		}
+
+		bool IsOverlappingPortal(PortalId id, PortalPlacement placement, Vector2 localPos) {
+			if (portalManager == null) return false;
+			
+			PortalId otherId = id.Other();
+			if (!portalManager.TryGetState(otherId, out PortalState otherState) || !otherState.IsPlaced) {
+				return false; // Other portal not placed, no overlap
+			}
+			
+			// Check if on same surface
+			if (otherState.Surface != placement.Surface || Vector3.Dot(placement.Normal, otherState.Normal) < 0.99f) {
+				return false; // Different surface, no overlap
+			}
+			
+			// Check distance to other portal
+			Vector3 otherOffset = otherState.Position - placement.SurfaceCenter;
+			Vector2 otherLocalPos = new Vector2(Vector3.Dot(otherOffset, placement.Right), Vector3.Dot(otherOffset, placement.Up));
+			
+			float otherScale = otherState.Scale <= 0f ? 1f : otherState.Scale;
+			Vector2 otherHalfSize = _sizeController.ResolveHalfSize(otherScale);
+			Vector2 currentHalfSize = _sizeController.CurrentHalfSize;
+			
+			Vector2 minSeparation = new Vector2(
+				Mathf.Max(currentHalfSize.x + otherHalfSize.x, 1e-3f),
+				Mathf.Max(currentHalfSize.y + otherHalfSize.y, 1e-3f)
+			);
+			
+			Vector2 dist = localPos - otherLocalPos;
+			Vector2 distNormalized = new Vector2(
+				dist.x / minSeparation.x,
+				dist.y / minSeparation.y
+			);
+			
+			// If too close, we're overlapping
+			return distNormalized.magnitude < 1.05f;
+		}
+
+		void UpdateCrosshair(bool canPlaceBlue, bool canPlaceOrange) {
+			if (_crosshair != null) {
+				_crosshair.SetState(canPlaceBlue, canPlaceOrange);
 			}
 		}
 	}
