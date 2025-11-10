@@ -10,11 +10,17 @@ namespace Portal {
 		private GameObject _clone;
 		private PortalRenderer _currentPortal;
 		private PortalRenderer _currentDestination;
+		private PortalTraveller _traveller;
 		private bool _isHeld;
 		private float _lastSideCheck = 0f; // Track which side we were on last frame
+		private readonly HashSet<PortalTravellerHandler> _ignoredPortalHandlers = new HashSet<PortalTravellerHandler>();
 		
 		public bool HasClone => _clone != null;
 		public GameObject Clone => _clone;
+
+		void Awake() {
+			_traveller = GetComponent<PortalTraveller>();
+		}
 
 		void Update() {
 			// Always check for portal contact and update clone, even when not held
@@ -96,10 +102,9 @@ namespace Portal {
 		public void SetHeld(bool held) {
 			_isHeld = held;
 			if (!held) {
-				// When dropped, restore collisions first
-				RestorePortalCollisions();
+				bool hasActiveClone = _clone && _currentPortal && _currentDestination;
 				
-				if (_clone && _currentPortal && _currentDestination) {
+				if (hasActiveClone) {
 					// Check which side of the portal we're on
 					Vector3 offsetFromPortal = transform.position - _currentPortal.transform.position;
 					float dot = Vector3.Dot(offsetFromPortal, _currentPortal.transform.forward);
@@ -133,6 +138,9 @@ namespace Portal {
 						InitializePortalTracking();
 					}
 				} else {
+					// Not touching a portal - ensure any lingering ignores are cleared
+					RestorePortalCollisions();
+					
 					// No clone exists, but check if we're touching a portal
 					// If we are, a clone might be created in the next Update()
 					InitializePortalTracking();
@@ -226,8 +234,7 @@ namespace Portal {
 		void SetupPortalCollisions() {
 			if (!_currentPortal || !_currentDestination) return;
 			
-			var traveller = GetComponent<PortalTraveller>();
-			if (!traveller) {
+			if (!_traveller) {
 				Debug.LogWarning($"[PortalCloneSystem] No PortalTraveller on {gameObject.name}!");
 				return;
 			}
@@ -236,14 +243,14 @@ namespace Portal {
 			var sourceHandler = _currentPortal.GetComponent<PortalTravellerHandler>();
 			if (sourceHandler) {
 				Debug.Log($"[PortalCloneSystem] Ignoring collision with source portal wall for {gameObject.name}");
-				sourceHandler.SetCollisionIgnore(traveller, true);
+				SetPortalCollisionState(sourceHandler, true);
 			}
 			
 			// Ignore collision with destination portal wall
 			var destHandler = _currentDestination.GetComponent<PortalTravellerHandler>();
 			if (destHandler) {
 				Debug.Log($"[PortalCloneSystem] Ignoring collision with destination portal wall for {gameObject.name}");
-				destHandler.SetCollisionIgnore(traveller, true);
+				SetPortalCollisionState(destHandler, true);
 			}
 		}
 
@@ -392,16 +399,15 @@ namespace Portal {
 		}
 
 		void RestorePortalCollisions() {
-			// Restore collisions with all portal walls when object is dropped
-			var traveller = GetComponent<PortalTraveller>();
-			if (!traveller) return;
+			if (!_traveller || _ignoredPortalHandlers.Count == 0) return;
 			
-			// Find all portal handlers and restore collisions
-			var allHandlers = FindObjectsOfType<PortalTravellerHandler>();
-			foreach (var handler in allHandlers) {
-				handler.SetCollisionIgnore(traveller, false);
+			foreach (var handler in _ignoredPortalHandlers) {
+				if (handler) {
+					handler.SetCollisionIgnore(_traveller, false);
+				}
 			}
 			
+			_ignoredPortalHandlers.Clear();
 			Debug.Log($"[PortalCloneSystem] Restored collisions for {gameObject.name}");
 		}
 
@@ -411,9 +417,21 @@ namespace Portal {
 				_clone = null;
 			}
 			
+			RestorePortalCollisions();
 			_currentPortal = null;
 			_currentDestination = null;
 			_lastSideCheck = 0f;
+		}
+
+		void SetPortalCollisionState(PortalTravellerHandler handler, bool ignore) {
+			if (!_traveller || !handler) return;
+			
+			handler.SetCollisionIgnore(_traveller, ignore);
+			if (ignore) {
+				_ignoredPortalHandlers.Add(handler);
+			} else {
+				_ignoredPortalHandlers.Remove(handler);
+			}
 		}
 
 		void CopyVisualComponents(GameObject source, GameObject target) {
