@@ -185,6 +185,7 @@ public class InteractableObject : PortalTraveller
     /// <summary>
     /// Override Teleport to properly transform velocity through portals
     /// This is critical for objects falling through floor portals to maintain momentum
+    /// Uses the exact same method as FPSController for consistency
     /// </summary>
     public override void Teleport(Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot, float scaleRatio = 1f)
     {
@@ -202,45 +203,99 @@ public class InteractableObject : PortalTraveller
             return;
         }
 
-        // Capture velocity BEFORE teleporting
-        Vector3 velocityBeforeTeleport = _rigidbody.linearVelocity;
-        Vector3 angularVelocityBeforeTeleport = _rigidbody.angularVelocity;
-
-        // Call base Teleport to handle position, rotation, and scaling
-        base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
-
-        // Calculate portal transformation for velocity
+        // Capture velocity BEFORE position change (exact same as FPSController)
+        Vector3 currentVelocity = _rigidbody.linearVelocity;
+        Vector3 currentAngularVelocity = _rigidbody.angularVelocity;
+        
+        // Scale velocity based on portal size difference (exact same as FPSController)
+        currentVelocity *= scaleRatio;
+        
+        // Teleport the object position (exact same as FPSController)
+        transform.position = pos;
+        
+        // ===== UNIVERSAL VELOCITY TRANSFORMATION =====
+        // Rotate the entire velocity vector from the source portal's orientation to the destination's.
+        // We include a 180° flip around the portal's local up so 'entering' becomes 'exiting'.
+        // (exact same as FPSController)
         Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
         Quaternion relativeRotation = toPortal.rotation * flipLocal * Quaternion.Inverse(fromPortal.rotation);
-
-        // Transform velocity through portal
-        Vector3 finalVelocity = Vector3.zero;
-        if (velocityBeforeTeleport.sqrMagnitude > 0.001f)
+        
+        // Transform the object's forward direction through the portal (same transformation as velocity)
+        // This preserves relative orientation: looking left relative to source portal = looking left relative to dest portal
+        Vector3 currentForward = transform.forward;
+        Vector3 transformedForward = relativeRotation * currentForward;
+        
+        // Project onto horizontal plane and extract yaw
+        Vector3 horizontalForward = new Vector3(transformedForward.x, 0, transformedForward.z);
+        if (horizontalForward.sqrMagnitude > 0.01f)
         {
-            // Scale velocity by portal size difference
-            Vector3 transformedVelocity = velocityBeforeTeleport * scaleRatio;
-
-            // Rotate velocity through portal (same transformation as player)
-            // Include 180° flip so 'entering' becomes 'exiting'
-            transformedVelocity = relativeRotation * transformedVelocity;
-
-            finalVelocity = transformedVelocity;
-
-            // Transform angular velocity too
-            if (angularVelocityBeforeTeleport.sqrMagnitude > 0.001f)
-            {
-                Vector3 transformedAngularVelocity = relativeRotation * angularVelocityBeforeTeleport;
-                _rigidbody.angularVelocity = transformedAngularVelocity;
-            }
+            horizontalForward.Normalize();
+            float yaw = Mathf.Atan2(horizontalForward.x, horizontalForward.z) * Mathf.Rad2Deg;
+            transform.eulerAngles = Vector3.up * yaw;
         }
+        // If horizontal component is too small, keep current rotation (rare edge case)
+        
+        // Rotate the captured world-space velocity into the destination orientation (exact same as FPSController)
+        Vector3 velocity = relativeRotation * currentVelocity;
 
         // Apply minimum exit velocity using base class method (handles non-vertical to vertical transitions)
-        finalVelocity = ApplyMinimumExitVelocity(fromPortal, toPortal, finalVelocity);
+        // (exact same as FPSController)
+        velocity = ApplyMinimumExitVelocity(fromPortal, toPortal, velocity);
 
-        // Apply final velocity
-        _rigidbody.linearVelocity = finalVelocity;
+        // CRITICAL: Ensure velocity points away from portal to prevent bouncing back
+        // Portal forward points INTO the wall, so exit direction is OPPOSITE (exact same logic as player)
+        Vector3 exitDirection = -toPortal.forward; // Negative because portal forward points into wall
+        Vector3 horizontalExitDirection = new Vector3(exitDirection.x, 0, exitDirection.z).normalized;
+        
+        Vector3 horizontalVelocity = new Vector3(velocity.x, 0, velocity.z);
+        float horizontalSpeed = horizontalVelocity.magnitude;
+        
+        // Calculate how much velocity is pointing away from portal (exit direction)
+        float velocityDotExit = horizontalSpeed > 0.01f 
+            ? Vector3.Dot(horizontalVelocity.normalized, horizontalExitDirection) 
+            : -1f; // If no horizontal velocity, treat as pointing backwards
+        
+        // If velocity is pointing back towards portal or is too small, ensure minimum exit component
+        if (velocityDotExit < 0.3f || horizontalSpeed < 0.5f)
+        {
+            float minExitSpeed = Mathf.Max(1.5f, horizontalSpeed * 0.5f + 0.5f); // At least 1.5 units/sec away
+            
+            // If we have existing horizontal velocity, blend it with exit direction
+            if (horizontalSpeed > 0.01f && velocityDotExit > -0.5f)
+            {
+                // Blend: favor exit direction but keep some of existing velocity
+                Vector3 desiredExit = horizontalExitDirection * minExitSpeed;
+                horizontalVelocity = Vector3.Lerp(horizontalVelocity, desiredExit, 0.7f);
+            }
+            else
+            {
+                // No meaningful horizontal velocity, use pure exit direction
+                horizontalVelocity = horizontalExitDirection * minExitSpeed;
+            }
+            
+            // Reconstruct velocity with new horizontal component
+            velocity = new Vector3(horizontalVelocity.x, velocity.y, horizontalVelocity.z);
+        }
+        
+        // CRITICAL: Push object slightly away from portal to prevent immediate re-entry
+        // Use exit direction (away from portal) - portal forward points INTO wall, so we use negative
+        float pushDistance = 0.15f; // Small push to clear portal boundary
+        transform.position += horizontalExitDirection * pushDistance;
 
-        // Sync physics to prevent collision detection issues
+        // Transform angular velocity too (exact same transformation)
+        if (currentAngularVelocity.sqrMagnitude > 0.001f)
+        {
+            Vector3 transformedAngularVelocity = relativeRotation * currentAngularVelocity;
+            _rigidbody.angularVelocity = transformedAngularVelocity;
+        }
+
+        // Apply final velocity (exact same as FPSController)
+        _rigidbody.linearVelocity = velocity;
+
+        // Call base Teleport to handle scaling (exact same as FPSController)
+        base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
+
+        // Sync physics to prevent collision detection issues (exact same as FPSController)
         Physics.SyncTransforms();
     }
 
