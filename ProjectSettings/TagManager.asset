@@ -9,6 +9,7 @@ TagManager:
   - Interactable
   - Cube
   - Button
+  - Portal Wall
   layers:
   - Default
   - TransparentFX

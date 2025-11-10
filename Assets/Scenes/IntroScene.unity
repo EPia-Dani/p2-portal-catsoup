@@ -362,7 +362,7 @@ GameObject:
   - component: {fileID: 146055146}
   m_Layer: 6
   m_Name: Plane
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -1063,7 +1063,7 @@ GameObject:
   - component: {fileID: 361448954}
   m_Layer: 0
   m_Name: Cube (3)
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -1579,7 +1579,7 @@ GameObject:
   - component: {fileID: 389286416}
   m_Layer: 6
   m_Name: Plane (2)
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -2387,7 +2387,7 @@ GameObject:
   - component: {fileID: 768643678}
   m_Layer: 6
   m_Name: Cube
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -3525,7 +3525,7 @@ GameObject:
   - component: {fileID: 1109704483}
   m_Layer: 6
   m_Name: Plane (1)
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -3857,7 +3857,7 @@ GameObject:
   - component: {fileID: 1149916766}
   m_Layer: 6
   m_Name: Plane (5)
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -4154,7 +4154,7 @@ GameObject:
   - component: {fileID: 1183677595}
   m_Layer: 6
   m_Name: Cube (1)
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -5983,7 +5983,7 @@ GameObject:
   - component: {fileID: 1646607697}
   m_Layer: 5
   m_Name: Crosshair
-  m_TagString: Untagged
+  m_TagString: Portalwall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6019,14 +6019,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63f4579278874cbdb3f5fe74af39f831, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  crosshairImage: {fileID: 1646607698}
-  emptySprite: {fileID: 0}
-  placedSprite: {fileID: 0}
-  emptyColor: {r: 1, g: 1, b: 1, a: 0.2}
-  placedColor: {r: 1, g: 1, b: 1, a: 1}
-  crosshairColor: {r: 1, g: 1, b: 1, a: 1}
-  gapFromCenter: 5
-  targetGap: 5
+  emptySprite: {fileID: 21300000, guid: f489249a30d2e0e4196b9d24b86ac0ba, type: 3}
+  blueOnlySprite: {fileID: 21300000, guid: cc7037bba0a5f86459702197ec697a66, type: 3}
+  orangeOnlySprite: {fileID: 21300000, guid: 5e94f694b000e2e4985c5b79347c2f74, type: 3}
+  bothSprite: {fileID: 21300000, guid: 8a81d4c668a07384cbb4ec76e1a78117, type: 3}
 --- !u!114 &1646607697
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6039,11 +6035,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e9f1b4251c0f4392b31a47a837334950, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  portalManager: {fileID: 2079793665}
-  crosshairImage: {fileID: 1646607698}
-  emptySprite: {fileID: 21300000, guid: f489249a30d2e0e4196b9d24b86ac0ba, type: 3}
-  placedSprite: {fileID: 21300000, guid: 8a81d4c668a07384cbb4ec76e1a78117, type: 3}
-  crosshair: {fileID: 0}
 --- !u!114 &1646607698
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6263,7 +6254,7 @@ GameObject:
   - component: {fileID: 1666627232}
   m_Layer: 6
   m_Name: Plane (3)
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
@@ -6560,7 +6551,7 @@ GameObject:
   - component: {fileID: 1857451910}
   m_Layer: 6
   m_Name: Plane (4)
-  m_TagString: Untagged
+  m_TagString: Portal Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 1
