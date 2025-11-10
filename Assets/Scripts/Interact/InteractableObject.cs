@@ -44,6 +44,10 @@ public class InteractableObject : PortalTraveller
     private bool _originalUseGravity;
     private float _originalLinearDamping;
     private float _originalAngularDamping;
+    
+    // Track target position velocity (motion from being held/moved)
+    private Vector3 _previousTargetPosition;
+    private Vector3 _targetVelocity;
 
     public bool IsHeld => _isHeld;
     public Rigidbody Rigidbody => _rigidbody;
@@ -97,6 +101,12 @@ public class InteractableObject : PortalTraveller
         // Handle held object movement
         if (_isHeld && _holder != null)
         {
+            // Track target velocity (how fast the target position is moving)
+            // This captures motion from player movement and rotation
+            Vector3 targetDelta = _targetPosition - _previousTargetPosition;
+            _targetVelocity = targetDelta / Time.fixedDeltaTime;
+            _previousTargetPosition = _targetPosition;
+            
             UpdateHeldMovement();
         }
     }
@@ -120,6 +130,10 @@ public class InteractableObject : PortalTraveller
             _portalCloneSystem.SetHeld(true);
         }
         
+        // Initialize target velocity tracking
+        _previousTargetPosition = _rigidbody.position;
+        _targetVelocity = Vector3.zero;
+        
         // Configure physics for being held
         _rigidbody.linearVelocity = Vector3.zero;
         _rigidbody.angularVelocity = Vector3.zero;
@@ -138,6 +152,10 @@ public class InteractableObject : PortalTraveller
     {
         if (!_isHeld) return;
         
+        // Capture the CURRENT velocity right before dropping (includes motion from being held/moved)
+        Vector3 currentLinearVelocity = _rigidbody.linearVelocity;
+        Vector3 currentAngularVelocity = _rigidbody.angularVelocity;
+        
         _isHeld = false;
         
         // CRITICAL: Restore physics BEFORE clone system operations
@@ -146,44 +164,25 @@ public class InteractableObject : PortalTraveller
         _rigidbody.linearDamping = _originalLinearDamping;
         _rigidbody.angularDamping = _originalAngularDamping;
         
-        // Capture player's HORIZONTAL velocity to preserve momentum when dropping
-        // We only preserve horizontal momentum - let gravity handle vertical naturally
-        Vector3 playerHorizontalVelocity = Vector3.zero;
-        if (_holder != null)
+        // Use the target velocity we've been tracking (captures motion from player movement AND rotation)
+        // This is the velocity the object SHOULD have based on how the target position was moving
+        // The target velocity already includes rotational motion (tangential velocity from rotation)
+        Vector3 finalVelocity = _targetVelocity;
+        
+        // If target velocity is very small (object wasn't moving much), fall back to player's linear velocity
+        // This handles edge cases where tracking might not be perfect
+        if (finalVelocity.sqrMagnitude < 0.1f && _holder != null)
         {
             var playerController = _holder.GetComponent<FPSController>();
             if (playerController != null)
             {
-                // Get player's current velocity from FPSController
-                Vector3 playerVelocity = playerController.CurrentVelocity;
-                
-                // Extract only horizontal components (X and Z, ignore Y)
-                playerHorizontalVelocity = new Vector3(playerVelocity.x, 0, playerVelocity.z);
-            }
-            
-            // Fallback: if no horizontal velocity, use forward direction
-            if (playerHorizontalVelocity.sqrMagnitude < 0.01f && Camera.main != null)
-            {
-                Vector3 forward = Camera.main.transform.forward;
-                playerHorizontalVelocity = new Vector3(forward.x, 0, forward.z).normalized * 2f; // Small forward push
+                finalVelocity = playerController.CurrentVelocity;
             }
         }
         
-        // Apply player's horizontal velocity to object (preserve horizontal momentum)
-        // Vertical velocity starts at zero - gravity will handle it naturally
-        if (playerHorizontalVelocity.sqrMagnitude > 0.01f)
-        {
-            _rigidbody.linearVelocity = playerHorizontalVelocity; // Only horizontal, Y = 0
-        }
-        else
-        {
-            // If no player velocity, give a small forward push (horizontal only)
-            if (Camera.main != null)
-            {
-                Vector3 forward = Camera.main.transform.forward;
-                _rigidbody.linearVelocity = new Vector3(forward.x, 0, forward.z).normalized * dropForce;
-            }
-        }
+        // Apply the velocity - this preserves the object's motion at the moment of drop
+        _rigidbody.linearVelocity = finalVelocity;
+        _rigidbody.angularVelocity = currentAngularVelocity; // Preserve angular velocity
         
         // Notify clone system that we're dropping (will swap if clone exists)
         // This happens AFTER we've set velocity so SwapWithClone can preserve it
@@ -194,7 +193,7 @@ public class InteractableObject : PortalTraveller
         
         _holder = null;
         
-        Debug.Log($"[InteractableObject] {gameObject.name} dropped with velocity: {_rigidbody.linearVelocity}");
+        Debug.Log($"[InteractableObject] {gameObject.name} dropped with velocity: {_rigidbody.linearVelocity} (target velocity: {_targetVelocity})");
     }
 
     /// <summary>
