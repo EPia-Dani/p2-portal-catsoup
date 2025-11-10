@@ -5,10 +5,10 @@ TagManager:
   serializedVersion: 3
   tags:
   - Portal
-  - Portalwall
   - Interactable
   - Cube
   - Button
+  - Portal Wall
   layers:
   - Default
   - TransparentFX
@@ -26,7 +26,7 @@ TagManager:
   - Gizmo
   - Interactable
   - Button
-  - 
+  - Weapon
   - 
   - 
   - 

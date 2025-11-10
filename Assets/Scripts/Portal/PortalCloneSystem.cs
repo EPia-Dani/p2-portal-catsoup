@@ -10,11 +10,17 @@ namespace Portal {
 		private GameObject _clone;
 		private PortalRenderer _currentPortal;
 		private PortalRenderer _currentDestination;
+		private PortalTraveller _traveller;
 		private bool _isHeld;
 		private float _lastSideCheck = 0f; // Track which side we were on last frame
+		private readonly HashSet<PortalTravellerHandler> _ignoredPortalHandlers = new HashSet<PortalTravellerHandler>();
 		
 		public bool HasClone => _clone != null;
 		public GameObject Clone => _clone;
+
+		void Awake() {
+			_traveller = GetComponent<PortalTraveller>();
+		}
 
 		void Update() {
 			// Always check for portal contact and update clone, even when not held
@@ -35,8 +41,19 @@ namespace Portal {
 		void CheckForPortalCrossing() {
 			if (!_clone || !_currentPortal || !_currentDestination) return;
 			
-			// Check which side of the portal we're on now
+			// Verify we're still near the portal we're tracking
+			// If object teleported via PortalTravellerHandler, we might be at a different portal now
 			Vector3 offsetFromPortal = transform.position - _currentPortal.transform.position;
+			float distanceToPortal = offsetFromPortal.magnitude;
+			
+			// If object is too far from the portal, it probably teleported normally - destroy clone
+			if (distanceToPortal > 2f) {
+				Debug.Log($"[PortalCloneSystem] Object too far from tracked portal ({distanceToPortal}m), destroying clone for {gameObject.name}");
+				DestroyClone();
+				return;
+			}
+			
+			// Check which side of the portal we're on now
 			float dot = Vector3.Dot(offsetFromPortal, _currentPortal.transform.forward);
 			
 			// If we were on the entering side (negative) and now we're on the exiting side (positive),
@@ -85,10 +102,9 @@ namespace Portal {
 		public void SetHeld(bool held) {
 			_isHeld = held;
 			if (!held) {
-				// When dropped, restore collisions first
-				RestorePortalCollisions();
+				bool hasActiveClone = _clone && _currentPortal && _currentDestination;
 				
-				if (_clone && _currentPortal && _currentDestination) {
+				if (hasActiveClone) {
 					// Check which side of the portal we're on
 					Vector3 offsetFromPortal = transform.position - _currentPortal.transform.position;
 					float dot = Vector3.Dot(offsetFromPortal, _currentPortal.transform.forward);
@@ -122,6 +138,9 @@ namespace Portal {
 						InitializePortalTracking();
 					}
 				} else {
+					// Not touching a portal - ensure any lingering ignores are cleared
+					RestorePortalCollisions();
+					
 					// No clone exists, but check if we're touching a portal
 					// If we are, a clone might be created in the next Update()
 					InitializePortalTracking();
@@ -159,6 +178,32 @@ namespace Portal {
 			}
 		}
 
+		/// <summary>
+		/// Called when object teleports via PortalTravellerHandler (normal teleportation, not clone swap)
+		/// This prevents clone system from interfering and causing object to disappear
+		/// </summary>
+		public void OnObjectTeleported(Transform fromPortal, Transform toPortal) {
+			// If we have a clone, destroy it since normal teleportation already happened
+			// The clone system should not interfere with normal teleportation
+			if (_clone != null) {
+				Debug.Log($"[PortalCloneSystem] Object teleported via PortalTravellerHandler, destroying clone for {gameObject.name}");
+				DestroyClone();
+			}
+			
+			// Reset side check to prevent immediate re-teleportation
+			// Find which portal we're now at
+			Collider[] nearby = Physics.OverlapSphere(transform.position, 0.5f);
+			foreach (var col in nearby) {
+				var portal = col.GetComponent<PortalRenderer>();
+				if (portal != null && (portal.transform == toPortal || portal.pair?.transform == toPortal)) {
+					// Initialize side check for the portal we're now at
+					Vector3 offsetFromPortal = transform.position - portal.transform.position;
+					_lastSideCheck = Vector3.Dot(offsetFromPortal, portal.transform.forward);
+					break;
+				}
+			}
+		}
+
 		void CreateClone(PortalRenderer portal) {
 			if (!portal.pair || _clone != null) return; // Only create if we don't have one
 			
@@ -189,8 +234,7 @@ namespace Portal {
 		void SetupPortalCollisions() {
 			if (!_currentPortal || !_currentDestination) return;
 			
-			var traveller = GetComponent<PortalTraveller>();
-			if (!traveller) {
+			if (!_traveller) {
 				Debug.LogWarning($"[PortalCloneSystem] No PortalTraveller on {gameObject.name}!");
 				return;
 			}
@@ -199,14 +243,14 @@ namespace Portal {
 			var sourceHandler = _currentPortal.GetComponent<PortalTravellerHandler>();
 			if (sourceHandler) {
 				Debug.Log($"[PortalCloneSystem] Ignoring collision with source portal wall for {gameObject.name}");
-				sourceHandler.SetCollisionIgnore(traveller, true);
+				SetPortalCollisionState(sourceHandler, true);
 			}
 			
 			// Ignore collision with destination portal wall
 			var destHandler = _currentDestination.GetComponent<PortalTravellerHandler>();
 			if (destHandler) {
 				Debug.Log($"[PortalCloneSystem] Ignoring collision with destination portal wall for {gameObject.name}");
-				destHandler.SetCollisionIgnore(traveller, true);
+				SetPortalCollisionState(destHandler, true);
 			}
 		}
 
@@ -252,6 +296,20 @@ namespace Portal {
 				angularVelocityBeforeTeleport = rb.angularVelocity;
 			}
 			
+			// CRITICAL: Ensure gravity is enabled before teleporting
+			// This prevents objects from floating after swap
+			if (rb) {
+				// Check if this is an InteractableObject and preserve its gravity setting
+				var interactable = GetComponent<InteractableObject>();
+				if (interactable != null) {
+					// InteractableObject manages its own gravity in OnDropped()
+					// But ensure it's enabled here as a safeguard
+					if (!rb.useGravity) {
+						rb.useGravity = true;
+					}
+				}
+			}
+			
 			// Move real object to clone's position using PortalTraveller.Teleport
 			// This ensures proper scaling and portal tracking
 			var traveller = GetComponent<PortalTraveller>();
@@ -259,20 +317,42 @@ namespace Portal {
 				traveller.Teleport(_currentPortal.transform, _currentDestination.transform, clonePos, cloneRot, scaleRatio);
 				
 				// Transform velocity through portal (same as player does)
-				if (rb && velocityBeforeTeleport.sqrMagnitude > 0.001f) {
-					// Scale velocity by portal size difference
-					Vector3 transformedVelocity = velocityBeforeTeleport * scaleRatio;
+				if (rb) {
+					Vector3 transformedVelocity = Vector3.zero;
 					
-					// Rotate velocity through portal (same transformation as player)
-					Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
-					Quaternion relativeRotation = _currentDestination.transform.rotation * flipLocal * Quaternion.Inverse(_currentPortal.transform.rotation);
-					transformedVelocity = relativeRotation * transformedVelocity;
+					if (velocityBeforeTeleport.sqrMagnitude > 0.001f) {
+						// Scale velocity by portal size difference
+						transformedVelocity = velocityBeforeTeleport * scaleRatio;
+						
+						// Rotate velocity through portal (same transformation as player)
+						Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+						Quaternion relativeRotation = _currentDestination.transform.rotation * flipLocal * Quaternion.Inverse(_currentPortal.transform.rotation);
+						transformedVelocity = relativeRotation * transformedVelocity;
+						
+						// Apply minimum exit velocity if needed
+						transformedVelocity = traveller.ApplyMinimumExitVelocity(_currentPortal.transform, _currentDestination.transform, transformedVelocity);
+					} else {
+						// If velocity is zero, ensure minimum exit velocity to prevent floating
+						// Calculate exit direction (away from portal)
+						Vector3 exitDirection = -_currentDestination.transform.forward;
+						Vector3 horizontalExit = new Vector3(exitDirection.x, 0, exitDirection.z).normalized;
+						
+						// Apply minimum horizontal velocity away from portal
+						transformedVelocity = horizontalExit * 1.5f; // Minimum 1.5 units/sec
+						
+						// Preserve any existing vertical velocity (for gravity)
+						if (rb.linearVelocity.y < 0) {
+							transformedVelocity.y = rb.linearVelocity.y;
+						}
+					}
 					
 					// Apply transformed velocity
 					rb.linearVelocity = transformedVelocity;
 					
 					// Transform angular velocity too
 					if (angularVelocityBeforeTeleport.sqrMagnitude > 0.001f) {
+						Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
+						Quaternion relativeRotation = _currentDestination.transform.rotation * flipLocal * Quaternion.Inverse(_currentPortal.transform.rotation);
 						Vector3 transformedAngularVelocity = relativeRotation * angularVelocityBeforeTeleport;
 						rb.angularVelocity = transformedAngularVelocity;
 					}
@@ -319,16 +399,15 @@ namespace Portal {
 		}
 
 		void RestorePortalCollisions() {
-			// Restore collisions with all portal walls when object is dropped
-			var traveller = GetComponent<PortalTraveller>();
-			if (!traveller) return;
+			if (!_traveller || _ignoredPortalHandlers.Count == 0) return;
 			
-			// Find all portal handlers and restore collisions
-			var allHandlers = FindObjectsOfType<PortalTravellerHandler>();
-			foreach (var handler in allHandlers) {
-				handler.SetCollisionIgnore(traveller, false);
+			foreach (var handler in _ignoredPortalHandlers) {
+				if (handler) {
+					handler.SetCollisionIgnore(_traveller, false);
+				}
 			}
 			
+			_ignoredPortalHandlers.Clear();
 			Debug.Log($"[PortalCloneSystem] Restored collisions for {gameObject.name}");
 		}
 
@@ -338,9 +417,21 @@ namespace Portal {
 				_clone = null;
 			}
 			
+			RestorePortalCollisions();
 			_currentPortal = null;
 			_currentDestination = null;
 			_lastSideCheck = 0f;
+		}
+
+		void SetPortalCollisionState(PortalTravellerHandler handler, bool ignore) {
+			if (!_traveller || !handler) return;
+			
+			handler.SetCollisionIgnore(_traveller, ignore);
+			if (ignore) {
+				_ignoredPortalHandlers.Add(handler);
+			} else {
+				_ignoredPortalHandlers.Remove(handler);
+			}
 		}
 
 		void CopyVisualComponents(GameObject source, GameObject target) {

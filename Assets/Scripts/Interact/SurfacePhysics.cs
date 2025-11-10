@@ -1,0 +1,207 @@
+using UnityEngine;
+
+/// <summary>
+/// Component that defines physics properties for surfaces that affect cubes.
+/// Can make surfaces bouncy, slippery, or destructive.
+/// </summary>
+[RequireComponent(typeof(Collider))]
+public class SurfacePhysics : MonoBehaviour
+{
+    public enum SurfaceType
+    {
+        Normal,      // Standard physics
+        Bouncy,      // High bounce coefficient
+        Sliding,     // Low friction (slippery)
+        Destructive  // Destroys cubes on contact
+    }
+
+    [Header("Surface Type")]
+    [Tooltip("Type of surface physics behavior")]
+    public SurfaceType surfaceType = SurfaceType.Normal;
+
+    [Header("Bouncy Surface Settings")]
+    [Tooltip("Bounce coefficient (0 = no bounce, 1 = perfect bounce, >1 = super bounce)")]
+    [Range(0f, 2f)]
+    public float bounceCoefficient = 0.8f;
+
+    [Tooltip("Bounce combine mode")]
+    public PhysicsMaterialCombine bounceCombine = PhysicsMaterialCombine.Maximum;
+
+    [Header("Sliding Surface Settings")]
+    [Tooltip("Friction coefficient (0 = no friction, 1 = high friction)")]
+    [Range(0f, 1f)]
+    public float frictionCoefficient = 0.1f;
+
+    [Tooltip("Friction combine mode")]
+    public PhysicsMaterialCombine frictionCombine = PhysicsMaterialCombine.Minimum;
+
+    [Header("Destructive Surface Settings")]
+    [Tooltip("Minimum impact velocity required to destroy cube (0 = any contact destroys)")]
+    public float minDestroyVelocity = 0.1f;
+
+    [Tooltip("Destroy cubes even if they're being held")]
+    public bool destroyHeldCubes = false;
+
+    [Tooltip("Particle effect to spawn when cube is destroyed (optional)")]
+    public GameObject destroyEffectPrefab;
+
+    [Tooltip("Sound effect to play when cube is destroyed (optional)")]
+    public AudioClip destroySound;
+
+    private PhysicsMaterial _physicMaterial;
+    private Collider _collider;
+    private AudioSource _audioSource;
+
+    void Awake()
+    {
+        _collider = GetComponent<Collider>();
+        if (_collider == null)
+        {
+            Debug.LogError($"[SurfacePhysics] {gameObject.name} requires a Collider component!");
+            enabled = false;
+            return;
+        }
+
+        // Create or get PhysicMaterial
+        _physicMaterial = _collider.material;
+        if (_physicMaterial == null)
+        {
+            _physicMaterial = new PhysicsMaterial($"{gameObject.name}_PhysicsMaterial");
+            _collider.material = _physicMaterial;
+        }
+
+        // Setup audio source if destroy sound is provided
+        if (destroySound != null)
+        {
+            _audioSource = GetComponent<AudioSource>();
+            if (_audioSource == null)
+            {
+                _audioSource = gameObject.AddComponent<AudioSource>();
+                _audioSource.playOnAwake = false;
+                _audioSource.spatialBlend = 1f; // 3D sound
+            }
+        }
+
+        // Apply physics material settings based on surface type
+        ApplyPhysicsMaterial();
+    }
+
+    void OnValidate()
+    {
+        // Update physics material when values change in editor
+        if (Application.isPlaying && _physicMaterial != null)
+        {
+            ApplyPhysicsMaterial();
+        }
+    }
+
+    void ApplyPhysicsMaterial()
+    {
+        if (_physicMaterial == null) return;
+
+        switch (surfaceType)
+        {
+            case SurfaceType.Bouncy:
+                _physicMaterial.bounciness = bounceCoefficient;
+                _physicMaterial.bounceCombine = bounceCombine;
+                _physicMaterial.staticFriction = 0.6f; // Normal friction
+                _physicMaterial.dynamicFriction = 0.6f;
+                _physicMaterial.frictionCombine = PhysicsMaterialCombine.Average;
+                break;
+
+            case SurfaceType.Sliding:
+                _physicMaterial.bounciness = 0f; // No bounce
+                _physicMaterial.bounceCombine = PhysicsMaterialCombine.Minimum;
+                _physicMaterial.staticFriction = frictionCoefficient;
+                _physicMaterial.dynamicFriction = frictionCoefficient;
+                _physicMaterial.frictionCombine = frictionCombine;
+                break;
+
+            case SurfaceType.Destructive:
+                // Destructive surfaces can still have physics properties
+                _physicMaterial.bounciness = 0f;
+                _physicMaterial.staticFriction = 0.6f;
+                _physicMaterial.dynamicFriction = 0.6f;
+                break;
+
+            case SurfaceType.Normal:
+            default:
+                // Default Unity physics material values
+                _physicMaterial.bounciness = 0f;
+                _physicMaterial.staticFriction = 0.6f;
+                _physicMaterial.dynamicFriction = 0.6f;
+                _physicMaterial.bounceCombine = PhysicsMaterialCombine.Average;
+                _physicMaterial.frictionCombine = PhysicsMaterialCombine.Average;
+                break;
+        }
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        // Only handle destructive surfaces in collision
+        if (surfaceType != SurfaceType.Destructive) return;
+
+        // Check if the colliding object is a cube
+        GameObject otherObject = collision.gameObject;
+        if (!otherObject.CompareTag("Cube"))
+        {
+            // Also check if it has InteractableObject component (cubes should have this)
+            if (otherObject.GetComponent<InteractableObject>() == null)
+            {
+                return;
+            }
+        }
+
+        // Check if cube is being held
+        var interactable = otherObject.GetComponent<InteractableObject>();
+        if (interactable != null && interactable.IsHeld && !destroyHeldCubes)
+        {
+            return; // Don't destroy held cubes unless explicitly allowed
+        }
+
+        // Check impact velocity
+        float impactVelocity = collision.relativeVelocity.magnitude;
+        if (impactVelocity < minDestroyVelocity)
+        {
+            return; // Impact too weak
+        }
+
+        // Destroy the cube
+        DestroyCube(otherObject, collision.contacts[0].point);
+    }
+
+    /// <summary>
+    /// Destroys a cube with optional effects
+    /// </summary>
+    void DestroyCube(GameObject cube, Vector3 contactPoint)
+    {
+        Debug.Log($"[SurfacePhysics] Destroying cube {cube.name} on {gameObject.name}");
+
+        // Play sound effect
+        if (_audioSource != null && destroySound != null)
+        {
+            _audioSource.PlayOneShot(destroySound);
+        }
+
+        // Spawn particle effect
+        if (destroyEffectPrefab != null)
+        {
+            GameObject effect = Instantiate(destroyEffectPrefab, contactPoint, Quaternion.identity);
+            // Auto-destroy effect after 5 seconds if it doesn't destroy itself
+            Destroy(effect, 5f);
+        }
+
+        // Destroy the cube
+        Destroy(cube);
+    }
+
+    /// <summary>
+    /// Gets the surface type (useful for other scripts)
+    /// </summary>
+    public SurfaceType GetSurfaceType()
+    {
+        return surfaceType;
+    }
+}
+
+

@@ -82,41 +82,34 @@ namespace Portal {
 			// Force physics to update immediately so collision changes take effect
 			Physics.SyncTransforms();
 
-			// Apply velocity transformation (same as player)
-			// Determine if the source portal is 'non-vertical' (e.g. on the floor/ceiling)
-			float portalUpDot = Mathf.Abs(Vector3.Dot(transform.forward.normalized, Vector3.up));
-			const float nonVerticalThreshold = 0.5f;
-			bool isHorizontalPortal = portalUpDot > nonVerticalThreshold;
+			// Apply velocity transformation ONLY if the traveler doesn't handle it itself
+			// InteractableObject and FPSController override Teleport and handle velocity transformation internally
+			bool handlesVelocityInternally = traveller is InteractableObject || traveller is FPSController;
 			
-			if (rb) {
+			if (!handlesVelocityInternally && rb) {
+				Vector3 transformedVelocity = Vector3.zero;
+				
 				if (velocityBeforeTeleport.sqrMagnitude > 0.001f) {
 					// Scale velocity by portal size difference
-					Vector3 transformedVelocity = velocityBeforeTeleport * scaleRatio;
+					transformedVelocity = velocityBeforeTeleport * scaleRatio;
 					
 					// Rotate velocity through portal (same transformation as player)
 					Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
 					Quaternion relativeRotation = destination.transform.rotation * flipLocal * Quaternion.Inverse(transform.rotation);
 					transformedVelocity = relativeRotation * transformedVelocity;
 					
-					// Apply transformed velocity
-					rb.linearVelocity = transformedVelocity;
-					
 					// Transform angular velocity too
 					if (angularVelocityBeforeTeleport.sqrMagnitude > 0.001f) {
 						Vector3 transformedAngularVelocity = relativeRotation * angularVelocityBeforeTeleport;
 						rb.angularVelocity = transformedAngularVelocity;
 					}
-				} else if (isHorizontalPortal) {
-					// For horizontal portals, even if object has no velocity, give it a small push
-					// in the direction of the portal's forward to ensure it appears on the other side
-					Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
-					Quaternion relativeRotation = destination.transform.rotation * flipLocal * Quaternion.Inverse(transform.rotation);
-					Vector3 exitDirection = relativeRotation * transform.forward;
-					
-					// Give a small forward push (horizontal only)
-					Vector3 horizontalPush = new Vector3(exitDirection.x, 0, exitDirection.z).normalized * 2f;
-					rb.linearVelocity = horizontalPush;
 				}
+				
+				// Apply minimum exit velocity using base class method (handles non-vertical to vertical transitions)
+				transformedVelocity = traveller.ApplyMinimumExitVelocity(transform, destination.transform, transformedVelocity);
+				
+				// Apply transformed velocity
+				rb.linearVelocity = transformedVelocity;
 			}
 
 			destHandler?.OnTravellerEnterPortal(traveller, justTeleported: true);
@@ -167,18 +160,13 @@ namespace Portal {
 		}
 
 		void OnTriggerEnter(Collider other) {
-			// Check if object has PortalTraveller component, if not, try to add it for interactable objects
+			// Check if object has PortalTraveller component
 			var traveller = other.GetComponent<PortalTraveller>();
 			if (!traveller && other.CompareTag("Interactable")) {
-				// Check if object has InteractableObject (which should already have PortalTraveller)
-				var interactable = other.GetComponent<InteractableObject>();
-				if (interactable != null && interactable.PortalTraveller != null) {
-					traveller = interactable.PortalTraveller;
-				} else {
-					// Fallback: automatically add PortalTraveller to interactable objects so they can teleport
-					traveller = other.gameObject.AddComponent<PortalTraveller>();
-					Debug.Log($"[PortalTravellerHandler] Auto-added PortalTraveller to {other.name}");
-				}
+				// InteractableObject now inherits from PortalTraveller, so GetComponent should find it
+				// Fallback: automatically add PortalTraveller to interactable objects so they can teleport
+				traveller = other.gameObject.AddComponent<PortalTraveller>();
+				Debug.Log($"[PortalTravellerHandler] Auto-added PortalTraveller to {other.name}");
 			}
 			
 			if (traveller) {

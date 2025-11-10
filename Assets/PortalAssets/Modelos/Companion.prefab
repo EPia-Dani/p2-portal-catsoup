@@ -2841,12 +2841,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 082df5768b0bab7419e52fab8ae4479c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minPortalExitVelocity: 3
   terminalVelocity: 50
   maxAngularVelocity: 50
-  moveSpeed: 100
+  moveSpeed: 70
   rotationSpeed: 10
-  heldDamping: 5
-  droppedDamping: 0.05
+  heldDamping: 10
+  droppedDamping: 2
   dropForce: 2
 --- !u!1 &1996072827028512
 GameObject:
