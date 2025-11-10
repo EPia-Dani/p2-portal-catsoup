@@ -5440,6 +5440,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1646607695}
   - component: {fileID: 1646607696}
+  - component: {fileID: 1646607699}
+  - component: {fileID: 1646607698}
+  - component: {fileID: 1646607697}
   m_Layer: 5
   m_Name: Crosshair
   m_TagString: Untagged
@@ -5456,7 +5459,7 @@ RectTransform:
   m_GameObject: {fileID: 1646607694}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.37242, y: 0.37242, z: 0.37242}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 972651031}
@@ -5478,13 +5481,69 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 63f4579278874cbdb3f5fe74af39f831, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  crosshairImage: {fileID: 1646607698}
+  emptySprite: {fileID: 0}
+  placedSprite: {fileID: 0}
+  emptyColor: {r: 1, g: 1, b: 1, a: 0.2}
+  placedColor: {r: 1, g: 1, b: 1, a: 1}
   crosshairColor: {r: 1, g: 1, b: 1, a: 1}
-  lineThickness: 2
-  lineLength: 10
   gapFromCenter: 5
   targetGap: 5
-  gapTransitionSpeed: 10
-  smoothTransitions: 1
+--- !u!114 &1646607697
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646607694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9f1b4251c0f4392b31a47a837334950, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  portalManager: {fileID: 2079793665}
+  crosshairImage: {fileID: 1646607698}
+  emptySprite: {fileID: 21300000, guid: f489249a30d2e0e4196b9d24b86ac0ba, type: 3}
+  placedSprite: {fileID: 21300000, guid: 8a81d4c668a07384cbb4ec76e1a78117, type: 3}
+  crosshair: {fileID: 0}
+--- !u!114 &1646607698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646607694}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: f489249a30d2e0e4196b9d24b86ac0ba, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1646607699
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1646607694}
+  m_CullTransparentMesh: 1
 --- !u!43 &1655748179
 Mesh:
   m_ObjectHideFlags: 0
