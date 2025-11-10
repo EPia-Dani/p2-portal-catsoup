@@ -3,7 +3,7 @@ using Portal;
 
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(Collider))]
-public class InteractableObject : MonoBehaviour
+public class InteractableObject : PortalTraveller
 {
     [Header("Physics Settings")]
     [Tooltip("Maximum velocity magnitude to prevent physics breaking")]
@@ -32,7 +32,6 @@ public class InteractableObject : MonoBehaviour
     // Components
     private Rigidbody _rigidbody;
     private Collider _collider;
-    private PortalTraveller _portalTraveller;
     private PortalCloneSystem _portalCloneSystem;
     
     // State
@@ -48,7 +47,6 @@ public class InteractableObject : MonoBehaviour
 
     public bool IsHeld => _isHeld;
     public Rigidbody Rigidbody => _rigidbody;
-    public PortalTraveller PortalTraveller => _portalTraveller;
     public PortalCloneSystem PortalCloneSystem => _portalCloneSystem;
 
     void Awake()
@@ -74,9 +72,6 @@ public class InteractableObject : MonoBehaviour
         _originalUseGravity = _rigidbody.useGravity;
         _originalLinearDamping = _rigidbody.linearDamping;
         _originalAngularDamping = _rigidbody.angularDamping;
-        
-        // Ensure PortalTraveller component exists
-        EnsurePortalTraveller();
         
         // PortalCloneSystem will be added when picked up
     }
@@ -117,7 +112,6 @@ public class InteractableObject : MonoBehaviour
         _holder = holder;
         
         // Ensure portal components exist
-        EnsurePortalTraveller();
         EnsurePortalCloneSystem();
         
         // Activate clone system
@@ -202,18 +196,6 @@ public class InteractableObject : MonoBehaviour
         
         // Rotate toward target rotation
         _rigidbody.MoveRotation(Quaternion.Slerp(_rigidbody.rotation, _targetRotation, rotationSpeed * Time.fixedDeltaTime));
-    }
-
-    void EnsurePortalTraveller()
-    {
-        if (_portalTraveller == null)
-        {
-            _portalTraveller = GetComponent<PortalTraveller>();
-            if (_portalTraveller == null)
-            {
-                _portalTraveller = gameObject.AddComponent<PortalTraveller>();
-            }
-        }
     }
 
     void EnsurePortalCloneSystem()
