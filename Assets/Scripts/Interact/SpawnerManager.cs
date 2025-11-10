@@ -16,6 +16,11 @@ namespace Interact
                 { 
                     Debug.LogWarning("Animator not assigned on ButtonManager.");
                 }
+                
+                Vector3 locaclPos = transform.localPosition;
+                locaclPos.x = 0.0f;
+                transform.localPosition = locaclPos;
+                Debug.Log("Spawner action completed, resetting position.");
         }
     }
 }
