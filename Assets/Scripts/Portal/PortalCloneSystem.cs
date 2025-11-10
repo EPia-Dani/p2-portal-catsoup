@@ -1,5 +1,6 @@
 // PortalCloneSystem.cs - Handles visual clones for held objects passing through portals
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace Portal {
 	public class PortalCloneSystem : MonoBehaviour {
@@ -10,20 +11,44 @@ namespace Portal {
 		private PortalRenderer _currentPortal;
 		private PortalRenderer _currentDestination;
 		private bool _isHeld;
+		private float _lastSideCheck = 0f; // Track which side we were on last frame
 		
 		public bool HasClone => _clone != null;
 		public GameObject Clone => _clone;
 
 		void Update() {
-			if (!_isHeld) return;
-			
-			// Check if we're touching a portal by checking nearby colliders
+			// Always check for portal contact and update clone, even when not held
+			// This ensures clone persists when object is crossing portal
 			CheckForPortalContact();
 			
 			// Update clone position/rotation if it exists
 			if (_clone && _currentPortal && _currentDestination) {
 				UpdateCloneTransform();
+				
+				// Check if object has fully crossed portal (for dropped objects)
+				if (!_isHeld) {
+					CheckForPortalCrossing();
+				}
 			}
+		}
+		
+		void CheckForPortalCrossing() {
+			if (!_clone || !_currentPortal || !_currentDestination) return;
+			
+			// Check which side of the portal we're on now
+			Vector3 offsetFromPortal = transform.position - _currentPortal.transform.position;
+			float dot = Vector3.Dot(offsetFromPortal, _currentPortal.transform.forward);
+			
+			// If we were on the entering side (negative) and now we're on the exiting side (positive),
+			// we've crossed the portal - swap with clone
+			if (_lastSideCheck < 0 && dot > 0.01f) {
+				Debug.Log($"[PortalCloneSystem] Object crossed portal (dot changed from {_lastSideCheck} to {dot}), swapping with clone for {gameObject.name}");
+				SwapWithClone();
+				return;
+			}
+			
+			// Update last side check
+			_lastSideCheck = dot;
 		}
 
 		void CheckForPortalContact() {
@@ -64,28 +89,41 @@ namespace Portal {
 				RestorePortalCollisions();
 				
 				if (_clone && _currentPortal && _currentDestination) {
-					// Only swap with clone if we're actually on the destination side (where clone is)
 					// Check which side of the portal we're on
 					Vector3 offsetFromPortal = transform.position - _currentPortal.transform.position;
 					float dot = Vector3.Dot(offsetFromPortal, _currentPortal.transform.forward);
 					
-					// If dot > 0, we're on the "exiting" side (where clone is) - swap
-					// If dot <= 0, we're on the "entering" side - don't swap, just destroy clone
-					if (dot > 0) {
+					// Use a small threshold to handle cases where object is exactly at portal plane
+					const float threshold = 0.01f;
+					
+					// If dot > threshold, we're clearly on the "exiting" side (where clone is) - swap
+					if (dot > threshold) {
 						// We're on the destination side, swap with clone
+						Debug.Log($"[PortalCloneSystem] Dropped on destination side (dot={dot}), swapping with clone for {gameObject.name}");
 						SwapWithClone();
-					} else {
-						// We're still on the source side, just destroy the clone
-						Debug.Log($"[PortalCloneSystem] Dropped on source side, destroying clone for {gameObject.name}");
+					} 
+					// If dot < -threshold, we're clearly on the "entering" side
+					else if (dot < -threshold) {
+						// We're still on the source side, destroy clone
+						Debug.Log($"[PortalCloneSystem] Dropped on source side (dot={dot}), destroying clone for {gameObject.name}");
 						DestroyClone();
 						
 						// Properly initialize portal tracking so it doesn't immediately teleport
 						InitializePortalTracking();
 					}
+					// If -threshold <= dot <= threshold, object is crossing/intersecting portal
+					// Keep the clone alive - it will be handled by portal teleportation system
+					else {
+						Debug.Log($"[PortalCloneSystem] Dropped while crossing portal (dot={dot}), keeping clone alive for {gameObject.name}");
+						// Don't destroy clone - let portal teleportation system handle it
+						// Clone will update in Update() and swap will happen when object fully crosses
+						
+						// Properly initialize portal tracking
+						InitializePortalTracking();
+					}
 				} else {
-					DestroyClone();
-					
-					// If no clone but we might be in a portal, initialize tracking
+					// No clone exists, but check if we're touching a portal
+					// If we are, a clone might be created in the next Update()
 					InitializePortalTracking();
 				}
 			}
@@ -126,6 +164,10 @@ namespace Portal {
 			
 			_currentPortal = portal;
 			_currentDestination = portal.pair;
+			
+			// Initialize side check
+			Vector3 offsetFromPortal = transform.position - portal.transform.position;
+			_lastSideCheck = Vector3.Dot(offsetFromPortal, portal.transform.forward);
 			
 			// Ensure collision is ignored with both portal walls
 			SetupPortalCollisions();
@@ -247,8 +289,33 @@ namespace Portal {
 				transform.localScale = cloneScale;
 			}
 			
+			// Store portal references before destroying clone
+			PortalRenderer oldDestination = _currentDestination;
+			
 			// Destroy clone - swap complete!
 			DestroyClone();
+			
+			// After swap, check if we're still touching a portal and create new clone if needed
+			// This handles cases where object is dropped right at portal boundary
+			// We're now on what was the destination side
+			if (oldDestination != null) {
+				// Check if we're still touching a portal after swap
+				Collider[] nearby = Physics.OverlapSphere(transform.position, 0.5f);
+				PortalRenderer stillTouching = null;
+				foreach (var col in nearby) {
+					var portal = col.GetComponent<PortalRenderer>();
+					if (portal != null && portal.pair != null) {
+						stillTouching = portal;
+						break;
+					}
+				}
+				
+				// If still touching the portal we just teleported to, create new clone
+				// (we're now on the other side, so clone should appear on the original side)
+				if (stillTouching != null && stillTouching == oldDestination) {
+					CreateClone(oldDestination);
+				}
+			}
 		}
 
 		void RestorePortalCollisions() {
@@ -273,33 +340,66 @@ namespace Portal {
 			
 			_currentPortal = null;
 			_currentDestination = null;
+			_lastSideCheck = 0f;
 		}
 
 		void CopyVisualComponents(GameObject source, GameObject target) {
-			// Copy MeshRenderer
-			var sourceRenderer = source.GetComponent<MeshRenderer>();
-			if (sourceRenderer) {
-				var targetRenderer = target.AddComponent<MeshRenderer>();
-				targetRenderer.sharedMaterial = sourceRenderer.sharedMaterial;
-				targetRenderer.shadowCastingMode = sourceRenderer.shadowCastingMode;
-				targetRenderer.receiveShadows = sourceRenderer.receiveShadows;
-			}
+			// Get ALL renderers including children
+			var allRenderers = source.GetComponentsInChildren<Renderer>();
 			
-			// Copy MeshFilter
-			var sourceFilter = source.GetComponent<MeshFilter>();
-			if (sourceFilter && sourceFilter.sharedMesh) {
-				var targetFilter = target.AddComponent<MeshFilter>();
-				targetFilter.sharedMesh = sourceFilter.sharedMesh;
-			}
+			// Build hierarchy map to match source transforms to target transforms
+			Dictionary<Transform, Transform> transformMap = new Dictionary<Transform, Transform>();
+			transformMap[source.transform] = target.transform;
 			
-			// Copy all child visual components
-			foreach (Transform child in source.transform) {
-				GameObject childClone = new GameObject(child.name);
-				childClone.transform.SetParent(target.transform);
-				childClone.transform.localPosition = child.localPosition;
-				childClone.transform.localRotation = child.localRotation;
-				childClone.transform.localScale = child.localScale;
-				CopyVisualComponents(child.gameObject, childClone);
+			// Recursively build the full hierarchy
+			void BuildHierarchy(Transform sourceParent, Transform targetParent) {
+				foreach (Transform child in sourceParent) {
+					GameObject childClone = new GameObject(child.name);
+					childClone.transform.SetParent(targetParent);
+					childClone.transform.localPosition = child.localPosition;
+					childClone.transform.localRotation = child.localRotation;
+					childClone.transform.localScale = child.localScale;
+					transformMap[child] = childClone.transform;
+					BuildHierarchy(child, childClone.transform);
+				}
+			}
+			BuildHierarchy(source.transform, target.transform);
+			
+			// Copy all renderers to their corresponding positions in the clone hierarchy
+			foreach (var renderer in allRenderers) {
+				if (!renderer) continue;
+				Transform targetTransform = transformMap[renderer.transform];
+				if (!targetTransform) continue;
+				
+				if (renderer is MeshRenderer meshRenderer) {
+					// Copy MeshFilter if it exists
+					var filter = renderer.GetComponent<MeshFilter>();
+					if (filter && filter.sharedMesh) {
+						var targetFilter = targetTransform.GetComponent<MeshFilter>();
+						if (!targetFilter) targetFilter = targetTransform.gameObject.AddComponent<MeshFilter>();
+						targetFilter.sharedMesh = filter.sharedMesh;
+					}
+					
+					// Copy MeshRenderer
+					var targetRenderer = targetTransform.GetComponent<MeshRenderer>();
+					if (!targetRenderer) targetRenderer = targetTransform.gameObject.AddComponent<MeshRenderer>();
+					targetRenderer.sharedMaterials = meshRenderer.sharedMaterials;
+					targetRenderer.shadowCastingMode = meshRenderer.shadowCastingMode;
+					targetRenderer.receiveShadows = meshRenderer.receiveShadows;
+					targetRenderer.enabled = meshRenderer.enabled;
+				}
+				else if (renderer is SkinnedMeshRenderer skinnedRenderer) {
+					// Copy SkinnedMeshRenderer
+					var targetSkinned = targetTransform.GetComponent<SkinnedMeshRenderer>();
+					if (!targetSkinned) targetSkinned = targetTransform.gameObject.AddComponent<SkinnedMeshRenderer>();
+					targetSkinned.sharedMesh = skinnedRenderer.sharedMesh;
+					targetSkinned.sharedMaterials = skinnedRenderer.sharedMaterials;
+					targetSkinned.bones = skinnedRenderer.bones;
+					targetSkinned.rootBone = skinnedRenderer.rootBone;
+					targetSkinned.shadowCastingMode = skinnedRenderer.shadowCastingMode;
+					targetSkinned.receiveShadows = skinnedRenderer.receiveShadows;
+					targetSkinned.enabled = skinnedRenderer.enabled;
+				}
 			}
 		}
 
