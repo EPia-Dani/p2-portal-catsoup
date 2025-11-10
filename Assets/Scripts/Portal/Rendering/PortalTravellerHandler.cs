@@ -51,12 +51,7 @@ namespace Portal {
 
 			Collider travellerCollider = traveller.GetComponent<Collider>();
 
-			// Disable collision with source wall
-			if (wallCollider && travellerCollider) {
-				Physics.IgnoreCollision(travellerCollider, wallCollider, false);
-			}
-
-			// Enable collision ignore with destination wall
+			// Disable collision with destination wall BEFORE teleport (so object can pass through it)
 			var destHandler = destination.GetComponent<PortalTravellerHandler>();
 			if (destHandler?.wallCollider && travellerCollider) {
 				Physics.IgnoreCollision(travellerCollider, destHandler.wallCollider, true);
@@ -77,6 +72,15 @@ namespace Portal {
 				out Vector3 newPos, out Quaternion newRot);
 
 			traveller.Teleport(transform, destination.transform, newPos, newRot, scaleRatio);
+
+			// CRITICAL: Re-enable collision with SOURCE portal wall IMMEDIATELY AFTER teleport
+			// This allows the object to collide with the floor/wall it came from
+			if (wallCollider && travellerCollider) {
+				Physics.IgnoreCollision(travellerCollider, wallCollider, false);
+			}
+
+			// Force physics to update immediately so collision changes take effect
+			Physics.SyncTransforms();
 
 			// Apply velocity transformation (same as player)
 			// Determine if the source portal is 'non-vertical' (e.g. on the floor/ceiling)
