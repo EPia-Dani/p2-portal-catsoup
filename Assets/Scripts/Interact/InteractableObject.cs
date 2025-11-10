@@ -153,6 +153,8 @@ public class InteractableObject : PortalTraveller
         if (!_isHeld) return;
         
         // Capture the CURRENT velocity right before dropping (includes motion from being held/moved)
+        // This is the actual velocity the rigidbody has from all the forces applied during holding
+        // It already includes motion from player movement AND rotation (tangential velocity)
         Vector3 currentLinearVelocity = _rigidbody.linearVelocity;
         Vector3 currentAngularVelocity = _rigidbody.angularVelocity;
         
@@ -164,13 +166,19 @@ public class InteractableObject : PortalTraveller
         _rigidbody.linearDamping = _originalLinearDamping;
         _rigidbody.angularDamping = _originalAngularDamping;
         
-        // Use the target velocity we've been tracking (captures motion from player movement AND rotation)
-        // This is the velocity the object SHOULD have based on how the target position was moving
-        // The target velocity already includes rotational motion (tangential velocity from rotation)
-        Vector3 finalVelocity = _targetVelocity;
+        // Use the ACTUAL rigidbody velocity - it already includes all motion from forces applied
+        // The forces in UpdateHeldMovement() already capture player movement and rotation
+        Vector3 finalVelocity = currentLinearVelocity;
         
-        // If target velocity is very small (object wasn't moving much), fall back to player's linear velocity
-        // This handles edge cases where tracking might not be perfect
+        // If actual velocity is very small (damping reduced it too much), enhance with target velocity
+        // This handles cases where damping has reduced velocity but object should still have momentum
+        if (finalVelocity.sqrMagnitude < 0.1f && _targetVelocity.sqrMagnitude > 0.1f)
+        {
+            // Blend actual velocity with target velocity to preserve momentum
+            finalVelocity = Vector3.Lerp(finalVelocity, _targetVelocity, 0.7f);
+        }
+        
+        // Fallback: if both are small, use player's velocity as last resort
         if (finalVelocity.sqrMagnitude < 0.1f && _holder != null)
         {
             var playerController = _holder.GetComponent<FPSController>();
