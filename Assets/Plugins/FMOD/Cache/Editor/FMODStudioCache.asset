@@ -49,10 +49,10 @@ MonoBehaviour:
   - {fileID: 7327229040431735482}
   IsStream: 0
   Is3D: 1
-  IsOneShot: 1
+  IsOneShot: 0
   Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
+  MinDistance: 0
+  MaxDistance: 90
   Length: 4664
 --- !u!114 &-7244729939795585029
 MonoBehaviour:
@@ -229,7 +229,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -5631817738560404720}
   cacheVersion: 131856
-  cacheTime: 638984652318556843
+  cacheTime: 638984664371660709
   SerializableEventsDict:
   - key: event:/SFX/Collision
     index: 0
@@ -365,10 +365,10 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
   Name: PortalSounds
   StudioPath: bank:/SFX/PortalSounds
-  lastModified: 638984652318132122
+  lastModified: 638984664371660709
   FileSizes:
   - Name: Desktop
-    Value: 63264
+    Value: 63712
   Exists: 1
 --- !u!114 &8115163133539580668
 MonoBehaviour:
