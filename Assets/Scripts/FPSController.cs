@@ -76,6 +76,65 @@ public class FPSController : PortalTraveller {
         cameraRotationEnabled = enabled;
     }
     
+    // Static dummy transforms for respawn teleportation (reused to avoid allocations)
+    private static Transform dummyFromPortal;
+    private static Transform dummyToPortal;
+    
+    /// <summary>
+    /// Teleports the player to a specific position and rotation.
+    /// Uses the exact same Teleport() method that portals use for identical behavior.
+    /// </summary>
+    /// <param name="position">Target position to teleport to</param>
+    /// <param name="rotation">Target rotation to set</param>
+    public void TeleportToPosition(Vector3 position, Quaternion rotation)
+    {
+        // Ensure time scale is normal (critical for builds)
+        if (Time.timeScale <= 0f)
+        {
+            Time.timeScale = 1f;
+        }
+        
+        // Reset velocity to zero before teleport (for respawn, we want no momentum)
+        velocity = Vector3.zero;
+        verticalVelocity = 0f;
+        externalVelocity = Vector3.zero;
+        airHorizontalVelocity = Vector3.zero;
+        jumping = false;
+        lastGroundedTime = Time.time;
+        
+        // Create or reuse dummy portal transforms
+        // Both use target rotation so relativeRotation will be identity (no rotation change)
+        if (dummyFromPortal == null)
+        {
+            GameObject dummyFromObj = new GameObject("DummyFromPortal");
+            dummyFromObj.hideFlags = HideFlags.HideAndDontSave;
+            dummyFromPortal = dummyFromObj.transform;
+            
+            GameObject dummyToObj = new GameObject("DummyToPortal");
+            dummyToObj.hideFlags = HideFlags.HideAndDontSave;
+            dummyToPortal = dummyToObj.transform;
+        }
+        
+        // Set both portals to target position/rotation
+        // This makes relativeRotation = identity (no transformation)
+        dummyFromPortal.position = transform.position;
+        dummyFromPortal.rotation = rotation;
+        dummyToPortal.position = position;
+        dummyToPortal.rotation = rotation;
+        
+        // Use the exact same Teleport method that portals use
+        // This ensures identical behavior and smoothness
+        Teleport(dummyFromPortal, dummyToPortal, position, rotation, 1f);
+        
+        // Ensure yaw and pitch match target rotation after teleport
+        yaw = rotation.eulerAngles.y;
+        pitch = 0f;
+        if (cam != null)
+        {
+            cam.transform.localEulerAngles = Vector3.right * pitch;
+        }
+    }
+    
     // Store horizontal velocity when jumping to preserve momentum
     Vector3 airHorizontalVelocity = Vector3.zero;
     

@@ -130,7 +130,7 @@ public class ScreenFadeManager : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < fadeOutDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime; // Use unscaled time so fade works even when paused
             float alpha = Mathf.Clamp01(elapsed / fadeOutDuration);
             if (image != null) image.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, alpha);
             yield return null;
@@ -149,7 +149,7 @@ public class ScreenFadeManager : MonoBehaviour
         float startAlpha = image != null ? image.color.a : 1f;
         while (elapsed < fadeInDuration)
         {
-            elapsed += Time.deltaTime;
+            elapsed += Time.unscaledDeltaTime; // Use unscaled time so fade works even when paused
             float alpha = Mathf.Lerp(startAlpha, 0f, elapsed / fadeInDuration);
             if (image != null) image.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, alpha);
             yield return null;

@@ -91,77 +91,30 @@ public class PlayerManager : MonoBehaviour
         }
         
         isDead = true;
-        Debug.Log("PlayerManager: Player has died!");
+        
         
         deathScreen.ShowDeathScreen();
         
     }
     
     /// <summary>
-    /// Respawns the player at the respawn point with fade transition.
+    /// Respawns the player at the respawn anchor.
     /// </summary>
     public void RespawnPlayer()
     {
-        if (!isDead)
+        if (player == null || fpsController == null || respawnPoint == null)
         {
-            return; // Not dead, can't respawn
+            return;
         }
         
-        Debug.Log("PlayerManager: Respawning player...");
+        // Get respawn position from anchor
+        Vector3 targetPos = respawnPoint.position;
+        Quaternion targetRot = respawnPoint.rotation;
         
-        // Use fade system if available
-        var fadeManager = ScreenFadeManager.Instance;
-        if (fadeManager != null)
-        {
-            fadeManager.FadeOutAndRespawn(() => {
-                // Reset player position and rotation
-                Transform targetPoint = respawnPoint != null ? respawnPoint : null;
-                if (targetPoint == null)
-                {
-                    // Fall back to the initial spawn we cached on start
-                    player.transform.position = initialPosition;
-                    player.transform.rotation = initialRotation;
-                }
-                else
-                {
-                    player.transform.position = targetPoint.position;
-                    player.transform.rotation = targetPoint.rotation;
-                }
-                
-                // Reset velocity if rigidbody exists
-                var rb = player.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                }
-                
-                isDead = false;
-            });
-        }
-        else
-        {
-            // Fallback: direct respawn if fade manager doesn't exist
-            if (respawnPoint != null)
-            {
-                player.transform.position = respawnPoint.position;
-                player.transform.rotation = respawnPoint.rotation;
-            }
-            else
-            {
-                player.transform.position = initialPosition;
-                player.transform.rotation = initialRotation;
-            }
-            
-            var rb = player.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.linearVelocity = Vector3.zero;
-                rb.angularVelocity = Vector3.zero;
-            }
-            
-            isDead = false;
-        }
+        // Teleport player - that's it, nothing else
+        fpsController.TeleportToPosition(targetPos, targetRot);
+        
+        isDead = false;
     }
     
     /// <summary>
