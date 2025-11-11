@@ -100,7 +100,7 @@ public class PlayerManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Respawns the player at the respawn point.
+    /// Respawns the player at the respawn point with fade transition.
     /// </summary>
     public void RespawnPlayer()
     {
@@ -111,19 +111,51 @@ public class PlayerManager : MonoBehaviour
         
         Debug.Log("PlayerManager: Respawning player...");
         
-        // Reset player position and rotation
-        if (respawnAtPoint && respawnPoint != null)
+        // Use fade system if available
+        var fadeManager = ScreenFadeManager.Instance;
+        if (fadeManager != null)
         {
-            player.transform.position = respawnPoint.position;
-            player.transform.rotation = respawnPoint.rotation;
+            fadeManager.FadeOutAndRespawn(() => {
+                // Reset player position and rotation
+                if (respawnAtPoint && respawnPoint != null)
+                {
+                    player.transform.position = respawnPoint.position;
+                    player.transform.rotation = respawnPoint.rotation;
+                }
+                
+                // Reset velocity if rigidbody exists
+                var rb = player.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
+                
+                isDead = false;
+            });
         }
-       
-        
-        isDead = false;
+        else
+        {
+            // Fallback: direct respawn if fade manager doesn't exist
+            if (respawnAtPoint && respawnPoint != null)
+            {
+                player.transform.position = respawnPoint.position;
+                player.transform.rotation = respawnPoint.rotation;
+            }
+            
+            var rb = player.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            
+            isDead = false;
+        }
     }
     
     /// <summary>
-    /// Restarts the current scene.
+    /// Restarts the current scene with fade transition.
     /// </summary>
     public void RestartScene()
     {

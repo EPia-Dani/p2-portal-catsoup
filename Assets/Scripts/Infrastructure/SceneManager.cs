@@ -12,7 +12,7 @@ public static class GameSceneManager {
 	public const string SAMPLE_SCENE = "SampleScene"; // Existing scene
 
 	/// <summary>
-	/// Loads a scene by name
+	/// Loads a scene by name with fade transition
 	/// </summary>
 	public static void LoadScene(string sceneName) {
 		if (string.IsNullOrEmpty(sceneName)) {
@@ -21,11 +21,19 @@ public static class GameSceneManager {
 		}
 
 		Debug.Log($"SceneManager: Loading scene '{sceneName}'");
-		SceneManager.LoadScene(sceneName);
+		
+		// Use fade system if available
+		var fadeManager = ScreenFadeManager.Instance;
+		if (fadeManager != null) {
+			fadeManager.FadeOutAndLoadScene(sceneName);
+		} else {
+			// Fallback: direct load if fade manager doesn't exist
+			SceneManager.LoadScene(sceneName);
+		}
 	}
 
 	/// <summary>
-	/// Loads a scene by build index
+	/// Loads a scene by build index with fade transition
 	/// </summary>
 	public static void LoadScene(int buildIndex) {
 		if (buildIndex < 0 || buildIndex >= SceneManager.sceneCountInBuildSettings) {
@@ -34,7 +42,15 @@ public static class GameSceneManager {
 		}
 
 		Debug.Log($"SceneManager: Loading scene at index {buildIndex}");
-		SceneManager.LoadScene(buildIndex);
+		
+		// Use fade system if available
+		var fadeManager = ScreenFadeManager.Instance;
+		if (fadeManager != null) {
+			fadeManager.FadeOutAndLoadScene(buildIndex);
+		} else {
+			// Fallback: direct load if fade manager doesn't exist
+			SceneManager.LoadScene(buildIndex);
+		}
 	}
 
 	/// <summary>
@@ -52,12 +68,20 @@ public static class GameSceneManager {
 	}
 
 	/// <summary>
-	/// Reloads the current active scene
+	/// Reloads the current active scene with fade transition
 	/// </summary>
 	public static void ReloadCurrentScene() {
 		Scene currentScene = SceneManager.GetActiveScene();
 		Debug.Log($"SceneManager: Reloading scene '{currentScene.name}'");
-		SceneManager.LoadScene(currentScene.buildIndex);
+		
+		// Use fade system if available
+		var fadeManager = ScreenFadeManager.Instance;
+		if (fadeManager != null) {
+			fadeManager.FadeOutAndReloadScene();
+		} else {
+			// Fallback: direct reload if fade manager doesn't exist
+			SceneManager.LoadScene(currentScene.buildIndex);
+		}
 	}
 
 	/// <summary>

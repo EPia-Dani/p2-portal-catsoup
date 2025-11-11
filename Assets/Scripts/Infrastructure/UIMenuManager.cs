@@ -141,11 +141,18 @@ namespace SlimUI.ModernMenu{
 			mainMenu.SetActive(true);
 		}
 
-		public void LoadScene(string scene){
-			if(scene != ""){
+	public void LoadScene(string scene){
+		if(scene != ""){
+			if (ScreenFadeManager.Instance != null)
+			{
+				ScreenFadeManager.Instance.FadeOutAndLoadScene(scene);
+			}
+			else
+			{
 				StartCoroutine(LoadAsynchronously(scene));
 			}
 		}
+	}
 
 		public void  DisablePlayCampaign(){
 			playMenu.SetActive(false);
