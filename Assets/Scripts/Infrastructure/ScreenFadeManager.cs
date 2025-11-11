@@ -110,7 +110,8 @@ public class ScreenFadeManager : MonoBehaviour
     
     public void FadeOutAndReloadScene()
     {
-        StartCoroutine(FadeOut(() => SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex)));
+        int currentIndex = SceneManager.GetActiveScene().buildIndex;
+        StartCoroutine(FadeOut(() => SceneManager.LoadScene(currentIndex)));
     }
     
     public void FadeOutAndRespawn(System.Action onComplete)

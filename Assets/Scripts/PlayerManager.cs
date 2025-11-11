@@ -93,8 +93,6 @@ public class PlayerManager : MonoBehaviour
         isDead = true;
         Debug.Log("PlayerManager: Player has died!");
         
-       
-        
         deathScreen.ShowDeathScreen();
         
     }
@@ -117,10 +115,17 @@ public class PlayerManager : MonoBehaviour
         {
             fadeManager.FadeOutAndRespawn(() => {
                 // Reset player position and rotation
-                if (respawnAtPoint && respawnPoint != null)
+                Transform targetPoint = respawnPoint != null ? respawnPoint : null;
+                if (targetPoint == null)
                 {
-                    player.transform.position = respawnPoint.position;
-                    player.transform.rotation = respawnPoint.rotation;
+                    // Fall back to the initial spawn we cached on start
+                    player.transform.position = initialPosition;
+                    player.transform.rotation = initialRotation;
+                }
+                else
+                {
+                    player.transform.position = targetPoint.position;
+                    player.transform.rotation = targetPoint.rotation;
                 }
                 
                 // Reset velocity if rigidbody exists
@@ -137,10 +142,15 @@ public class PlayerManager : MonoBehaviour
         else
         {
             // Fallback: direct respawn if fade manager doesn't exist
-            if (respawnAtPoint && respawnPoint != null)
+            if (respawnPoint != null)
             {
                 player.transform.position = respawnPoint.position;
                 player.transform.rotation = respawnPoint.rotation;
+            }
+            else
+            {
+                player.transform.position = initialPosition;
+                player.transform.rotation = initialRotation;
             }
             
             var rb = player.GetComponent<Rigidbody>();

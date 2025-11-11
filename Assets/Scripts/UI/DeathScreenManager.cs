@@ -359,6 +359,9 @@ public class DeathScreenManager : MonoBehaviour
             Time.timeScale = 1f;
         }
         
+        // Re-lock and hide cursor before we return control to the player
+        CursorUtility.Apply(CursorLockMode.Locked, false);
+        
         // Re-enable camera rotation
         if (fpsController != null)
         {

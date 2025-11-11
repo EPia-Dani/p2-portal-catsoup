@@ -1916,7 +1916,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 165274156}
   respawnPoint: {fileID: 1289852991}
-  respawnAtPoint: 1
+  respawnAtPoint: 0
   deathScreen: {fileID: 972651032}
 --- !u!1 &320930582
 GameObject:
@@ -5431,6 +5431,9 @@ MonoBehaviour:
   pauseOnDeath: 1
   fadeOutDuration: 1
   fadeInDuration: 1
+  textFadeDuration: 0.5
+  buttonFadeDelay: 0.3
+  buttonFadeDuration: 0.5
 --- !u!1001 &1085796613
 PrefabInstance:
   m_ObjectHideFlags: 0
