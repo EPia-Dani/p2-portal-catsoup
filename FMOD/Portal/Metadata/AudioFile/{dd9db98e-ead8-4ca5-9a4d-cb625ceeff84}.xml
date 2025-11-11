@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{dd9db98e-ead8-4ca5-9a4d-cb625ceeff84}">
+		<property name="assetPath">
+			<value>55843__sergenious__port (1).wav</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>22.0499992</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>0.33292517006802719</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{a9e72a2b-7a54-45a1-8abf-afaccd8d1fd1}</destination>
+		</relationship>
+	</object>
+</objects>

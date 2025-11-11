@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{9ee23294-414f-4752-8e58-40d2cf1a8239}">
+		<property name="assetPath">
+			<value>511910__audiopapkin__impact-sfx-023.wav</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>10.855147392290249</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{a9e72a2b-7a54-45a1-8abf-afaccd8d1fd1}</destination>
+		</relationship>
+	</object>
+</objects>

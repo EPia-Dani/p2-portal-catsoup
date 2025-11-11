@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{8c719424-992b-48a2-9427-b7d629f8d887}">
+		<property name="assetPath">
+			<value>Ca7riel &amp; Paco Amoroso_ Tiny Desk Concert.mp3</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>2</value>
+		</property>
+		<property name="length">
+			<value>1062.0865306122448</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{a9e72a2b-7a54-45a1-8abf-afaccd8d1fd1}</destination>
+		</relationship>
+	</object>
+</objects>

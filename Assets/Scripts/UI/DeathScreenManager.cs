@@ -21,6 +21,9 @@ public class DeathScreenManager : MonoBehaviour
     [Tooltip("Button to return to main menu.")]
     public Button restartButton;
     
+    [Tooltip("ScreenFade component attached to death screen (for red fade effect on death).")]
+    public ScreenFade deathScreenFade;
+    
     [Header("Settings")]
     [Tooltip("Message displayed when player dies.")]
     public string deathMessage = "You Died";
@@ -43,6 +46,12 @@ public class DeathScreenManager : MonoBehaviour
         
         // Find FPSController to disable camera rotation
         fpsController = FindFirstObjectByType<FPSController>();
+        
+        // Find ScreenFade component if not assigned
+        if (deathScreenFade == null)
+        {
+            deathScreenFade = GetComponentInChildren<ScreenFade>();
+        }
         
         // Hide death screen by default
         if (deathScreenPanel != null)
@@ -79,6 +88,12 @@ public class DeathScreenManager : MonoBehaviour
         }
         
         isShowing = true;
+        
+        // Show red fade effect on death
+        if (deathScreenFade != null)
+        {
+            deathScreenFade.FadeOut();
+        }
         
         // Disable camera rotation
         if (fpsController != null)
@@ -155,6 +170,12 @@ public class DeathScreenManager : MonoBehaviour
         if (deathScreenPanel != null)
         {
             deathScreenPanel.SetActive(false);
+        }
+        
+        // Fade out red death screen fade first
+        if (deathScreenFade != null)
+        {
+            deathScreenFade.FadeIn();
         }
         
         // Use fade system for smooth respawn transition
