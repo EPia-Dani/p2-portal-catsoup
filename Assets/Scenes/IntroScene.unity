@@ -1916,7 +1916,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 165274156}
   respawnPoint: {fileID: 1289852991}
-  respawnAtPoint: 0
+  respawnAtPoint: 1
   deathScreen: {fileID: 972651032}
 --- !u!1 &320930582
 GameObject:
