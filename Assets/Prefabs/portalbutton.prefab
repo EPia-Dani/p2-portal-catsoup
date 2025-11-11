@@ -25,6 +25,10 @@ PrefabInstance:
       value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 100004, guid: 5718ba0d86b07c4428af67cbd37bcfd2, type: 3}
+      propertyPath: m_Name
+      value: Controller
+      objectReference: {fileID: 0}
+    - target: {fileID: 100004, guid: 5718ba0d86b07c4428af67cbd37bcfd2, type: 3}
       propertyPath: m_Layer
       value: 15
       objectReference: {fileID: 0}

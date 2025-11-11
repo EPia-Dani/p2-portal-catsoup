@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 163549025507954536}
   - component: {fileID: 9162084775544625527}
   m_Layer: 0
-  m_Name: box_dropper_model_cover_cubedropper_plates.smd_Dupli_2_Box_drop
+  m_Name: Controller
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
