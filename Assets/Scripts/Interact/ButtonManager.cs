@@ -16,15 +16,16 @@ namespace Interact
         private void OnTriggerEnter(Collider interactable)
         {
             if (interactable == null) return;
-            if (!interactable.CompareTag("Interactable"))return;
-
-            isPressed = true; 
-            if (animator != null)
+            if (interactable.CompareTag("Interactable") || interactable.CompareTag("Player"))
             {
-                animator.SetTrigger("ButtonPressed");
-                spawner?.performAction();
-                leftDoor?.performAction();
-                rightDoor?.performAction();   
+                isPressed = true; 
+                if (animator != null)
+                {
+                    animator.SetTrigger("ButtonPressed");
+                    spawner?.performAction();
+                    leftDoor?.performAction();
+                    rightDoor?.performAction();   
+                }
             }
         }
 
