@@ -121,6 +121,7 @@ Material:
     - _DstBlend: 0
     - _DstBlendAlpha: 0
     - _EdgeWidth: 0.05
+    - _EmissionIntensity: 6
     - _EnvironmentReflections: 1
     - _FullScreen: 0
     - _GlossMapScale: 0
@@ -157,7 +158,7 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EdgeColor: {r: 0.19999996, g: 0.6, b: 1, a: 1}
-    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _EmissionColor: {r: 1, g: 0.21586053, b: 0, a: 1}
     - _FillColor: {r: 0.19999996, g: 0.8, b: 1, a: 0.5}
     - _InactiveColour: {r: 1, g: 1, b: 1, a: 1}
     - _NoiseColor: {r: 1, g: 0.50282484, b: 0, a: 1}

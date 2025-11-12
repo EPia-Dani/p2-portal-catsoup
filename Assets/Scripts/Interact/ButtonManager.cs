@@ -9,8 +9,8 @@ namespace Interact
         public Animator animator;
         public bool isPressed;
         public SpawnerManager spawner;
-        public DoorManager leftDoor;
-        public DoorManager rightDoor;
+        public Door leftDoor;
+        public Door rightDoor;
         
 
         private void OnTriggerEnter(Collider interactable)
@@ -22,10 +22,10 @@ namespace Interact
                 if (animator != null)
                 {
                     animator.SetTrigger("ButtonPressed");
-                    spawner?.performAction();
-                    leftDoor?.performAction();
-                    rightDoor?.performAction();   
                 }
+                spawner?.performAction();
+                leftDoor?.Open();
+                rightDoor?.Open();   
             }
         }
 
@@ -36,11 +36,9 @@ namespace Interact
             if (animator != null)
             {
                 animator.SetTrigger("ButtonUnpressed");
-                leftDoor.ResetPosition();
-                rightDoor.ResetPosition();
             }
-            
-                
+            leftDoor?.Close();
+            rightDoor?.Close();
         }
     }
 }

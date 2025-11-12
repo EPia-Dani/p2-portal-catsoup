@@ -20,12 +20,9 @@ namespace Interact
         [Tooltip("Speed at which the button moves down/up (units per second).")]
         public float pressSpeed = 2f;
         
-        [Header("Event Settings")]
-        [Tooltip("Event name to invoke when button is pressed. Use ButtonEvents.EventNames constants.")]
-        public string pressedEventName = ButtonEvents.EventNames.ButtonPressed;
-        
-        [Tooltip("Event name to invoke when button is unpressed. Use ButtonEvents.EventNames constants.")]
-        public string unpressedEventName = ButtonEvents.EventNames.ButtonUnpressed;
+        [Header("Door Settings")]
+        [Tooltip("The Door component(s) to open/close when button is pressed. Can assign multiple doors.")]
+        [SerializeField] Door[] doors;
         
         [Header("Debug")]
         [Tooltip("Current pressed state of the button.")]
@@ -183,10 +180,17 @@ namespace Interact
         /// </summary>
         private void OnButtonPressed()
         {
-            // Invoke button pressed event
-            ButtonEvents.Invoke(pressedEventName, this);
-            
-            Debug.Log($"[Button] {gameObject.name} pressed by {_objectsOnButton.Count} object(s) - Invoking event: {pressedEventName}");
+            // Open all assigned doors
+            if (doors != null)
+            {
+                foreach (Door door in doors)
+                {
+                    if (door != null)
+                    {
+                        door.Open();
+                    }
+                }
+            }
         }
         
         /// <summary>
@@ -194,10 +198,17 @@ namespace Interact
         /// </summary>
         private void OnButtonUnpressed()
         {
-            // Invoke button unpressed event
-            ButtonEvents.Invoke(unpressedEventName, this);
-            
-            Debug.Log($"[Button] {gameObject.name} unpressed - Invoking event: {unpressedEventName}");
+            // Close all assigned doors
+            if (doors != null)
+            {
+                foreach (Door door in doors)
+                {
+                    if (door != null)
+                    {
+                        door.Close();
+                    }
+                }
+            }
         }
         
         /// <summary>

@@ -23,6 +23,10 @@ Shader "Tecnocampus/PortalBorder"
         _NoiseColor ("Noise Color", Color) = (1.0, 0.5, 0.0, 1)
         _NoiseEmission ("Noise Emission Strength", Range(0.0, 5.0)) = 1.0
         _NoiseTransparency ("Noise Transparency", Range(0.0, 1.0)) = 0.7
+
+        [Header(Emission)]
+        [HDR] _EmissionColor ("Emission Color", Color) = (0.2, 0.8, 1.0, 1)
+        _EmissionIntensity ("Emission Intensity", Range(0.0, 10.0)) = 2.0
     }
 
     SubShader
@@ -48,6 +52,7 @@ Shader "Tecnocampus/PortalBorder"
             #pragma shader_feature_local _ USE_CIRCULAR_MASK
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
             // ---- constants
             #define NOISE_SCALE_INVERT 51.0
@@ -57,8 +62,17 @@ Shader "Tecnocampus/PortalBorder"
             #define SMOOTHNESS_MAX 0.15
             #define VORTEX_STRENGTH 2.0
 
-            struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
-            struct Varyings   { float4 positionHCS : SV_POSITION; float2 uv : TEXCOORD0; };
+            struct Attributes { 
+                float4 positionOS : POSITION; 
+                float2 uv : TEXCOORD0; 
+                float3 normalOS : NORMAL;
+            };
+            struct Varyings { 
+                float4 positionHCS : SV_POSITION; 
+                float2 uv : TEXCOORD0;
+                float3 positionWS : TEXCOORD1;
+                float3 normalWS : TEXCOORD2;
+            };
 
             CBUFFER_START(UnityPerMaterial)
                 float _Cutout;
@@ -76,6 +90,8 @@ Shader "Tecnocampus/PortalBorder"
                 float4 _NoiseColor;
                 float _NoiseEmission;
                 float _NoiseTransparency;
+                float4 _EmissionColor;
+                float _EmissionIntensity;
             CBUFFER_END
 
             // hash + value noise
@@ -94,7 +110,12 @@ Shader "Tecnocampus/PortalBorder"
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
-                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                VertexPositionInputs vertexInput = GetVertexPositionInputs(IN.positionOS.xyz);
+                VertexNormalInputs normalInput = GetVertexNormalInputs(IN.normalOS);
+                
+                OUT.positionHCS = vertexInput.positionCS;
+                OUT.positionWS = vertexInput.positionWS;
+                OUT.normalWS = normalInput.normalWS;
                 OUT.uv = IN.uv;
                 return OUT;
             }
@@ -148,6 +169,13 @@ Shader "Tecnocampus/PortalBorder"
                     half3 portalContent = baseCol.rgb * _Brightness * finalAlpha;
                     half3 outlineCol    = _OutlineColor.rgb * outlineMask * _OutlineEmission;
                     half3 finalColor    = lerp(portalContent, outlineCol, outlineMask);
+
+                    // Calculate emission - combine outline and noise emission
+                    half3 emission = outlineCol * _EmissionColor.rgb * _EmissionIntensity;
+                    emission += portalContent * _EmissionColor.rgb * _EmissionIntensity * 0.5;
+                    
+                    // Add emission to final color
+                    finalColor += emission;
 
                     // Ensure outline and border area is fully opaque
                     half finalAlphaWithNoise = max(finalAlpha * baseCol.a, outlineMask);

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="AudioFile" id="{7f4955c2-0505-4827-9d96-98eeb5550af5}">
+		<property name="assetPath">
+			<value>01. Hello and again Welcome to Apeture Science.mp3</value>
+		</property>
+		<property name="isStreaming">
+			<value>true</value>
+		</property>
+		<property name="frequencyInKHz">
+			<value>44.0999985</value>
+		</property>
+		<property name="channelCount">
+			<value>1</value>
+		</property>
+		<property name="length">
+			<value>79.203265306122447</value>
+		</property>
+		<relationship name="masterAssetFolder">
+			<destination>{a9e72a2b-7a54-45a1-8abf-afaccd8d1fd1}</destination>
+		</relationship>
+	</object>
+</objects>

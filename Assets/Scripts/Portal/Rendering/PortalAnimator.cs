@@ -163,6 +163,13 @@ namespace Portal {
 			// Use border renderer if assigned, otherwise fallback to portal renderer
 			MeshRenderer targetRenderer = borderRenderer != null ? borderRenderer : _portalMeshRenderer;
 			if (targetRenderer == null) return;
+			
+			// Don't try to apply if GameObject is disabled (renderers won't work)
+			if (!gameObject.activeInHierarchy) return;
+
+			if (_propertyBlock == null) {
+				_propertyBlock = new MaterialPropertyBlock();
+			}
 
 			_propertyBlock.SetFloat(CircleRadiusId, _currentCircleRadius);
 			_propertyBlock.SetFloat(PortalOpenId, _portalOpenProgress);

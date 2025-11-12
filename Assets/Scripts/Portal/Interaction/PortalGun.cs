@@ -22,7 +22,17 @@ namespace Portal {
 		[SerializeField] float boundsOffset = 0.001f;
 		[SerializeField] int ellipseSegments = 64;
 
+		[Header("Held Bobbing Effect")]
+		[SerializeField] bool enableBobbing = true;
+		[SerializeField] float bobbingSpeed = 2f;
+		[SerializeField] float verticalBobAmount = 0.01f;
+		[SerializeField] float rotationBobAmount = 0.5f;
+
 		[SerializeField] LineRenderer boundsRenderer;
+		
+		private Vector3 _originalLocalPosition;
+		private Quaternion _originalLocalRotation;
+		private float _bobTimer;
 
 		PlayerInput _input;
 		PortalSizeController _sizeController;
@@ -50,10 +60,16 @@ namespace Portal {
 			#else
 			_crosshair = FindObjectOfType<Crosshair>();
 			#endif
+			
+			// Store original transform for bobbing effect
+			_originalLocalPosition = transform.localPosition;
+			_originalLocalRotation = transform.localRotation;
+			_bobTimer = 0f;
 		}
 
 		void Update() {
 			HandlePortalResize();
+			UpdateBobbing();
 
 			// First raycast to check what we're looking at (all surfaces)
 			Ray ray = shootCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
@@ -209,6 +225,30 @@ namespace Portal {
 			if (_crosshair != null) {
 				_crosshair.SetState(canPlaceBlue, canPlaceOrange);
 			}
+		}
+
+		void UpdateBobbing() {
+			if (!enableBobbing) {
+				// Reset to original position if bobbing is disabled
+				transform.localPosition = _originalLocalPosition;
+				transform.localRotation = _originalLocalRotation;
+				return;
+			}
+
+			// Update bobbing timer
+			_bobTimer += Time.deltaTime * bobbingSpeed;
+
+			// Calculate vertical bobbing offset using sine wave
+			float verticalOffset = Mathf.Sin(_bobTimer) * verticalBobAmount;
+
+			// Calculate rotation bobbing (subtle tilt)
+			float rotationOffset = Mathf.Sin(_bobTimer * 0.7f) * rotationBobAmount;
+
+			// Apply bobbing to position
+			transform.localPosition = _originalLocalPosition + Vector3.up * verticalOffset;
+
+			// Apply bobbing to rotation (subtle tilt around Z axis)
+			transform.localRotation = _originalLocalRotation * Quaternion.Euler(0f, 0f, rotationOffset);
 		}
 	}
 }

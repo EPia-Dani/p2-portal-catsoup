@@ -1,0 +1,78 @@
+﻿#include "pch-c.h"
+
+
+#include "codegen/il2cpp-codegen-metadata.h"
+
+
+
+
+
+extern void FmodResonanceAudio_UpdateAudioRoom_mE957D662AD9913EC12470386DDC9A65777CF67D2 (void);
+extern void FmodResonanceAudio_IsListenerInsideRoom_mF51A6574877EEB05D8496935C40F6B9C50BC495D (void);
+extern void FmodResonanceAudio_get_ListenerPlugin_mD852E94681203B33FB96E426E51EFC961DE1AAAB (void);
+extern void FmodResonanceAudio_ConvertAmplitudeFromDb_mB733E1B4458C6EB6342882C0E65FD625FE366A68 (void);
+extern void FmodResonanceAudio_ConvertAudioTransformFromUnity_mADC39D21EA0D3A5AE8C304A7041EFB3E3C0AF215 (void);
+extern void FmodResonanceAudio_GetBytes_m118205AD0F68AE69DA396FE804E86630D8BA6365 (void);
+extern void FmodResonanceAudio_GetRoomProperties_m20E941629CDA31D5A1D27028D5EC7E0673BC647F (void);
+extern void FmodResonanceAudio_Initialize_m6F0D8A464FBAABAD7040F426D3F81FCB0624A5A1 (void);
+extern void FmodResonanceAudio__cctor_m907C588ED1F4CB5FBC03523E1311612A8D7F0C46 (void);
+extern void FmodResonanceAudioRoom_OnEnable_mDB3DCB9E5858B517F47DC52048472F14B452D60C (void);
+extern void FmodResonanceAudioRoom_OnDisable_mBF54289307047AB8B837917C1E8B70C6837C689F (void);
+extern void FmodResonanceAudioRoom_Update_mB3F39F395CE086C53460FE4A25FDB244B77E73CB (void);
+extern void FmodResonanceAudioRoom_OnDrawGizmosSelected_m52A7D70F7A63652BA33C68443AB65F11F13E378B (void);
+extern void FmodResonanceAudioRoom__ctor_m1F848A91D64BC754832CB90A48F3A7A2C8AEB9EA (void);
+static Il2CppMethodPointer s_methodPointers[14] = 
+{
+	FmodResonanceAudio_UpdateAudioRoom_mE957D662AD9913EC12470386DDC9A65777CF67D2,
+	FmodResonanceAudio_IsListenerInsideRoom_mF51A6574877EEB05D8496935C40F6B9C50BC495D,
+	FmodResonanceAudio_get_ListenerPlugin_mD852E94681203B33FB96E426E51EFC961DE1AAAB,
+	FmodResonanceAudio_ConvertAmplitudeFromDb_mB733E1B4458C6EB6342882C0E65FD625FE366A68,
+	FmodResonanceAudio_ConvertAudioTransformFromUnity_mADC39D21EA0D3A5AE8C304A7041EFB3E3C0AF215,
+	FmodResonanceAudio_GetBytes_m118205AD0F68AE69DA396FE804E86630D8BA6365,
+	FmodResonanceAudio_GetRoomProperties_m20E941629CDA31D5A1D27028D5EC7E0673BC647F,
+	FmodResonanceAudio_Initialize_m6F0D8A464FBAABAD7040F426D3F81FCB0624A5A1,
+	FmodResonanceAudio__cctor_m907C588ED1F4CB5FBC03523E1311612A8D7F0C46,
+	FmodResonanceAudioRoom_OnEnable_mDB3DCB9E5858B517F47DC52048472F14B452D60C,
+	FmodResonanceAudioRoom_OnDisable_mBF54289307047AB8B837917C1E8B70C6837C689F,
+	FmodResonanceAudioRoom_Update_mB3F39F395CE086C53460FE4A25FDB244B77E73CB,
+	FmodResonanceAudioRoom_OnDrawGizmosSelected_m52A7D70F7A63652BA33C68443AB65F11F13E378B,
+	FmodResonanceAudioRoom__ctor_m1F848A91D64BC754832CB90A48F3A7A2C8AEB9EA,
+};
+static const int32_t s_InvokerIndices[14] = 
+{
+	4992,
+	5148,
+	5701,
+	5446,
+	4939,
+	4776,
+	5647,
+	5701,
+	5797,
+	3009,
+	3009,
+	3009,
+	3009,
+	3009,
+};
+IL2CPP_EXTERN_C const Il2CppCodeGenModule g_FMODUnityResonance_CodeGenModule;
+const Il2CppCodeGenModule g_FMODUnityResonance_CodeGenModule = 
+{
+	"FMODUnityResonance.dll",
+	14,
+	s_methodPointers,
+	0,
+	NULL,
+	s_InvokerIndices,
+	0,
+	NULL,
+	0,
+	NULL,
+	0,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+	NULL,
+};
