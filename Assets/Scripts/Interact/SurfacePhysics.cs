@@ -167,6 +167,49 @@ public class SurfacePhysics : MonoBehaviour
         DestroyCube(otherObject, collision.contacts[0].point);
     }
 
+    void OnTriggerEnter(Collider other)
+    {
+        // Only handle destructive surfaces in trigger
+        if (surfaceType != SurfaceType.Destructive) return;
+
+        GameObject otherObject = other.gameObject;
+        
+        // Check if the colliding object is a cube (by tag or InteractableObject component)
+        var interactable = otherObject.GetComponent<InteractableObject>();
+        if (!otherObject.CompareTag("Cube") && interactable == null)
+        {
+            return;
+        }
+
+        // Check if cube is being held
+        if (interactable != null && interactable.IsHeld && !destroyHeldCubes)
+        {
+            return; // Don't destroy held cubes unless explicitly allowed
+        }
+
+        // For triggers, check velocity from Rigidbody if available
+        if (minDestroyVelocity > 0f)
+        {
+            Rigidbody rb = otherObject.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                float velocity = rb.linearVelocity.magnitude;
+                if (velocity < minDestroyVelocity)
+                {
+                    return; // Velocity too low
+                }
+            }
+            else
+            {
+                // No rigidbody, can't check velocity - skip if minDestroyVelocity > 0
+                return;
+            }
+        }
+
+        // Destroy the cube (use the collider's position as contact point)
+        DestroyCube(otherObject, other.bounds.center);
+    }
+
     /// <summary>
     /// Destroys a cube with optional effects
     /// </summary>

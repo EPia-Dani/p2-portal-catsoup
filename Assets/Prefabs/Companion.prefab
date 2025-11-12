@@ -1347,7 +1347,7 @@ MonoBehaviour:
   terminalVelocity: 50
   maxAngularVelocity: 50
   moveSpeed: 60
-  rotationSpeed: 20
+  rotationSpeed: 1
   heldDamping: 1
   droppedDamping: 2
   dropForce: 2

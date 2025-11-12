@@ -40,6 +40,9 @@ public class PlayerManager : MonoBehaviour
             return;
         }
         instance = this;
+        
+        // Don't destroy on load so GameManager persists across scenes
+        DontDestroyOnLoad(gameObject);
     }
     
     private void Start()

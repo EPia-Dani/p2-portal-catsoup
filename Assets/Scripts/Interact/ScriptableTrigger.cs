@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.SceneManagement;
+using System.Collections;
 
 namespace Interact
 {
@@ -20,6 +22,12 @@ namespace Interact
         
         [Tooltip("If true, ignores objects that are currently being held by the player")]
         public bool ignoreHeldObjects = true;
+        
+        [Tooltip("If true, automatically loads the next scene when trigger is activated")]
+        public bool loadNextScene = false;
+        
+        [Tooltip("Delay in seconds before loading the next scene (only used if loadNextScene is enabled)")]
+        [SerializeField] float sceneLoadDelay = 0f;
         
         [Header("On Trigger Enter")]
         [Tooltip("Events to invoke when an object enters the trigger")]
@@ -77,6 +85,18 @@ namespace Interact
             if (ShouldTrigger(other))
             {
                 onEnter?.Invoke();
+                
+                if (loadNextScene)
+                {
+                    if (sceneLoadDelay > 0f)
+                    {
+                        StartCoroutine(LoadNextSceneDelayed());
+                    }
+                    else
+                    {
+                        LoadNextScene();
+                    }
+                }
             }
         }
         
@@ -88,12 +108,56 @@ namespace Interact
             }
         }
         
+        /// <summary>
+        /// Coroutine that waits for the delay before loading the next scene
+        /// </summary>
+        private IEnumerator LoadNextSceneDelayed()
+        {
+            yield return new WaitForSeconds(sceneLoadDelay);
+            LoadNextScene();
+        }
+        
+        /// <summary>
+        /// Loads the next scene in the build index.
+        /// Can be called from UnityEvents in the inspector.
+        /// </summary>
+        public void LoadNextScene()
+        {
+            int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
+            int nextSceneIndex = currentSceneIndex + 1;
+            
+            if (nextSceneIndex >= SceneManager.sceneCountInBuildSettings)
+            {
+                Debug.LogWarning($"[ScriptableTrigger] {gameObject.name}: No next scene available. Current scene is the last one in build settings.");
+                return;
+            }
+            
+            Debug.Log($"[ScriptableTrigger] {gameObject.name}: Loading next scene (index {nextSceneIndex})");
+            
+            // Use fade system if available
+            var fadeManager = ScreenFadeManager.Instance;
+            if (fadeManager != null)
+            {
+                fadeManager.FadeOutAndLoadScene(nextSceneIndex);
+            }
+            else
+            {
+                // Fallback: direct load if fade manager doesn't exist
+                SceneManager.LoadScene(nextSceneIndex);
+            }
+        }
+        
         private void OnValidate()
         {
             Collider col = GetComponent<Collider>();
             if (col != null && !col.isTrigger)
             {
                 col.isTrigger = true;
+            }
+            
+            if (sceneLoadDelay < 0f)
+            {
+                sceneLoadDelay = 0f;
             }
         }
     }
