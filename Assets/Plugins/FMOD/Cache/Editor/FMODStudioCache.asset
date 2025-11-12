@@ -170,11 +170,38 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638984849288902897
+  lastModified: 638985779731065553
   FileSizes:
   - Name: Desktop
-    Value: 1392
+    Value: 1446
   Exists: 1
+--- !u!114 &-4678787244532575712
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/FinalLevelIntro
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/FinalLevelIntro
+  Guid:
+    Data1: -1768367331
+    Data2: 1271958136
+    Data3: -1586132041
+    Data4: -17310402
+  Banks:
+  - {fileID: -2174464091015023244}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 400
+  Length: 0
 --- !u!114 &-2174464091015023244
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -190,10 +217,10 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
   Name: GeneralSFX
   StudioPath: bank:/SFX/GeneralSFX
-  lastModified: 638985496822583622
+  lastModified: 638985779742374170
   FileSizes:
   - Name: Desktop
-    Value: 1224000
+    Value: 1281632
   Exists: 1
 --- !u!114 &-1518166954590098963
 MonoBehaviour:
@@ -279,13 +306,14 @@ MonoBehaviour:
   - {fileID: 4850165914484808645}
   - {fileID: -9202794896008358728}
   - {fileID: -820629685071187517}
+  - {fileID: -4678787244532575712}
   EditorParameters: []
   MasterBanks:
   - {fileID: 4081106290661449368}
   StringsBanks:
   - {fileID: -5631817738560404720}
   cacheVersion: 131856
-  cacheTime: 638985496823153020
+  cacheTime: 638985779743036847
   SerializableEventsDict:
   - key: event:/SFX/Collision
     index: 0
@@ -309,6 +337,8 @@ MonoBehaviour:
     index: 9
   - key: event:/SFX/Environment/Music
     index: 10
+  - key: event:/SFX/GladOS/FinalLevelIntro
+    index: 11
 --- !u!114 &3399927208369914955
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -351,7 +381,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638984849288887763
+  lastModified: 638985779731055540
   FileSizes:
   - Name: Desktop
     Value: 1074
@@ -425,7 +455,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
   Name: PortalSounds
   StudioPath: bank:/SFX/PortalSounds
-  lastModified: 638985496823153020
+  lastModified: 638985779743036847
   FileSizes:
   - Name: Desktop
     Value: 63936

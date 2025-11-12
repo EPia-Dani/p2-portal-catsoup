@@ -1,8 +1,10 @@
 using UnityEngine;
 
 /// <summary>
-/// Component that defines physics properties for surfaces that affect cubes.
+/// Component that defines physics properties for surfaces.
 /// Can make surfaces bouncy, slippery, or destructive.
+/// Bouncy and sliding affect all objects via PhysicsMaterial.
+/// Destructive surfaces only affect interactables (cubes, radios, etc).
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class SurfacePhysics : MonoBehaviour
@@ -143,15 +145,15 @@ public class SurfacePhysics : MonoBehaviour
 
         GameObject otherObject = collision.gameObject;
         
-        // Check if the colliding object is a cube (by tag or InteractableObject component)
+        // Only affect interactables (cubes, radios, etc.)
         var interactable = otherObject.GetComponent<InteractableObject>();
-        if (!otherObject.CompareTag("Cube") && interactable == null)
+        if (interactable == null)
         {
             return;
         }
 
         // Check if cube is being held
-        if (interactable != null && interactable.IsHeld && !destroyHeldCubes)
+        if (interactable.IsHeld && !destroyHeldCubes)
         {
             return; // Don't destroy held cubes unless explicitly allowed
         }
@@ -163,7 +165,7 @@ public class SurfacePhysics : MonoBehaviour
             return; // Impact too weak
         }
 
-        // Destroy the cube
+        // Destroy the interactable
         DestroyCube(otherObject, collision.contacts[0].point);
     }
 
@@ -174,15 +176,15 @@ public class SurfacePhysics : MonoBehaviour
 
         GameObject otherObject = other.gameObject;
         
-        // Check if the colliding object is a cube (by tag or InteractableObject component)
+        // Only affect interactables (cubes, radios, etc.)
         var interactable = otherObject.GetComponent<InteractableObject>();
-        if (!otherObject.CompareTag("Cube") && interactable == null)
+        if (interactable == null)
         {
             return;
         }
 
         // Check if cube is being held
-        if (interactable != null && interactable.IsHeld && !destroyHeldCubes)
+        if (interactable.IsHeld && !destroyHeldCubes)
         {
             return; // Don't destroy held cubes unless explicitly allowed
         }
@@ -206,7 +208,7 @@ public class SurfacePhysics : MonoBehaviour
             }
         }
 
-        // Destroy the cube (use the collider's position as contact point)
+        // Destroy the interactable (use the collider's position as contact point)
         DestroyCube(otherObject, other.bounds.center);
     }
 

@@ -315,7 +315,6 @@ GameObject:
   - component: {fileID: 528331115032999500}
   - component: {fileID: 7626896875095834700}
   - component: {fileID: 3276190110375882744}
-  - component: {fileID: 1008321432208045873}
   m_Layer: 0
   m_Name: elevator_body_model|Round_Elevator_body_reference.smd|Dupli|
   m_TagString: Untagged
@@ -391,28 +390,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &1008321432208045873
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2840561154568486884}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 579912898907972918, guid: ce3a0286ab7972648a352cb7a71d2376, type: 3}
 --- !u!1 &3620132569457836736
 GameObject:
   m_ObjectHideFlags: 0

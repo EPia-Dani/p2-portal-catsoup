@@ -196,8 +196,8 @@ namespace Portal {
 				// Calculate frustum planes for this recursion level
 				GeometryUtility.CalculateFrustumPlanes(portalCamera, _frustumPlanes);
 				
-				// Check if next portal is in frustum
-				bool nextVisible = GeometryUtility.TestPlanesAABB(_frustumPlanes, nextBounds);
+				// More lenient frustum culling: expand bounds slightly and check portal center/forward
+				bool nextVisible = IsPortalVisibleInFrustum(_frustumPlanes, nextBounds, nextPortal.transform.position, nextPortal.transform.forward, distToNext, cameraPos, cameraForward);
 				
 				// Restore camera state
 				portalCamera.targetTexture = originalTarget;
@@ -277,6 +277,78 @@ namespace Portal {
 			}
 
 			return true;
+		}
+
+		/// <summary>
+		/// More lenient frustum culling for portals. Accounts for portals being flat surfaces
+		/// and prevents aggressive culling when portals are stacked in front of each other.
+		/// </summary>
+		bool IsPortalVisibleInFrustum(Plane[] frustumPlanes, Bounds portalBounds, Vector3 portalPosition, Vector3 portalForward, float distanceToPortal, Vector3 cameraPosition, Vector3 cameraForward) {
+			// Expand bounds slightly to account for edge cases and viewing angles
+			// This prevents portals from being culled when they're partially visible
+			Bounds expandedBounds = new Bounds(portalBounds.center, portalBounds.size * 1.2f);
+			
+			// First check: standard AABB test with expanded bounds
+			if (GeometryUtility.TestPlanesAABB(frustumPlanes, expandedBounds)) {
+				return true;
+			}
+			
+			// Second check: if portal center is in frustum, consider it visible
+			// This handles cases where the portal is visible but the AABB test fails
+			bool centerInFrustum = true;
+			for (int i = 0; i < frustumPlanes.Length; i++) {
+				float distance = frustumPlanes[i].GetDistanceToPoint(portalPosition);
+				if (distance < -0.5f) { // Small margin to be lenient
+					centerInFrustum = false;
+					break;
+				}
+			}
+			
+			if (centerInFrustum) {
+				return true;
+			}
+			
+			// Third check: if portal is very close, be more lenient
+			// When portals are stacked, they're often very close together
+			if (distanceToPortal < 5f) {
+				// Check if portal is roughly facing the camera (even if partially)
+				// This helps when viewing portals at angles
+				Vector3 toPortal = portalPosition - cameraPosition;
+				float toPortalDist = toPortal.magnitude;
+				if (toPortalDist > 0.01f) {
+					float dot = Vector3.Dot(toPortal.normalized, cameraForward);
+					if (dot > 0.3f) { // Portal is somewhat in front of camera
+						// Check if any corner of the expanded bounds is in frustum
+						Vector3 extents = expandedBounds.extents;
+						Vector3[] corners = {
+							expandedBounds.center + new Vector3(-extents.x, -extents.y, -extents.z),
+							expandedBounds.center + new Vector3(-extents.x, -extents.y,  extents.z),
+							expandedBounds.center + new Vector3(-extents.x,  extents.y, -extents.z),
+							expandedBounds.center + new Vector3(-extents.x,  extents.y,  extents.z),
+							expandedBounds.center + new Vector3( extents.x, -extents.y, -extents.z),
+							expandedBounds.center + new Vector3( extents.x, -extents.y,  extents.z),
+							expandedBounds.center + new Vector3( extents.x,  extents.y, -extents.z),
+							expandedBounds.center + new Vector3( extents.x,  extents.y,  extents.z)
+						};
+						
+						// If any corner is in frustum, consider portal visible
+						foreach (var corner in corners) {
+							bool cornerInFrustum = true;
+							for (int i = 0; i < frustumPlanes.Length; i++) {
+								if (frustumPlanes[i].GetDistanceToPoint(corner) < -0.1f) {
+									cornerInFrustum = false;
+									break;
+								}
+							}
+							if (cornerInFrustum) {
+								return true;
+							}
+						}
+					}
+				}
+			}
+			
+			return false;
 		}
 
 		bool IsValidVector3(Vector3 value) {

@@ -13,10 +13,7 @@ public class FPSController : PortalTraveller {
     [Header("Air Movement")]
     public float jumpForce = 8f;
     public float gravity = 18f;
-    [Range(0f, 1f)]
-    public float airControl = 0.5f; // 0 = no control, 1 = full control. Controls how much you can accelerate in air
-    public float airAcceleration = 15f; // How quickly you can change direction in air
-    public float airDrag = 0.1f; // Air resistance (0 = no drag, 1 = full drag)
+    public float airControl = 5f; // Simple air control acceleration (units/sec²)
     public float terminalVelocity = 50f; // Maximum velocity magnitude to prevent physics breaking
 
     public bool lockCursor;
@@ -34,14 +31,15 @@ public class FPSController : PortalTraveller {
     // Public property to access current velocity (for objects to inherit momentum when dropped)
     public Vector3 CurrentVelocity => velocity;
 
-    // External horizontal momentum applied after teleport (preserved across frames)
-    Vector3 externalVelocity = Vector3.zero;
-    public float portalMomentumDamping = 2f; // higher = faster decay
-
     bool jumping;
     float lastGroundedTime;
     bool disabled;
     bool cameraRotationEnabled = true;
+    
+    // Surface physics tracking
+    SurfacePhysics currentSurface;
+    float baseGroundFriction;
+    float baseGroundAcceleration;
     
     /// <summary>
     /// Disables player control (e.g., when dead or in menu).
@@ -97,7 +95,6 @@ public class FPSController : PortalTraveller {
         // Reset velocity to zero before teleport (for respawn, we want no momentum)
         velocity = Vector3.zero;
         verticalVelocity = 0f;
-        externalVelocity = Vector3.zero;
         airHorizontalVelocity = Vector3.zero;
         jumping = false;
         lastGroundedTime = Time.time;
@@ -152,6 +149,10 @@ public class FPSController : PortalTraveller {
 
         yaw = transform.eulerAngles.y;
         pitch = cam.transform.localEulerAngles.x;
+        
+        // Store base values for surface physics modifications
+        baseGroundFriction = groundFriction;
+        baseGroundAcceleration = groundAcceleration;
 
         // Initialize input controls if not already done
         if (_controls == null) {
@@ -188,6 +189,11 @@ public class FPSController : PortalTraveller {
         // Check if player is grounded (with small buffer for edge cases)
         bool isGrounded = controller.isGrounded || (Time.time - lastGroundedTime < 0.1f);
         
+        // Clear surface if not grounded
+        if (!isGrounded) {
+            currentSurface = null;
+        }
+        
         // Apply sprint multiplier when sprinting
         float speedMultiplier = isSprinting ? sprintMultiplier : 1f;
         float targetSpeed = walkSpeed * speedMultiplier;
@@ -200,97 +206,53 @@ public class FPSController : PortalTraveller {
         if (moveInput.sqrMagnitude > 0.01f) {
             desiredVelocity = worldInputDir * targetSpeed;
         }
-        
-        // Handle external velocity damping (from portals)
-        bool isActivelyMoving = moveInput.sqrMagnitude > 0.01f;
-        if (isActivelyMoving && externalVelocity.sqrMagnitude > 0.01f) {
-            // When player is moving, damp external velocity that opposes input
-            float inputVelMagnitude = desiredVelocity.magnitude;
-            if (inputVelMagnitude > 0.01f) {
-                Vector3 inputDirNormalized = desiredVelocity / inputVelMagnitude;
-                float alignment = Vector3.Dot(externalVelocity.normalized, inputDirNormalized);
-                
-                float dampingFactor = alignment > 0.3f ? portalMomentumDamping * 0.3f : portalMomentumDamping * 1.5f;
-                
-                Vector3 parallelComponent = Vector3.Project(externalVelocity, inputDirNormalized);
-                Vector3 perpendicularComponent = externalVelocity - parallelComponent;
-                
-                perpendicularComponent = Vector3.Lerp(perpendicularComponent, Vector3.zero, portalMomentumDamping * Time.deltaTime);
-                parallelComponent = Vector3.Lerp(parallelComponent, Vector3.zero, dampingFactor * Time.deltaTime);
-                
-                externalVelocity = parallelComponent + perpendicularComponent;
-            } else {
-                externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
-            }
-        } else {
-            externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, portalMomentumDamping * Time.deltaTime);
-        }
 
         Vector3 horizontal;
         
+        // Apply surface physics modifications
+        float effectiveFriction = baseGroundFriction;
+        float effectiveAcceleration = baseGroundAcceleration;
+        
+        if (currentSurface != null && isGrounded) {
+            if (currentSurface.surfaceType == SurfacePhysics.SurfaceType.Sliding) {
+                // Sliding surface: reduce friction significantly
+                effectiveFriction = baseGroundFriction * currentSurface.frictionCoefficient;
+            } else if (currentSurface.surfaceType == SurfacePhysics.SurfaceType.Bouncy) {
+                // Bouncy surface: normal friction
+                effectiveFriction = baseGroundFriction;
+            }
+        }
+        
         if (isGrounded) {
-            // Grounded movement: responsive acceleration with strong friction
+            // Grounded movement: simple acceleration and friction
             if (moveInput.sqrMagnitude > 0.01f) {
-                // Accelerate towards desired velocity quickly for responsive feel
-                Vector3 velocityDiff = desiredVelocity - currentHorizontal;
-                float acceleration = groundAcceleration * Time.deltaTime;
+                // Accelerate towards desired velocity
+                float acceleration = effectiveAcceleration * Time.deltaTime;
                 horizontal = Vector3.MoveTowards(currentHorizontal, desiredVelocity, acceleration);
             } else {
-                // Strong friction when not moving - stop quickly
-                float friction = groundFriction * Time.deltaTime;
+                // Apply friction when not moving
+                float friction = effectiveFriction * Time.deltaTime;
                 horizontal = Vector3.MoveTowards(currentHorizontal, Vector3.zero, friction);
                 
-                // If velocity is very small, snap to zero to prevent micro-sliding
+                // Snap to zero if very small
                 if (horizontal.magnitude < 0.1f) {
                     horizontal = Vector3.zero;
                 }
             }
             
-            // Add external velocity (from portals) - but apply friction to it too
-            if (externalVelocity.sqrMagnitude > 0.01f) {
-                // Damp external velocity more aggressively when grounded
-                externalVelocity = Vector3.Lerp(externalVelocity, Vector3.zero, groundFriction * Time.deltaTime);
-                if (externalVelocity.magnitude < 0.1f) {
-                    externalVelocity = Vector3.zero;
-                }
-            }
-            
-            horizontal += externalVelocity;
-            
-            // Reset air velocity when grounded
+            // Update air velocity when grounded (for jump momentum)
             airHorizontalVelocity = horizontal;
         } else {
-            // Air movement: Source-engine style air control
-            // You can accelerate in any direction, but speed is limited
-            Vector3 currentVel = airHorizontalVelocity;
+            // Air movement: simple inertia with basic air control
+            horizontal = airHorizontalVelocity;
             
+            // Apply air control if input is given
             if (moveInput.sqrMagnitude > 0.01f) {
-                // Calculate acceleration in desired direction
-                Vector3 desiredDir = desiredVelocity.normalized;
-                float accel = airAcceleration * airControl * Time.deltaTime;
-                
-                // Accelerate in the desired direction
-                Vector3 accelVector = desiredDir * accel;
-                horizontal = currentVel + accelVector;
-                
-                // Limit horizontal speed to prevent infinite acceleration
-                // Allow slightly higher speed than ground speed for air strafing
-                float maxAirSpeed = targetSpeed * 1.2f;
-                if (horizontal.magnitude > maxAirSpeed) {
-                    horizontal = horizontal.normalized * maxAirSpeed;
-                }
-            } else {
-                // No input, just apply air drag
-                horizontal = currentVel;
+                Vector3 accelVector = worldInputDir * airControl * Time.deltaTime;
+                horizontal += accelVector;
             }
             
-            // Apply air drag (gradual slowdown)
-            horizontal *= (1f - airDrag * Time.deltaTime);
-            
-            // Add external velocity (from portals)
-            horizontal += externalVelocity;
-            
-            // Store for next frame
+            // Store for next frame (preserves inertia naturally)
             airHorizontalVelocity = horizontal;
         }
 
@@ -309,7 +271,18 @@ public class FPSController : PortalTraveller {
         if (flags == CollisionFlags.Below) {
             jumping = false;
             lastGroundedTime = Time.time;
-            verticalVelocity = 0;
+            
+            // Handle bouncy surfaces
+            if (currentSurface != null && currentSurface.surfaceType == SurfacePhysics.SurfaceType.Bouncy) {
+                // Apply bounce based on bounce coefficient
+                float bounceMultiplier = currentSurface.bounceCoefficient;
+                if (verticalVelocity < 0) { // Only bounce if moving downward
+                    verticalVelocity = -verticalVelocity * bounceMultiplier;
+                }
+            } else {
+                verticalVelocity = 0;
+            }
+            
             // Reset air velocity when landing (will be set from ground movement next frame)
             airHorizontalVelocity = horizontal;
         }
@@ -379,22 +352,8 @@ public class FPSController : PortalTraveller {
         // Update verticalVelocity to match the new world-space Y component
         verticalVelocity = velocity.y;
 
-        // Determine if the source portal is 'non-vertical' (e.g. on the floor/ceiling).
-        // We treat portals whose forward/normal has a significant Y component as non-vertical.
-        float fromPortalUpDot = Mathf.Abs(Vector3.Dot(fromPortal.forward.normalized, Vector3.up));
-        const float nonVerticalThreshold = 0.5f; // tweakable: >0.5 means noticeably tilted towards horizontal plane
-        bool fromPortalIsNonVertical = fromPortalUpDot > nonVerticalThreshold;
-
-        if (fromPortalIsNonVertical) {
-            // Preserve horizontal components as external momentum so Update doesn't overwrite them
-            externalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-            
-            // Also update airHorizontalVelocity to ensure momentum is preserved in air
-            airHorizontalVelocity = externalVelocity;
-        } else {
-            // For vertical portals (walls), don't inject external momentum so movement stays fluid
-            externalVelocity = Vector3.zero;
-        }
+        // Simply preserve horizontal velocity naturally (inertia)
+        airHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
 
         // Call base Teleport to handle scaling
         base.Teleport(fromPortal, toPortal, pos, rot, scaleRatio);
@@ -408,6 +367,22 @@ public class FPSController : PortalTraveller {
 
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();
+    }
+    
+    /// <summary>
+    /// Called by CharacterController when it hits a collider during movement.
+    /// Used to detect what surface the player is standing on.
+    /// </summary>
+    void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        // Check if we hit something below us (ground)
+        if (hit.moveDirection.y < -0.5f) {
+            // Check for SurfacePhysics component
+            currentSurface = hit.gameObject.GetComponent<SurfacePhysics>();
+        } else {
+            // Not hitting ground, clear surface
+            currentSurface = null;
+        }
     }
 
 }
