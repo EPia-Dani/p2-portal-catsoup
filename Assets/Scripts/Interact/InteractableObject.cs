@@ -28,6 +28,9 @@ public class InteractableObject : PortalTraveller
     [Header("Drop Settings")]
     [Tooltip("Forward force applied when dropped")]
     public float dropForce = 2f;
+    
+    [Header("RefractionCube")]
+    public bool isRefractionCube = false;
 
     // Components
     private Rigidbody _rigidbody;

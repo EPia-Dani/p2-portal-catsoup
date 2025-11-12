@@ -147,6 +147,7 @@ public class PlayerManager : MonoBehaviour
         if (isDead)
         {
             return; // Already dead, prevent multiple death triggers
+            Debug.Log("PlayerManager: Player is dead!");
         }
         
         isDead = true;
