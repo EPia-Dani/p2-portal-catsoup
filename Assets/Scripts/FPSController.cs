@@ -142,9 +142,6 @@ public class FPSController : PortalTraveller {
     private Input.PlayerInput _controls;
 
     void Start () {
-        // Don't destroy on load so Player persists across scenes
-        DontDestroyOnLoad(gameObject);
-        
         cam = Camera.main;
         if (lockCursor) {
             Cursor.lockState = CursorLockMode.Locked;
