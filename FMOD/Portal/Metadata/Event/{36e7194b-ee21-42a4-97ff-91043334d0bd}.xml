@@ -85,9 +85,6 @@
 		</relationship>
 	</object>
 	<object class="EventMixerMaster" id="{7faf24e1-7811-4870-9b93-55c8bf34427e}">
-		<property name="volume">
-			<value>-19</value>
-		</property>
 		<property name="pitch">
 			<value>-9.5</value>
 		</property>
@@ -110,9 +107,6 @@
 	<object class="SingleSound" id="{fbe143df-8721-4a6b-8141-b5f886edeeac}">
 		<property name="length">
 			<value>4.6642857142857146</value>
-		</property>
-		<property name="volume">
-			<value>-24</value>
 		</property>
 		<property name="looping">
 			<value>true</value>

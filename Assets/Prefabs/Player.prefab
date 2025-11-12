@@ -337,7 +337,7 @@ MonoBehaviour:
   pickupRange: 2
   holdParent: {fileID: 1468549838373895565}
   holdDistance: 1.8
-  debugRay: 1
+  debugRay: 0
 --- !u!1 &4686560316160589576
 GameObject:
   m_ObjectHideFlags: 0
