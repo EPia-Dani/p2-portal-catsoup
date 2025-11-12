@@ -354,7 +354,11 @@ public class InteractableObject : PortalTraveller
         
         // Calculate spring-like force to reach target position
         Vector3 positionDifference = _targetPosition - _rigidbody.position;
-        Vector3 desiredVelocity = positionDifference * moveSpeed;
+        
+        // CRITICAL: Add target velocity to desired velocity so object follows arc motion when camera rotates
+        // This prevents objects from falling when rotating the camera
+        Vector3 desiredVelocity = (positionDifference * moveSpeed) + _targetVelocity;
+        
         Vector3 force = (desiredVelocity - _rigidbody.linearVelocity) * _rigidbody.mass;
         
         // Apply force to move toward target (physics will prevent clipping through walls)

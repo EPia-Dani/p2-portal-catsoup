@@ -1226,7 +1226,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3127338552389630326}
-  - component: {fileID: 2969996522001160978}
   - component: {fileID: 4733601258637867722}
   - component: {fileID: 5490365928917155558}
   - component: {fileID: 7525577222897363634}
@@ -1284,28 +1283,6 @@ Transform:
   - {fileID: 5701952185621932054}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!95 &2969996522001160978
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2360831743556308137}
-  m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 92cb4bb31068d5d4db760892f798d493, type: 3}
-  m_Controller: {fileID: 0}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!54 &4733601258637867722
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1369,9 +1346,9 @@ MonoBehaviour:
   minPortalExitVelocity: 3
   terminalVelocity: 50
   maxAngularVelocity: 50
-  moveSpeed: 70
-  rotationSpeed: 10
-  heldDamping: 10
+  moveSpeed: 60
+  rotationSpeed: 20
+  heldDamping: 1
   droppedDamping: 2
   dropForce: 2
 --- !u!1 &3225439790704800318

@@ -150,23 +150,91 @@ namespace Portal {
 			Bounds pairBounds = pairRenderer ? pairRenderer.bounds : new Bounds(pair.transform.position, Vector3.one * 2f);
 			Bounds thisBounds = thisRenderer ? thisRenderer.bounds : new Bounds(transform.position, Vector3.one * 2f);
 
-			// Render all recursion levels
-			// The top-level visibility culler already checks if THIS portal is visible to the main camera
-			// So we render all levels - deeper levels will naturally be culled if portals aren't visible
+			// Render with per-level frustum culling
+			// For each recursion level, check if the NEXT portal in the chain is visible
+			// BuildViewMatrices: [0]=through this->pair (next=pair), [1]=through this->pair->this (next=this), etc.
 			for (int i = levelCount - 1; i >= 0; i--) {
-				RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, texture);
+				// Always render the first level (what player sees directly)
+				if (i == levelCount - 1) {
+					RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, texture);
+					continue;
+				}
+				
+				// For deeper levels, check if next portal in chain is visible
+				// Determine which portal we're looking at next in the recursion chain
+				PortalRenderer nextPortal = (i % 2 == 0) ? pair : this;
+				Bounds nextBounds = (i % 2 == 0) ? pairBounds : thisBounds;
+				
+				// Extract camera position and orientation from view matrix
+				Matrix4x4 viewMatrix = _viewMatrices[i];
+				Vector3 cameraPos = viewMatrix.MultiplyPoint(Vector3.zero);
+				Vector3 cameraForward = viewMatrix.MultiplyVector(Vector3.forward);
+				Vector3 cameraUp = viewMatrix.MultiplyVector(Vector3.up);
+				Quaternion cameraRot = Quaternion.LookRotation(cameraForward, cameraUp);
+				
+				if (!IsValidVector3(cameraPos) || !IsValidVector3(cameraForward) || !IsValidVector3(cameraUp)) {
+					continue;
+				}
+				
+				// Quick distance check
+				float distToNext = Vector3.Distance(cameraPos, nextPortal.transform.position);
+				if (distToNext < 0.01f) {
+					continue;
+				}
+				
+				// Frustum culling: check if next portal is visible from this recursion level's camera
+				RenderTexture originalTarget = portalCamera.targetTexture;
+				Rect originalRect = portalCamera.pixelRect;
+				Matrix4x4 originalProj = portalCamera.projectionMatrix;
+				Vector3 originalPos = portalCamera.transform.position;
+				Quaternion originalRot = portalCamera.transform.rotation;
+				
+				// Set camera to this recursion level's position/orientation
+				portalCamera.transform.SetPositionAndRotation(cameraPos, cameraRot);
+				portalCamera.projectionMatrix = mainCamera.projectionMatrix;
+				
+				// Calculate frustum planes for this recursion level
+				GeometryUtility.CalculateFrustumPlanes(portalCamera, _frustumPlanes);
+				
+				// Check if next portal is in frustum
+				bool nextVisible = GeometryUtility.TestPlanesAABB(_frustumPlanes, nextBounds);
+				
+				// Restore camera state
+				portalCamera.targetTexture = originalTarget;
+				portalCamera.pixelRect = originalRect;
+				portalCamera.projectionMatrix = originalProj;
+				portalCamera.transform.SetPositionAndRotation(originalPos, originalRot);
+				
+				if (nextVisible) {
+					// Next portal is visible, render this level
+					RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, texture);
+				} else {
+					// Next portal not visible, stop recursion (deeper levels won't be visible either)
+					break;
+				}
 			}
 		}
 
 		int SimplifyRecursion(int levelCount) {
 			if (levelCount <= 1 || !pair) return levelCount;
 			
-			// Simple check: if portals face same direction, reduce recursion
+			// Check portal alignment to reduce unnecessary recursion
 			float dot = Vector3.Dot(transform.forward, pair.transform.forward);
-			if (dot > 0.8f) {
-				return 1; // Same direction - no recursion needed
+			
+			// Exact same direction (dot ~1.0): no recursion, only first level
+			// When portals face the same direction, you can't see recursion
+			if (dot > 0.95f) {
+				return 1; // Only render first level (no recursion)
 			}
 			
+			// Perpendicular portals (dot ~0): limit to 1-2 levels max
+			// At 90 degrees, you can only see one level of recursion effectively
+			if (Mathf.Abs(dot) < 0.3f) {
+				return Mathf.Min(levelCount, 2);
+			}
+			
+			// Opposite directions (dot ~-1): allow more recursion
+			// This creates the "infinite corridor" effect
 			return levelCount;
 		}
 
