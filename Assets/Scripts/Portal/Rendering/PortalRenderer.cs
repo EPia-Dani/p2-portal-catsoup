@@ -29,6 +29,7 @@ namespace Portal {
 		private Material _surfaceMaterial;
 		private Matrix4x4[] _viewMatrices = Array.Empty<Matrix4x4>();
 		private bool _visible = true;
+		private readonly Plane[] _frustumPlanes = new Plane[6];
 
 		void Awake() {
 			// Get references
@@ -142,7 +143,16 @@ namespace Portal {
 
 			Vector3 exitPos = pair.transform.position;
 			Vector3 exitFwd = pair.transform.forward;
+			
+			// Cache portal bounds for frustum culling
+			MeshRenderer pairRenderer = pair.GetComponentInChildren<MeshRenderer>(true);
+			MeshRenderer thisRenderer = surfaceRenderer;
+			Bounds pairBounds = pairRenderer ? pairRenderer.bounds : new Bounds(pair.transform.position, Vector3.one * 2f);
+			Bounds thisBounds = thisRenderer ? thisRenderer.bounds : new Bounds(transform.position, Vector3.one * 2f);
 
+			// Render all recursion levels
+			// The top-level visibility culler already checks if THIS portal is visible to the main camera
+			// So we render all levels - deeper levels will naturally be culled if portals aren't visible
 			for (int i = levelCount - 1; i >= 0; i--) {
 				RenderLevel(context, _viewMatrices[i], exitPos, exitFwd, texture);
 			}

@@ -5140,7 +5140,7 @@ MonoBehaviour:
   blueCollidersTransform: {fileID: 1290390156}
   orangeCollidersTransform: {fileID: 1931593786}
   textureSize: 1024
-  recursionLimit: 7
+  recursionLimit: 3
 --- !u!4 &2079793666
 Transform:
   m_ObjectHideFlags: 0

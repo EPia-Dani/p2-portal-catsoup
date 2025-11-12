@@ -41,11 +41,14 @@ namespace Portal {
 			}
 
 			// Angle culling - check if camera is facing the portal
+			// IMPORTANT: Portals have normals flipped inwards, so we check if camera is looking at the portal correctly
 			if (enableCulling && enableAngleCulling) {
 				Vector3 toPortal = surfaceRenderer.bounds.center - mainCamera.transform.position;
 				float distanceToPortal = toPortal.magnitude;
 				if (distanceToPortal > 0.01f) {
 					Vector3 dirToPortal = toPortal / distanceToPortal;
+					// Portal normals are flipped inwards, so camera forward should point towards portal
+					// (opposite to portal's forward direction)
 					float facingDot = Vector3.Dot(mainCamera.transform.forward, dirToPortal);
 					float minFacingDot = Mathf.Cos(Mathf.Deg2Rad * maxViewAngle);
 					if (facingDot < minFacingDot) {
