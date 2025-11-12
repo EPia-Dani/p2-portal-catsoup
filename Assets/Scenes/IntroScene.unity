@@ -1050,8 +1050,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetObject: {fileID: 1032233382}
-  dropDistance: 300
-  moveSpeed: 500
+  dropDistance: 200
+  moveSpeed: 100
 --- !u!224 &283786728 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5206668379868315107, guid: 817319833dd713d45af5c2121e9649c7,
