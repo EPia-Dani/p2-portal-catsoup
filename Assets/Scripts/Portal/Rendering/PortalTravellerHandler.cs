@@ -8,13 +8,18 @@ namespace Portal {
 		public Collider wallCollider;
 		
 		private readonly List<PortalTraveller> _trackedTravellers = new List<PortalTraveller>();
+		private PortalManager _portalManager;
 
 		void Awake() {
 			if (!portalRenderer) portalRenderer = GetComponent<PortalRenderer>();
+			_portalManager = FindObjectOfType<PortalManager>();
 		}
 
 		void LateUpdate() {
 			if (!portalRenderer?.pair) return;
+			
+			// Check if both portals are placed before allowing teleportation
+			if (!AreBothPortalsPlaced()) return;
 
 			PortalRenderer pair = portalRenderer.pair;
 			float scaleRatio = pair.PortalScale / portalRenderer.PortalScale;
@@ -48,6 +53,9 @@ namespace Portal {
 
 		void TeleportTraveller(PortalTraveller traveller, PortalRenderer destination, float scaleRatio) {
 			if (!traveller || !destination) return;
+			
+			// Safety check: ensure both portals are placed before teleporting
+			if (!AreBothPortalsPlaced()) return;
 
 			Collider travellerCollider = traveller.GetComponent<Collider>();
 
@@ -118,7 +126,10 @@ namespace Portal {
 		public void OnTravellerEnterPortal(PortalTraveller traveller, bool justTeleported = false) {
 			// Never track held objects
 			if (PlayerPickup.IsObjectHeld(traveller.gameObject)) {
-				SetCollisionIgnore(traveller, true);
+				// Only disable collision if both portals are placed
+				if (AreBothPortalsPlaced()) {
+					SetCollisionIgnore(traveller, true);
+				}
 				return;
 			}
 
@@ -146,11 +157,19 @@ namespace Portal {
 
 			_trackedTravellers.Add(traveller);
 
-			// Ignore collision with wall
-			SetCollisionIgnore(traveller, true);
+			// Ignore collision with wall only if both portals are placed
+			if (AreBothPortalsPlaced()) {
+				SetCollisionIgnore(traveller, true);
+			}
 		}
 
 		public void SetCollisionIgnore(PortalTraveller traveller, bool ignore) {
+			// If trying to ignore collision (disable it), only do so if both portals are placed
+			// Always allow restoring collision (ignore = false) regardless of portal state
+			if (ignore && !AreBothPortalsPlaced()) {
+				return;
+			}
+			
 			if (wallCollider && traveller) {
 				var collider = traveller.GetComponent<Collider>();
 				if (collider) {
@@ -172,13 +191,16 @@ namespace Portal {
 				bool isHeld = PlayerPickup.IsObjectHeld(traveller.gameObject);
 				
 				// For held objects, only set up collision ignore (no tracking/teleportation)
+				// Only disable collision if both portals are placed
 				if (isHeld) {
-					SetCollisionIgnore(traveller, true);
-					// Also ignore collision with destination portal wall
-					if (portalRenderer?.pair) {
-						var destHandler = portalRenderer.pair.GetComponent<PortalTravellerHandler>();
-						if (destHandler) {
-							destHandler.SetCollisionIgnore(traveller, true);
+					if (AreBothPortalsPlaced()) {
+						SetCollisionIgnore(traveller, true);
+						// Also ignore collision with destination portal wall
+						if (portalRenderer?.pair) {
+							var destHandler = portalRenderer.pair.GetComponent<PortalTravellerHandler>();
+							if (destHandler) {
+								destHandler.SetCollisionIgnore(traveller, true);
+							}
 						}
 					}
 				} else {
@@ -206,6 +228,22 @@ namespace Portal {
 					SetCollisionIgnore(traveller, false);
 				}
 			}
+		}
+
+		/// <summary>
+		/// Checks if both portals (blue and orange) are placed.
+		/// Returns false if PortalManager is not found or if either portal is not placed.
+		/// </summary>
+		bool AreBothPortalsPlaced() {
+			if (_portalManager == null) {
+				_portalManager = FindObjectOfType<PortalManager>();
+				if (_portalManager == null) return false;
+			}
+
+			bool bluePlaced = _portalManager.TryGetState(PortalId.Blue, out _);
+			bool orangePlaced = _portalManager.TryGetState(PortalId.Orange, out _);
+			
+			return bluePlaced && orangePlaced;
 		}
 	}
 }
