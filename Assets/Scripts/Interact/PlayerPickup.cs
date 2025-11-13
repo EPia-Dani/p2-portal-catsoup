@@ -70,14 +70,20 @@ public class PlayerPickup : MonoBehaviour
 
         foreach (RaycastHit hit in hits)
         {
-            if (hit.collider.CompareTag("Interactable"))
+            // Check for InteractableObject component directly (works for Radio and all InteractableObject types)
+            // This ensures radios can be picked up even if they don't have the "Interactable" tag
+            var interactable = hit.collider.GetComponent<InteractableObject>();
+            
+            // Also check parent/root GameObject in case collider is on a child object
+            if (interactable == null)
             {
-                var interactable = hit.collider.GetComponent<InteractableObject>();
-                if (interactable != null && hit.distance < closestDistance)
-                {
-                    closestDistance = hit.distance;
-                    closestObject = interactable;
-                }
+                interactable = hit.collider.GetComponentInParent<InteractableObject>();
+            }
+            
+            if (interactable != null && hit.distance < closestDistance)
+            {
+                closestDistance = hit.distance;
+                closestObject = interactable;
             }
         }
 

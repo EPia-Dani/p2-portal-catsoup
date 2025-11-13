@@ -44,6 +44,16 @@ public class SurfacePhysics : MonoBehaviour
     [Tooltip("Destroy cubes even if they're being held")]
     public bool destroyHeldCubes = false;
 
+    [Header("Interactable Filter")]
+    [Tooltip("Which types of interactables this surface affects")]
+    public bool affectRadios = true;
+    
+    [Tooltip("Affect simple interactables (cubes, etc.)")]
+    public bool affectSimpleInteractables = true;
+    
+    [Tooltip("Affect other types of interactables")]
+    public bool affectOtherInteractables = true;
+
     [Tooltip("Particle effect to spawn when cube is destroyed (optional)")]
     public GameObject destroyEffectPrefab;
 
@@ -152,6 +162,12 @@ public class SurfacePhysics : MonoBehaviour
             return;
         }
 
+        // Check if this interactable type is filtered
+        if (!ShouldAffectInteractable(interactable))
+        {
+            return;
+        }
+
         // Check if cube is being held
         if (interactable.IsHeld && !destroyHeldCubes)
         {
@@ -179,6 +195,12 @@ public class SurfacePhysics : MonoBehaviour
         // Only affect interactables (cubes, radios, etc.)
         var interactable = otherObject.GetComponent<InteractableObject>();
         if (interactable == null)
+        {
+            return;
+        }
+
+        // Check if this interactable type is filtered
+        if (!ShouldAffectInteractable(interactable))
         {
             return;
         }
@@ -219,6 +241,13 @@ public class SurfacePhysics : MonoBehaviour
     {
         Debug.Log($"[SurfacePhysics] Destroying cube {cube.name} on {gameObject.name}");
 
+        // Check if this is a Radio and notify it before destroying
+        var radio = cube.GetComponent<Radio>();
+        if (radio != null)
+        {
+            radio.OnDestroyed();
+        }
+
         // Play sound effect
         if (_audioSource != null && destroySound != null)
         {
@@ -235,6 +264,26 @@ public class SurfacePhysics : MonoBehaviour
 
         // Destroy the cube
         Destroy(cube);
+    }
+
+    /// <summary>
+    /// Checks if this surface should affect the given interactable based on filter settings
+    /// </summary>
+    bool ShouldAffectInteractable(InteractableObject interactable)
+    {
+        InteractableObject.InteractableType type = interactable.GetInteractableType();
+        
+        switch (type)
+        {
+            case InteractableObject.InteractableType.Radio:
+                return affectRadios;
+            case InteractableObject.InteractableType.SimpleInteractable:
+                return affectSimpleInteractables;
+            case InteractableObject.InteractableType.Other:
+                return affectOtherInteractables;
+            default:
+                return false;
+        }
     }
 
     /// <summary>

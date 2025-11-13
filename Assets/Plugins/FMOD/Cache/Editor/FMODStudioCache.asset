@@ -108,6 +108,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
+--- !u!114 &-7066833972006092316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/LEVELCOMPLETE
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/LEVELCOMPLETE
+  Guid:
+    Data1: 1575880725
+    Data2: 1279790205
+    Data3: 938077877
+    Data4: 649235227
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &-6089138680388968108
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -155,6 +182,33 @@ MonoBehaviour:
   - Name: Desktop
     Value: 111712
   Exists: 1
+--- !u!114 &-6040118280764833724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/3
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/3
+  Guid:
+    Data1: -1543476661
+    Data2: 1158556511
+    Data3: -906912070
+    Data4: -1622555444
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &-5631817738560404720
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -170,10 +224,10 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638985779731065553
+  lastModified: 638986294728107808
   FileSizes:
   - Name: Desktop
-    Value: 1446
+    Value: 1838
   Exists: 1
 --- !u!114 &-4678787244532575712
 MonoBehaviour:
@@ -202,6 +256,60 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 400
   Length: 0
+--- !u!114 &-2933680742219898644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/5
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/5
+  Guid:
+    Data1: -1529730571
+    Data2: 1200469674
+    Data3: -1007397491
+    Data4: 487146448
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &-2621103683327116303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/7
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/7
+  Guid:
+    Data1: 2130019805
+    Data2: 1207247863
+    Data3: -914604353
+    Data4: 27898888
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &-2174464091015023244
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -217,7 +325,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
   Name: GeneralSFX
   StudioPath: bank:/SFX/GeneralSFX
-  lastModified: 638985779742374170
+  lastModified: 638986270964970101
   FileSizes:
   - Name: Desktop
     Value: 1281632
@@ -249,6 +357,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4800
+--- !u!114 &-915658016412301201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/8
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/8
+  Guid:
+    Data1: 1779523283
+    Data2: 1160393177
+    Data3: 732997269
+    Data4: -1048818252
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &-820629685071187517
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -294,6 +429,7 @@ MonoBehaviour:
   - {fileID: 4081106290661449368}
   - {fileID: 7327229040431735482}
   - {fileID: -6063671304224853933}
+  - {fileID: 842182114131825624}
   EditorEvents:
   - {fileID: -7244729939795585029}
   - {fileID: 8115163133539580668}
@@ -307,13 +443,23 @@ MonoBehaviour:
   - {fileID: -9202794896008358728}
   - {fileID: -820629685071187517}
   - {fileID: -4678787244532575712}
+  - {fileID: -7066833972006092316}
+  - {fileID: 1629884818111865685}
+  - {fileID: 6556691407138402164}
+  - {fileID: -6040118280764833724}
+  - {fileID: 7616950719319471234}
+  - {fileID: 741577673660717328}
+  - {fileID: -915658016412301201}
+  - {fileID: -2621103683327116303}
+  - {fileID: 2020775504138623324}
+  - {fileID: -2933680742219898644}
   EditorParameters: []
   MasterBanks:
   - {fileID: 4081106290661449368}
   StringsBanks:
   - {fileID: -5631817738560404720}
   cacheVersion: 131856
-  cacheTime: 638985779743036847
+  cacheTime: 638986294730213192
   SerializableEventsDict:
   - key: event:/SFX/Collision
     index: 0
@@ -339,6 +485,127 @@ MonoBehaviour:
     index: 10
   - key: event:/SFX/GladOS/FinalLevelIntro
     index: 11
+  - key: event:/SFX/GladOS/LEVELCOMPLETE
+    index: 12
+  - key: event:/SFX/GladOS/4
+    index: 13
+  - key: event:/SFX/GladOS/6
+    index: 14
+  - key: event:/SFX/GladOS/3
+    index: 15
+  - key: event:/SFX/GladOS/9
+    index: 16
+  - key: event:/SFX/GladOS/1
+    index: 17
+  - key: event:/SFX/GladOS/8
+    index: 18
+  - key: event:/SFX/GladOS/7
+    index: 19
+  - key: event:/SFX/GladOS/2
+    index: 20
+  - key: event:/SFX/GladOS/5
+    index: 21
+--- !u!114 &741577673660717328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/1
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/1
+  Guid:
+    Data1: -1739054393
+    Data2: 1099432047
+    Data3: -1761129343
+    Data4: 1073638702
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &842182114131825624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/GlaDOS.bank
+  m_EditorClassIdentifier: 
+  Path: FMOD/Portal/Build/Desktop/GlaDOS.bank
+  Name: GlaDOS
+  StudioPath: bank:/SFX/GlaDOS
+  lastModified: 638986294730213192
+  FileSizes:
+  - Name: Desktop
+    Value: 256032
+  Exists: 1
+--- !u!114 &1629884818111865685
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/4
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/4
+  Guid:
+    Data1: -1179439332
+    Data2: 1291883615
+    Data3: 1530924693
+    Data4: -464177123
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &2020775504138623324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/2
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/2
+  Guid:
+    Data1: -352239138
+    Data2: 1338483815
+    Data3: -1576875639
+    Data4: 775237980
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &3399927208369914955
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -381,7 +648,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638985779731055540
+  lastModified: 638986294728077785
   FileSizes:
   - Name: Desktop
     Value: 1074
@@ -413,6 +680,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4840
+--- !u!114 &6556691407138402164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/6
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/6
+  Guid:
+    Data1: 1775982369
+    Data2: 1179334869
+    Data3: 1247883430
+    Data4: -1430452176
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &6863992414714831538
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -460,6 +754,33 @@ MonoBehaviour:
   - Name: Desktop
     Value: 63936
   Exists: 1
+--- !u!114 &7616950719319471234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/9
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/9
+  Guid:
+    Data1: -2118122325
+    Data2: 1238841500
+    Data3: -725199989
+    Data4: 352448268
+  Banks:
+  - {fileID: 842182114131825624}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
 --- !u!114 &8115163133539580668
 MonoBehaviour:
   m_ObjectHideFlags: 0

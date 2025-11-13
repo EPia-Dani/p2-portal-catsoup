@@ -5,6 +5,20 @@ using Portal;
 [RequireComponent(typeof(Collider))]
 public class InteractableObject : PortalTraveller
 {
+    /// <summary>
+    /// Types of interactable objects for filtering purposes
+    /// </summary>
+    public enum InteractableType
+    {
+        Radio,              // Radio objects
+        SimpleInteractable, // Basic interactable objects (cubes, etc.)
+        Other               // Other types of interactables
+    }
+
+    [Header("Interactable Type")]
+    [Tooltip("Type of interactable for physics surface filtering")]
+    public InteractableType interactableType = InteractableType.SimpleInteractable;
+
     [Header("Physics Settings")]
     [Tooltip("Maximum velocity magnitude to prevent physics breaking")]
     public float terminalVelocity = 50f;
@@ -56,7 +70,7 @@ public class InteractableObject : PortalTraveller
     public Rigidbody Rigidbody => _rigidbody;
     public PortalCloneSystem PortalCloneSystem => _portalCloneSystem;
 
-    void Awake()
+    protected virtual void Awake()
     {
         _rigidbody = GetComponent<Rigidbody>();
         _collider = GetComponent<Collider>();
@@ -154,6 +168,15 @@ public class InteractableObject : PortalTraveller
     public void OnDropped()
     {
         if (!_isHeld) return;
+        
+        // Safety check: ensure rigidbody is initialized
+        if (_rigidbody == null)
+        {
+            Debug.LogError($"[InteractableObject] {gameObject.name} OnDropped() called but _rigidbody is null! This should not happen.");
+            _isHeld = false;
+            _holder = null;
+            return;
+        }
         
         // Capture the CURRENT velocity right before dropping (includes motion from being held/moved)
         // This is the actual velocity the rigidbody has from all the forces applied during holding
@@ -381,6 +404,20 @@ public class InteractableObject : PortalTraveller
                 _portalCloneSystem = gameObject.AddComponent<PortalCloneSystem>();
             }
         }
+    }
+
+    /// <summary>
+    /// Gets the interactable type, automatically detecting Radio if applicable
+    /// </summary>
+    public InteractableType GetInteractableType()
+    {
+        // Auto-detect Radio type
+        if (this is Radio)
+        {
+            return InteractableType.Radio;
+        }
+        
+        return interactableType;
     }
 }
 

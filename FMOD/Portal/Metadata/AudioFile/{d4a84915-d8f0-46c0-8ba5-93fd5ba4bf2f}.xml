@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <objects serializationModel="Studio.02.03.00">
-	<object class="AudioFile" id="{ea706a94-1517-42fa-b27f-f43d5458f8c0}">
+	<object class="AudioFile" id="{d4a84915-d8f0-46c0-8ba5-93fd5ba4bf2f}">
 		<property name="assetPath">
-			<value>GLaDOS-784065.wav</value>
+			<value>GLaDOS-784185.wav</value>
 		</property>
 		<property name="frequencyInKHz">
 			<value>44.0999985</value>
@@ -11,7 +11,7 @@
 			<value>1</value>
 		</property>
 		<property name="length">
-			<value>6.9043537414965988</value>
+			<value>5.05578231292517</value>
 		</property>
 		<relationship name="masterAssetFolder">
 			<destination>{a9e72a2b-7a54-45a1-8abf-afaccd8d1fd1}</destination>

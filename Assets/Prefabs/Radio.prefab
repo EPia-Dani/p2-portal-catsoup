@@ -97,10 +97,10 @@ GameObject:
   - component: {fileID: 5727931518067783799}
   - component: {fileID: 47963876706133207}
   - component: {fileID: 3301837843565171627}
-  - component: {fileID: 606300938276054715}
+  - component: {fileID: 3148072123534316199}
   m_Layer: 0
   m_Name: Radio
-  m_TagString: Untagged
+  m_TagString: Interactable
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -169,7 +169,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!114 &606300938276054715
+--- !u!114 &3148072123534316199
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -178,14 +178,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 6618517067538177165}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 082df5768b0bab7419e52fab8ae4479c, type: 3}
+  m_Script: {fileID: 11500000, guid: 7b03a27ad5ec40a48af30e44ffd2a6d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   minPortalExitVelocity: 3
   terminalVelocity: 50
   maxAngularVelocity: 50
-  moveSpeed: 10
+  moveSpeed: 100
   rotationSpeed: 10
-  heldDamping: 5
+  heldDamping: 10
   droppedDamping: 0.05
   dropForce: 2
+  isRefractionCube: 0
+  pickupSound: {fileID: 0}
+  dropSound: {fileID: 0}
+  destroySound: {fileID: 0}

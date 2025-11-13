@@ -18,10 +18,6 @@ public class PlayerManager : MonoBehaviour
     
     [Tooltip("Should the player respawn at the respawn point or restart the scene?")]
     public bool respawnAtPoint = true;
-
-    [Header("Player Reference")]
-    [Tooltip("Reference to the player GameObject. If null, will search for FPSController.")]
-    public DeathScreenManager deathScreen;
     
     private FPSController fpsController;
     private Vector3 initialPosition;
@@ -140,21 +136,31 @@ public class PlayerManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Called when the player dies. Triggers death screen and disables player control.
+    /// Called when the player dies. Triggers respawn with black fade transition.
     /// </summary>
     public void OnPlayerDeath()
     {
         if (isDead)
         {
             return; // Already dead, prevent multiple death triggers
-            Debug.Log("PlayerManager: Player is dead!");
         }
         
         isDead = true;
         
-        
-        deathScreen.ShowDeathScreen();
-        
+        // Use black fade system to respawn directly
+        if (ScreenFadeManager.Instance != null)
+        {
+            ScreenFadeManager.Instance.FadeOutAndRespawn(() =>
+            {
+                // Respawn player during black screen
+                RespawnPlayer();
+            });
+        }
+        else
+        {
+            // Fallback: respawn immediately if fade manager doesn't exist
+            RespawnPlayer();
+        }
     }
     
     /// <summary>

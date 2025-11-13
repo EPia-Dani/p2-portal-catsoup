@@ -113,7 +113,7 @@ Material:
     - _EdgeGlowPower: 10
     - _EnvironmentReflections: 1
     - _FresnelIntensity: 1.81
-    - _FresnelPower: 3.32
+    - _FresnelPower: 1.1
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
@@ -132,7 +132,7 @@ Material:
     - _SrcBlend: 1
     - _SrcBlendAlpha: 1
     - _Surface: 0
-    - _Transparency: 1
+    - _Transparency: 0.102
     - _WaveIntensity: 1
     - _WaveScale: 50
     - _WaveSpeed: 1.69
