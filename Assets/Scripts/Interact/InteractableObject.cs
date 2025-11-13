@@ -65,6 +65,7 @@ public class InteractableObject : PortalTraveller
     // Track target position velocity (motion from being held/moved)
     private Vector3 _previousTargetPosition;
     private Vector3 _targetVelocity;
+    
 
     public bool IsHeld => _isHeld;
     public Rigidbody Rigidbody => _rigidbody;
@@ -419,5 +420,7 @@ public class InteractableObject : PortalTraveller
         
         return interactableType;
     }
+    
+    
 }
 
