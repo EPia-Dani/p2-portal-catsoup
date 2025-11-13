@@ -192,6 +192,15 @@ namespace Input
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Exit"",
+                    ""type"": ""Button"",
+                    ""id"": ""a31378e0-63c5-4463-bb0f-e5194e671637"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -555,6 +564,17 @@ namespace Input
                     ""processors"": """",
                     ""groups"": ""Keyboard&Mouse"",
                     ""action"": ""ResizePortal"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6c6fad9f-4793-4853-881d-985a8112d8ff"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Exit"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -1153,6 +1173,7 @@ namespace Input
             m_Player_ShootBlue = m_Player.FindAction("ShootBlue", throwIfNotFound: true);
             m_Player_ShootOrange = m_Player.FindAction("ShootOrange", throwIfNotFound: true);
             m_Player_ResizePortal = m_Player.FindAction("ResizePortal", throwIfNotFound: true);
+            m_Player_Exit = m_Player.FindAction("Exit", throwIfNotFound: true);
             // UI
             m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
             m_UI_Navigate = m_UI.FindAction("Navigate", throwIfNotFound: true);
@@ -1257,6 +1278,7 @@ namespace Input
         private readonly InputAction m_Player_ShootBlue;
         private readonly InputAction m_Player_ShootOrange;
         private readonly InputAction m_Player_ResizePortal;
+        private readonly InputAction m_Player_Exit;
         /// <summary>
         /// Provides access to input actions defined in input action map "Player".
         /// </summary>
@@ -1312,6 +1334,10 @@ namespace Input
             /// Provides access to the underlying input action "Player/ResizePortal".
             /// </summary>
             public InputAction @ResizePortal => m_Wrapper.m_Player_ResizePortal;
+            /// <summary>
+            /// Provides access to the underlying input action "Player/Exit".
+            /// </summary>
+            public InputAction @Exit => m_Wrapper.m_Player_Exit;
             /// <summary>
             /// Provides access to the underlying input action map instance.
             /// </summary>
@@ -1371,6 +1397,9 @@ namespace Input
                 @ResizePortal.started += instance.OnResizePortal;
                 @ResizePortal.performed += instance.OnResizePortal;
                 @ResizePortal.canceled += instance.OnResizePortal;
+                @Exit.started += instance.OnExit;
+                @Exit.performed += instance.OnExit;
+                @Exit.canceled += instance.OnExit;
             }
 
             /// <summary>
@@ -1415,6 +1444,9 @@ namespace Input
                 @ResizePortal.started -= instance.OnResizePortal;
                 @ResizePortal.performed -= instance.OnResizePortal;
                 @ResizePortal.canceled -= instance.OnResizePortal;
+                @Exit.started -= instance.OnExit;
+                @Exit.performed -= instance.OnExit;
+                @Exit.canceled -= instance.OnExit;
             }
 
             /// <summary>
@@ -1792,6 +1824,13 @@ namespace Input
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnResizePortal(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "Exit" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnExit(InputAction.CallbackContext context);
         }
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
