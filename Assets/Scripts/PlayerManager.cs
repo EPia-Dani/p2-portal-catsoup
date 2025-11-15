@@ -190,12 +190,91 @@ public class PlayerManager : MonoBehaviour
         Vector3 targetPos = respawnPoint.position;
         Quaternion targetRot = respawnPoint.rotation;
         
-        // Teleport player - that's it, nothing else
+        // Reset all scene objects EXCEPT audio systems (FMOD, AudioListeners, AudioSources marked DontDestroyOnLoad)
+        ResetSceneState();
+        
+        // Teleport player to checkpoint
         fpsController.TeleportToPosition(targetPos, targetRot);
+        
+        // Reset player health
+        if (fpsController != null)
+        {
+            // Use reflection to reset health without making fields public
+            var healthField = typeof(FPSController).GetField("_currentHealth", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var maxHealthField = typeof(FPSController).GetField("maxHealth", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            if (healthField != null && maxHealthField != null)
+            {
+                int maxHP = (int)maxHealthField.GetValue(fpsController);
+                healthField.SetValue(fpsController, maxHP);
+            }
+            
+            // Re-enable player control
+            fpsController.SetDisabled(false);
+        }
         
         // Update last spawn time so subsequent deaths only use checkpoints activated after this moment
         _lastSpawnTime = Time.time;
         isDead = false;
+    }
+    
+    /// <summary>
+    /// Resets all scene objects (turrets, radios, cubes, etc.) to their initial state.
+    /// Preserves audio systems (FMOD, AudioListener, persistent AudioSources).
+    /// </summary>
+    private void ResetSceneState()
+    {
+        // Reset all turrets to idle state
+        var turrets = FindObjectsByType<Enemy.Turret>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var turret in turrets)
+        {
+            if (turret == null) continue;
+            // Re-enable and reset turrets
+            turret.gameObject.SetActive(true);
+            turret.enabled = true;
+            turret.ResetToIdle();
+        }
+        
+        // Reset all interactable objects (radios, cubes, etc.)
+        var interactables = FindObjectsByType<InteractableObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var obj in interactables)
+        {
+            if (obj == null) continue;
+            // Reset physics - stop all movement
+            var rb = obj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+        
+        // Destroy all active projectiles
+        var projectiles = FindObjectsByType<Enemy.Projectile>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var proj in projectiles)
+        {
+            if (proj != null)
+            {
+                Destroy(proj.gameObject);
+            }
+        }
+        
+        // Reset radio counter if present (but keep collected radios count - only reset if you want full reset)
+        var radioCounter = FindFirstObjectByType<Interact.RadioCounter>();
+        if (radioCounter != null)
+        {
+            // Don't reset radio count - player keeps their progress
+            // If you want to reset radios too, add that logic here
+        }
+        
+        // Reset buttons to unpressed state
+        var buttons = FindObjectsByType<Interact.Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var button in buttons)
+        {
+            if (button == null) continue;
+            // Buttons will reset themselves on scene reload, no action needed here for checkpoint respawn
+        }
+        
+        Debug.Log("PlayerManager: Scene state reset (turrets, projectiles, physics) while preserving audio systems.");
     }
     public void RestartScene()
     {

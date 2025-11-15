@@ -41,6 +41,8 @@ namespace Enemy
         public bool allowManualFire; // press ManualFireKey in Play to call FireOnce()
         public KeyCode manualFireKey = KeyCode.F;
         public bool verboseDiagnostics; // when true, prints detailed search/hit info
+        [Tooltip("If true, when nothing is found using the configured targetMask the turret will attempt to add detected collider layers to the mask at runtime (helpful for build-time layer mismatches).")]
+        public bool autoDetectTargetLayer = true;
 
         // Re-usable buffer for OverlapSphereNonAlloc to avoid GC allocations
         Collider[] overlapResults = new Collider[32];
@@ -69,24 +71,64 @@ namespace Enemy
 
         void Start()
         {
-            if (head == null) head = transform;
+            // CRITICAL: Always ensure head is assigned - this fixes builds where it might be null
+            if (head == null)
+            {
+                head = transform;
+                if (logFiring) Debug.Log($"Turret '{name}': head was null, assigned to self (transform). This is normal.", this);
+            }
+            
+            // Validate head is not destroyed
+            if (head == null || head.Equals(null))
+            {
+                Debug.LogError($"Turret '{name}': head reference is invalid after assignment! Turret will not rotate.", this);
+                enabled = false;
+                return;
+            }
+            
             fireTimer = 0f; // allow immediate firing on acquire
 
             turretColliders = GetComponentsInChildren<Collider>(true);
 
             if (firePoint == null)
+            {
                 Debug.LogWarning($"Turret '{name}': firePoint is not assigned. Assign an empty child Transform as the muzzle.", this);
+                // Try to find a child named "FirePoint" or "Muzzle"
+                Transform fp = transform.Find("FirePoint");
+                if (fp == null) fp = transform.Find("Muzzle");
+                if (fp != null)
+                {
+                    firePoint = fp;
+                    Debug.Log($"Turret '{name}': Auto-found firePoint: {firePoint.name}", this);
+                }
+                else
+                {
+                    // Use head position as fallback
+                    firePoint = head;
+                    Debug.LogWarning($"Turret '{name}': Using head as firePoint fallback.", this);
+                }
+            }
 
             if (projectilePrefab == null)
                 Debug.LogWarning($"Turret '{name}': projectilePrefab is not assigned. Assign a prefab with a Mesh/Renderer, Collider and Rigidbody.", this);
 
+            // If targetMask was serialized to zero by mistake, default to everything so turret still works in builds
             if (targetMask.value == 0)
-                Debug.LogWarning($"Turret '{name}': targetMask is zero (no layers selected). Make sure the intended targets are on a layer included by the mask.", this);
+            {
+                Debug.LogWarning($"Turret '{name}': targetMask is zero (no layers selected). Overriding to default (Everything) to avoid missing targets in builds.", this);
+                targetMask = ~0;
+            }
 
             // set idle animator state if available
             if (animator != null)
             {
                 animator.Play("Idle");
+            }
+            
+            // Log full turret state for build debugging
+            if (logFiring)
+            {
+                Debug.Log($"Turret '{name}' initialized: head={head?.name}, firePoint={firePoint?.name}, projectilePrefab={(projectilePrefab!=null?"assigned":"NULL")}, targetMask=0x{targetMask.value:X}, enabled={enabled}", this);
             }
         }
 
@@ -215,6 +257,36 @@ namespace Enemy
         {
             int count = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, overlapResults, targetMask);
             if (logFiring && verboseDiagnostics) Debug.Log($"Turret '{name}': OverlapSphere found {count} colliders.");
+
+            // Diagnostic fallback: if nothing found, retry without mask to detect possible layer/mask misconfiguration in build
+            if (count == 0)
+            {
+                int countAll = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, overlapResults, ~0);
+                if (countAll > 0)
+                {
+                    if (logFiring) Debug.LogWarning($"Turret '{name}': No targets found with configured targetMask. Found {countAll} colliders when ignoring layer mask — your targetMask may be misconfigured in the build.", this);
+                    if (autoDetectTargetLayer)
+                    {
+                        // Build a mask from the found colliders' layers and add them to the turret's targetMask
+                        int newMask = 0;
+                        for (int i = 0; i < countAll; i++)
+                        {
+                            var c = overlapResults[i];
+                            if (c == null) continue;
+                            newMask |= (1 << c.gameObject.layer);
+                        }
+                        if (newMask != 0)
+                        {
+                            targetMask |= newMask;
+                            if (logFiring) Debug.LogWarning($"Turret '{name}': auto-detected and expanded targetMask to include layers: 0x{newMask:X}. New targetMask=0x{targetMask.value:X}", this);
+                            // refresh count using the updated mask
+                            count = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, overlapResults, targetMask);
+                        }
+                    }
+                    count = countAll;
+                }
+            }
+
             float bestDist = Mathf.Infinity;
             Transform best = null;
 
@@ -404,7 +476,7 @@ namespace Enemy
                 {
                     // set velocity directly for deterministic behaviour in builds
                     rb.linearVelocity = firePoint.forward * projectileSpeed;
-                    if (logFiring) Debug.Log($"Turret '{name}': set projectile velocity to {rb.linearVelocity} (rb name: '{rb.name}').", projectileInstance);
+                    if (logFiring) Debug.Log($"Turret '{name}': set projectile linearVelocity to {rb.linearVelocity} (rb name: '{rb.name}').", projectileInstance);
                 }
             }
         }
@@ -424,9 +496,7 @@ namespace Enemy
             }
         }
 
-        /// <summary>
-        /// Public helper so you can trigger a single shot from other scripts or context menu.
-        /// </summary>
+ 
         [ContextMenu("Test Fire")]
         public void TestFire()
         {
@@ -439,11 +509,33 @@ namespace Enemy
             Gizmos.DrawWireSphere(transform.position, detectionRadius);
             if (firePoint != null)
             {
-                Gizmos.color = Color.red;
+            Gizmos.color = Color.red;
                 Gizmos.DrawLine(firePoint.position, firePoint.position + (firePoint.forward * Mathf.Min(10f, detectionRadius)));
             }
         }
 
         public void SetEnabled(bool on) => enabled = on;
+
+        /// <summary>
+        /// Resets the turret to its initial idle state (called when player respawns at checkpoint).
+        /// </summary>
+        public void ResetToIdle()
+        {
+            currentTarget = null;
+            state = State.Idle;
+            fireTimer = 0f;
+            loseTimer = 0f;
+            shotsRemainingInBurst = 0;
+            shotTimer = 0f;
+            acquireTimer = 0f;
+            
+            // Stop any ongoing animations
+            if (animator != null)
+            {
+                animator.Play("Idle");
+            }
+            
+            if (logFiring) Debug.Log($"Turret '{name}': Reset to idle state.", this);
+        }
     }
 }
