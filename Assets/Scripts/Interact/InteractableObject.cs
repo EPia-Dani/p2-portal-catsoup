@@ -1,3 +1,4 @@
+using Interact;
 using UnityEngine;
 using Portal;
 
@@ -5,14 +6,11 @@ using Portal;
 [RequireComponent(typeof(Collider))]
 public class InteractableObject : PortalTraveller
 {
-    /// <summary>
-    /// Types of interactable objects for filtering purposes
-    /// </summary>
     public enum InteractableType
     {
-        Radio,              // Radio objects
-        SimpleInteractable, // Basic interactable objects (cubes, etc.)
-        Other               // Other types of interactables
+        Radio,              
+        SimpleInteractable, 
+        Other               
     }
 
     [Header("Interactable Type")]
@@ -65,6 +63,7 @@ public class InteractableObject : PortalTraveller
     // Track target position velocity (motion from being held/moved)
     private Vector3 _previousTargetPosition;
     private Vector3 _targetVelocity;
+    
 
     public bool IsHeld => _isHeld;
     public Rigidbody Rigidbody => _rigidbody;
@@ -118,8 +117,6 @@ public class InteractableObject : PortalTraveller
         // Handle held object movement
         if (_isHeld && _holder != null)
         {
-            // Track target velocity (how fast the target position is moving)
-            // This captures motion from player movement and rotation
             Vector3 targetDelta = _targetPosition - _previousTargetPosition;
             _targetVelocity = targetDelta / Time.fixedDeltaTime;
             _previousTargetPosition = _targetPosition;
@@ -127,10 +124,7 @@ public class InteractableObject : PortalTraveller
             UpdateHeldMovement();
         }
     }
-
-    /// <summary>
-    /// Called by PlayerPickup when this object is picked up
-    /// </summary>
+    
     public void OnPickedUp(PlayerPickup holder)
     {
         if (_isHeld) return;
@@ -161,10 +155,7 @@ public class InteractableObject : PortalTraveller
         
         Debug.Log($"[InteractableObject] {gameObject.name} picked up");
     }
-
-    /// <summary>
-    /// Called by PlayerPickup when this object is dropped
-    /// </summary>
+    
     public void OnDropped()
     {
         if (!_isHeld) return;
@@ -178,33 +169,22 @@ public class InteractableObject : PortalTraveller
             return;
         }
         
-        // Capture the CURRENT velocity right before dropping (includes motion from being held/moved)
-        // This is the actual velocity the rigidbody has from all the forces applied during holding
-        // It already includes motion from player movement AND rotation (tangential velocity)
         Vector3 currentLinearVelocity = _rigidbody.linearVelocity;
         Vector3 currentAngularVelocity = _rigidbody.angularVelocity;
         
         _isHeld = false;
         
-        // CRITICAL: Restore physics BEFORE clone system operations
-        // This ensures gravity and physics work even if object is inside portal
         _rigidbody.useGravity = _originalUseGravity;
         _rigidbody.linearDamping = _originalLinearDamping;
         _rigidbody.angularDamping = _originalAngularDamping;
         
-        // Use the ACTUAL rigidbody velocity - it already includes all motion from forces applied
-        // The forces in UpdateHeldMovement() already capture player movement and rotation
         Vector3 finalVelocity = currentLinearVelocity;
         
-        // If actual velocity is very small (damping reduced it too much), enhance with target velocity
-        // This handles cases where damping has reduced velocity but object should still have momentum
         if (finalVelocity.sqrMagnitude < 0.1f && _targetVelocity.sqrMagnitude > 0.1f)
         {
             // Blend actual velocity with target velocity to preserve momentum
             finalVelocity = Vector3.Lerp(finalVelocity, _targetVelocity, 0.7f);
         }
-        
-        // Fallback: if both are small, use player's velocity as last resort
         if (finalVelocity.sqrMagnitude < 0.1f && _holder != null)
         {
             var playerController = _holder.GetComponent<FPSController>();
@@ -213,13 +193,8 @@ public class InteractableObject : PortalTraveller
                 finalVelocity = playerController.CurrentVelocity;
             }
         }
-        
-        // Apply the velocity - this preserves the object's motion at the moment of drop
         _rigidbody.linearVelocity = finalVelocity;
         _rigidbody.angularVelocity = currentAngularVelocity; // Preserve angular velocity
-        
-        // Notify clone system that we're dropping (will swap if clone exists)
-        // This happens AFTER we've set velocity so SwapWithClone can preserve it
         if (_portalCloneSystem != null)
         {
             _portalCloneSystem.SetHeld(false);
@@ -229,19 +204,11 @@ public class InteractableObject : PortalTraveller
         
         Debug.Log($"[InteractableObject] {gameObject.name} dropped with velocity: {_rigidbody.linearVelocity} (target velocity: {_targetVelocity})");
     }
-
-    /// <summary>
-    /// Called by PlayerPickup to update target position/rotation for held movement
-    /// </summary>
     public void SetTargetTransform(Vector3 position, Quaternion rotation)
     {
         _targetPosition = position;
         _targetRotation = rotation;
     }
-
-    /// <summary>
-    /// Called when player teleports - swap with clone if it exists
-    /// </summary>
     public void OnPlayerTeleport()
     {
         if (_portalCloneSystem != null)
@@ -249,12 +216,6 @@ public class InteractableObject : PortalTraveller
             _portalCloneSystem.OnPlayerTeleport();
         }
     }
-
-    /// <summary>
-    /// Override Teleport to properly transform velocity through portals
-    /// This is critical for objects falling through floor portals to maintain momentum
-    /// Uses the exact same method as FPSController for consistency
-    /// </summary>
     public override void Teleport(Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot, float scaleRatio = 1f)
     {
         if (_rigidbody == null)
@@ -280,16 +241,9 @@ public class InteractableObject : PortalTraveller
         
         // Teleport the object position (exact same as FPSController)
         transform.position = pos;
-        
-        // ===== UNIVERSAL VELOCITY TRANSFORMATION =====
-        // Rotate the entire velocity vector from the source portal's orientation to the destination's.
-        // We include a 180° flip around the portal's local up so 'entering' becomes 'exiting'.
-        // (exact same as FPSController)
         Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
         Quaternion relativeRotation = toPortal.rotation * flipLocal * Quaternion.Inverse(fromPortal.rotation);
         
-        // Transform the object's forward direction through the portal (same transformation as velocity)
-        // This preserves relative orientation: looking left relative to source portal = looking left relative to dest portal
         Vector3 currentForward = transform.forward;
         Vector3 transformedForward = relativeRotation * currentForward;
         
@@ -419,5 +373,7 @@ public class InteractableObject : PortalTraveller
         
         return interactableType;
     }
+    
+    
 }
 

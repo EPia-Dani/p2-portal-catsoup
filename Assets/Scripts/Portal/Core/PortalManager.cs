@@ -14,6 +14,12 @@ namespace Portal {
 		[SerializeField] int textureSize = 1024;
 		[SerializeField] int recursionLimit = 2;
 
+        [Header("Audio")]
+        [Tooltip("Sound played when the blue portal is placed.")]
+        [SerializeField] AudioClip bluePortalPlacedClip;
+        [Tooltip("Sound played when the orange portal is placed.")]
+        [SerializeField] AudioClip orangePortalPlacedClip;
+
 		PortalState _blueState;
 		PortalState _orangeState;
 		Vector3 _blueBaseScale = Vector3.one;
@@ -104,17 +110,17 @@ namespace Portal {
 			}
 		}
 
-		void UpdateRenderReadiness(PortalRenderer renderer, PortalId id) {
-			if (renderer == null || !renderer.gameObject.activeInHierarchy) return;
-			var animator = renderer.GetComponent<PortalAnimator>() ?? renderer.GetComponentInChildren<PortalAnimator>();
-			if (animator == null) return;
-			renderer.IsReadyToRender = animator.IsOpening || animator.IsFullyOpen;
-		}
+        void UpdateRenderReadiness(PortalRenderer portalRenderer, PortalId _id) {
+            if (portalRenderer == null || !portalRenderer.gameObject.activeInHierarchy) return;
+            var animator = portalRenderer.GetComponent<PortalAnimator>() ?? portalRenderer.GetComponentInChildren<PortalAnimator>();
+            if (animator == null) return;
+            portalRenderer.IsReadyToRender = animator.IsOpening || animator.IsFullyOpen;
+        }
 
-		public void PlacePortal(PortalId id, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float scale = 1f) {
-			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
+        public void PlacePortal(PortalId id, Vector3 position, Vector3 normal, Vector3 right, Vector3 up, Collider surface, float scale = 1f) {
+			PortalRenderer portalRenderer = id == PortalId.Blue ? bluePortal : orangePortal;
 			Transform mesh = id == PortalId.Blue ? bluePortalMesh : orangePortalMesh;
-			if (renderer == null) return;
+			if (portalRenderer == null) return;
 
 			// Enable the portal GameObject first (enables sounds, components, etc.)
 			EnablePortal(id);
@@ -140,14 +146,20 @@ namespace Portal {
 			}
 
 			// Apply to renderer
-			renderer.SetVisible(true);
-			renderer.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
-			renderer.transform.localScale = id == PortalId.Blue ? _blueBaseScale : _orangeBaseScale;
-			renderer.SetWallCollider(surface);
-			renderer.PortalScale = scale;
+			portalRenderer.SetVisible(true);
+			portalRenderer.transform.SetPositionAndRotation(position, Quaternion.LookRotation(-normal, up));
+			portalRenderer.transform.localScale = id == PortalId.Blue ? _blueBaseScale : _orangeBaseScale;
+			portalRenderer.SetWallCollider(surface);
+			portalRenderer.PortalScale = scale;
+
+			// Play placement audio for the portal at its position
+			AudioClip placeClip = (id == PortalId.Blue) ? bluePortalPlacedClip : orangePortalPlacedClip;
+			if (placeClip != null) {
+				AudioSource.PlayClipAtPoint(placeClip, position);
+			}
 
 			// Scale trigger collider to match portal size
-			UpdatePortalTriggerCollider(renderer, scale);
+			UpdatePortalTriggerCollider(portalRenderer, scale);
 
 			// Apply to mesh
 			if (mesh != null) {
@@ -167,7 +179,7 @@ namespace Portal {
 		}
 
 		public void RemovePortal(PortalId id) {
-			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			PortalRenderer portalRenderer = id == PortalId.Blue ? bluePortal : orangePortal;
 			Transform mesh = id == PortalId.Blue ? bluePortalMesh : orangePortalMesh;
 
 			if (id == PortalId.Blue) {
@@ -177,12 +189,12 @@ namespace Portal {
 			}
 
 			// Only try to access components if portal is enabled
-			if (renderer != null && renderer.gameObject.activeInHierarchy) {
-				renderer.SetVisible(false);
-				renderer.IsReadyToRender = false;
-				renderer.PortalScale = 1f;
+			if (portalRenderer != null && portalRenderer.gameObject.activeInHierarchy) {
+				portalRenderer.SetVisible(false);
+				portalRenderer.IsReadyToRender = false;
+				portalRenderer.PortalScale = 1f;
 
-				var animator = renderer.GetComponent<PortalAnimator>() ?? renderer.GetComponentInChildren<PortalAnimator>();
+				var animator = portalRenderer.GetComponent<PortalAnimator>() ?? portalRenderer.GetComponentInChildren<PortalAnimator>();
 				if (animator != null) {
 					animator.HideImmediate();
 				}
@@ -212,9 +224,9 @@ namespace Portal {
 		/// Enables a portal GameObject (enables sounds, components, etc.)
 		/// </summary>
 		public void EnablePortal(PortalId id) {
-			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
-			if (renderer != null) {
-				renderer.gameObject.SetActive(true);
+			PortalRenderer portalRenderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			if (portalRenderer != null) {
+				portalRenderer.gameObject.SetActive(true);
 			}
 		}
 
@@ -222,9 +234,9 @@ namespace Portal {
 		/// Disables a portal GameObject (disables sounds, components, etc.)
 		/// </summary>
 		public void DisablePortal(PortalId id) {
-			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
-			if (renderer != null) {
-				renderer.gameObject.SetActive(false);
+			PortalRenderer portalRenderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			if (portalRenderer != null) {
+				portalRenderer.gameObject.SetActive(false);
 			}
 		}
 
@@ -249,9 +261,9 @@ namespace Portal {
 		/// Applies settings to a specific portal (called after enabling it)
 		/// </summary>
 		void ApplySettingsToPortal(PortalId id) {
-			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
-			if (renderer != null) {
-				renderer.ConfigurePortal(textureSize, textureSize, recursionLimit, 1);
+			PortalRenderer portalRenderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			if (portalRenderer != null) {
+				portalRenderer.ConfigurePortal(textureSize, textureSize, recursionLimit, 1);
 			}
 		}
 
@@ -264,23 +276,23 @@ namespace Portal {
 			// Frame skipping removed for simplicity - this is a no-op for UI compatibility
 		}
 
-		void UpdatePortalTriggerCollider(PortalRenderer renderer, float scale) {
-			if (!renderer) return;
+		void UpdatePortalTriggerCollider(PortalRenderer portalRenderer, float _scale) {
+			if (!portalRenderer) return;
 
 			// Get BoxCollider from colliders transform (manually added, scales with portal)
-			Transform collidersTransform = (renderer == bluePortal) ? blueCollidersTransform : orangeCollidersTransform;
+			Transform collidersTransform = (portalRenderer == bluePortal) ? blueCollidersTransform : orangeCollidersTransform;
 			if (!collidersTransform) return;
 
 			BoxCollider triggerCollider = collidersTransform.GetComponent<BoxCollider>();
 			if (!triggerCollider) return; // Collider will be manually added
 
 			// Get base collider size for this portal
-			Vector3 baseSize = (renderer == bluePortal) ? _blueColliderBaseSize : _orangeColliderBaseSize;
+			Vector3 baseSize = (portalRenderer == bluePortal) ? _blueColliderBaseSize : _orangeColliderBaseSize;
 			
 			// If base size wasn't stored (first time), use current size as base
 			if (baseSize == Vector3.one && triggerCollider.size != Vector3.one) {
 				baseSize = triggerCollider.size;
-				if (renderer == bluePortal) {
+				if (portalRenderer == bluePortal) {
 					_blueColliderBaseSize = baseSize;
 				} else {
 					_orangeColliderBaseSize = baseSize;
@@ -304,12 +316,12 @@ namespace Portal {
 		}
 
 		void UpdatePortalVisuals(PortalId id, bool placed, bool bothPlaced) {
-			PortalRenderer renderer = id == PortalId.Blue ? bluePortal : orangePortal;
+			PortalRenderer portalRenderer = id == PortalId.Blue ? bluePortal : orangePortal;
 			Transform mesh = id == PortalId.Blue ? bluePortalMesh : orangePortalMesh;
-			if (renderer == null) return;
+			if (portalRenderer == null) return;
 
 			// Ensure portal is enabled before accessing its components
-			if (!renderer.gameObject.activeInHierarchy) {
+			if (!portalRenderer.gameObject.activeInHierarchy) {
 				if (placed) {
 					EnablePortal(id);
 				} else {
@@ -323,12 +335,12 @@ namespace Portal {
 			}
 
 			bool shouldRender = placed && bothPlaced;
-			renderer.SetVisible(shouldRender);
+			portalRenderer.SetVisible(shouldRender);
 			if (!shouldRender) {
-				renderer.IsReadyToRender = false;
+				portalRenderer.IsReadyToRender = false;
 			}
 
-			var animator = renderer.GetComponent<PortalAnimator>() ?? renderer.GetComponentInChildren<PortalAnimator>();
+			var animator = portalRenderer.GetComponent<PortalAnimator>() ?? portalRenderer.GetComponentInChildren<PortalAnimator>();
 			if (animator == null) return;
 
 			// Calculate target scale

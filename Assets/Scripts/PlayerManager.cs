@@ -2,10 +2,6 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.Collections;
 
-/// <summary>
-/// Manages player state, death, and respawn functionality.
-/// Should be placed in the scene as a singleton.
-/// </summary>
 public class PlayerManager : MonoBehaviour
 {
     [Header("Player Reference")]
@@ -16,27 +12,35 @@ public class PlayerManager : MonoBehaviour
     [Tooltip("Starting position for respawn. If null, uses player's initial position.")]
     public Transform respawnPoint;
     
-    [Tooltip("Should the player respawn at the respawn point or restart the scene?")]
-    public bool respawnAtPoint = true;
+    [Tooltip("If true, the player will respawn at the assigned respawnPoint. If false, the scene will restart on death.")]
+    public bool respawnAtPoint;
     
     private FPSController fpsController;
-    private Vector3 initialPosition;
-    private Quaternion initialRotation;
-    private bool isDead = false;
+    
+    private bool isDead;
+    // Track times so we only allow checkpoint respawn if the checkpoint was activated after the player's last spawn
+    private float _lastSpawnTime = float.NegativeInfinity;
+    private float _checkpointActivatedTime = float.NegativeInfinity;
     
     // Singleton instance
-    private static PlayerManager instance;
-    public static PlayerManager Instance => instance;
+    private static PlayerManager _instance;
+    public static PlayerManager Instance => _instance;
     
     private void Awake()
     {
         // Singleton pattern
-        if (instance != null && instance != this)
+        if (_instance != null && _instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        instance = this;
+        _instance = this;
+
+        // Enforce default behavior: do NOT respawn at checkpoints unless the checkpoint has been activated by the player.
+        // This overrides any accidental inspector-serialized value so dying before crossing a checkpoint restarts the scene.
+        respawnAtPoint = false;
+        _lastSpawnTime = float.NegativeInfinity;
+        _checkpointActivatedTime = float.NegativeInfinity;
         
         // Subscribe to scene loaded events
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -53,6 +57,12 @@ public class PlayerManager : MonoBehaviour
         // Reset player reference when loading a new scene (new player instance will be created)
         player = null;
         fpsController = null;
+
+        // Ensure checkpoint respawn is disabled on scene load: only activating a checkpoint
+        // during gameplay (crossing its trigger) should enable respawnAtPoint.
+        respawnAtPoint = false;
+        // Keep respawnPoint if SetupFinalLevel wants to link it; SetupFinalLevel will re-link when appropriate.
+        isDead = false;
         
         // Handle FinalLevel scene setup
         if (scene.name == "FinalLevel")
@@ -88,6 +98,7 @@ public class PlayerManager : MonoBehaviour
         
         if (checkpointAnchor != null)
         {
+            // Link checkpoint anchor but DO NOT enable checkpoint respawn until player actually crosses it
             SetRespawnPoint(checkpointAnchor.transform);
             Debug.Log($"PlayerManager: Checkpoint anchor '{checkpointAnchor.name}' linked to respawn point");
         }
@@ -118,54 +129,56 @@ public class PlayerManager : MonoBehaviour
         if (fpsController == null)
         {
             Debug.LogError("PlayerManager: Player GameObject does not have FPSController component!");
-            return;
+            // Disable PlayerManager to avoid running without a valid FPSController
+            enabled = false;
         }
-        
-        // Store initial position and rotation
-        initialPosition = player.transform.position;
-        initialRotation = player.transform.rotation;
-        
-        // Set respawn point if not assigned
-        if (respawnPoint == null)
+        else
         {
-            GameObject respawnObj = new GameObject("RespawnPoint");
-            respawnObj.transform.position = initialPosition;
-            respawnObj.transform.rotation = initialRotation;
-            respawnPoint = respawnObj.transform;
+            // Store initial rotation/position if needed later (not used by default behavior)
+            // Record initial spawn time for this PlayerManager instance
+            _lastSpawnTime = Time.time;
         }
     }
     
-    /// <summary>
-    /// Called when the player dies. Triggers respawn with black fade transition.
-    /// </summary>
     public void OnPlayerDeath()
     {
         if (isDead)
         {
-            return; // Already dead, prevent multiple death triggers
+            return; 
         }
         
         isDead = true;
-        
-        // Use black fade system to respawn directly
-        if (ScreenFadeManager.Instance != null)
-        {
-            ScreenFadeManager.Instance.FadeOutAndRespawn(() =>
+        // Only allow checkpoint respawn if the checkpoint was activated after the player's last spawn
+        // If a checkpoint has been activated and respawnAtPoint is true, use it. The prior time-gated
+        // check could prevent valid activations in some timing scenarios (player stepping on a checkpoint
+        // didn't reliably set the activation time after _lastSpawnTime). Rely on respawnAtPoint and a
+        // non-null respawnPoint instead.
+        if (respawnAtPoint && respawnPoint != null && fpsController != null)
+         {
+             if (ScreenFadeManager.Instance != null)
+             {
+                 ScreenFadeManager.Instance.FadeOutAndRespawn(() => { RespawnPlayer(); });
+             }
+             else
+             {
+                 RespawnPlayer();
+             }
+         }
+         else
+         {
+            // No checkpoint set - restart the scene so everything resets to the level start
+            if (ScreenFadeManager.Instance != null)
             {
-                // Respawn player during black screen
-                RespawnPlayer();
-            });
-        }
-        else
-        {
-            // Fallback: respawn immediately if fade manager doesn't exist
-            RespawnPlayer();
-        }
+                int currentIndex = SceneManager.GetActiveScene().buildIndex;
+                ScreenFadeManager.Instance.FadeOutAndLoadScene(currentIndex);
+            }
+            else
+            {
+                // Fallback: immediate scene reload
+                RestartScene();
+            }
+         }
     }
-    
-    /// <summary>
-    /// Respawns the player at the respawn anchor.
-    /// </summary>
     public void RespawnPlayer()
     {
         if (player == null || fpsController == null || respawnPoint == null)
@@ -177,34 +190,111 @@ public class PlayerManager : MonoBehaviour
         Vector3 targetPos = respawnPoint.position;
         Quaternion targetRot = respawnPoint.rotation;
         
-        // Teleport player - that's it, nothing else
+        // Reset all scene objects EXCEPT audio systems (FMOD, AudioListeners, AudioSources marked DontDestroyOnLoad)
+        ResetSceneState();
+        
+        // Teleport player to checkpoint
         fpsController.TeleportToPosition(targetPos, targetRot);
         
+        // Reset player health
+        if (fpsController != null)
+        {
+            // Use reflection to reset health without making fields public
+            var healthField = typeof(FPSController).GetField("_currentHealth", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var maxHealthField = typeof(FPSController).GetField("maxHealth", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+            if (healthField != null && maxHealthField != null)
+            {
+                int maxHP = (int)maxHealthField.GetValue(fpsController);
+                healthField.SetValue(fpsController, maxHP);
+            }
+            
+            // Re-enable player control
+            fpsController.SetDisabled(false);
+        }
+        
+        // Update last spawn time so subsequent deaths only use checkpoints activated after this moment
+        _lastSpawnTime = Time.time;
         isDead = false;
     }
     
     /// <summary>
-    /// Restarts the current scene with fade transition.
+    /// Resets all scene objects (turrets, radios, cubes, etc.) to their initial state.
+    /// Preserves audio systems (FMOD, AudioListener, persistent AudioSources).
     /// </summary>
+    private void ResetSceneState()
+    {
+        // Reset all turrets to idle state
+        var turrets = FindObjectsByType<Enemy.Turret>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var turret in turrets)
+        {
+            if (turret == null) continue;
+            // Re-enable and reset turrets
+            turret.gameObject.SetActive(true);
+            turret.enabled = true;
+            turret.ResetToIdle();
+        }
+        
+        // Reset all interactable objects (radios, cubes, etc.)
+        var interactables = FindObjectsByType<InteractableObject>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var obj in interactables)
+        {
+            if (obj == null) continue;
+            // Reset physics - stop all movement
+            var rb = obj.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+        
+        // Destroy all active projectiles
+        var projectiles = FindObjectsByType<Enemy.Projectile>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var proj in projectiles)
+        {
+            if (proj != null)
+            {
+                Destroy(proj.gameObject);
+            }
+        }
+        
+        // Reset radio counter if present (but keep collected radios count - only reset if you want full reset)
+        var radioCounter = FindFirstObjectByType<Interact.RadioCounter>();
+        if (radioCounter != null)
+        {
+            // Don't reset radio count - player keeps their progress
+            // If you want to reset radios too, add that logic here
+        }
+        
+        // Reset buttons to unpressed state
+        var buttons = FindObjectsByType<Interact.Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var button in buttons)
+        {
+            if (button == null) continue;
+            // Buttons will reset themselves on scene reload, no action needed here for checkpoint respawn
+        }
+        
+        Debug.Log("PlayerManager: Scene state reset (turrets, projectiles, physics) while preserving audio systems.");
+    }
     public void RestartScene()
     {
         Debug.Log("PlayerManager: Restarting scene...");
         GameSceneManager.ReloadCurrentScene();
     }
-  
-   
-    
-    /// <summary>
-    /// Sets a new respawn point.
-    /// </summary>
-    public void SetRespawnPoint(Transform newRespawnPoint)
+    public void SetRespawnPoint(Transform newRespawnPoint, bool enable = false)
     {
         respawnPoint = newRespawnPoint;
+        // Only enable checkpoint respawn if explicitly requested
+        if (enable)
+        {
+            respawnAtPoint = (respawnPoint != null);
+            if (respawnAtPoint)
+            {
+                _checkpointActivatedTime = Time.time;
+            }
+         }
+
+         Debug.Log($"PlayerManager: Respawn point set to '{respawnPoint?.name}'. Checkpoint respawn enabled: {respawnAtPoint}");
     }
-    
-    /// <summary>
-    /// Checks if the player is currently dead.
-    /// </summary>
     public bool IsDead => isDead;
 }
-

@@ -1,4 +1,4 @@
- using UnityEngine;
+using UnityEngine;
 
 namespace Interact {
 	/// <summary>
@@ -11,6 +11,12 @@ namespace Interact {
 		
 		[Tooltip("Right part of the door (moves right when opening)")]
 		[SerializeField] Transform doorRight;
+
+        [Header("Audio")]
+        [Tooltip("Sound played when the door opens.")]
+        [SerializeField] AudioClip openClip;
+        [Tooltip("Sound played when the door closes.")]
+        [SerializeField] AudioClip closeClip;
 
 		[Header("Door Settings")]
 		[Tooltip("Distance each door part moves when opening (in local space)")]
@@ -51,6 +57,7 @@ namespace Interact {
 		/// </summary>
 		public void Open() {
 			_isOpen = true;
+			if (openClip != null) AudioSource.PlayClipAtPoint(openClip, transform.position);
 		}
 
 		/// <summary>
@@ -58,6 +65,7 @@ namespace Interact {
 		/// </summary>
 		public void Close() {
 			_isOpen = false;
+			if (closeClip != null) AudioSource.PlayClipAtPoint(closeClip, transform.position);
 		}
 
 		void Update() {
@@ -91,4 +99,3 @@ namespace Interact {
 		}
 	}
 }
-

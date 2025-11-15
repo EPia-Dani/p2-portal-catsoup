@@ -1,6 +1,5 @@
 using UnityEngine;
-
-namespace Interact {
+using Interact;
 	/// <summary>
 	/// Simple elevator that moves up and down by translating a single door/platform vertically.
 	/// </summary>
@@ -19,6 +18,12 @@ namespace Interact {
 	[Header("Animation Curve")]
 	[Tooltip("Curve that controls the elevator movement animation. X axis (0-1) represents progress, Y axis (0-1) represents the interpolation value.")]
 	[SerializeField] AnimationCurve moveCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+        [Header("Audio")]
+        [Tooltip("Sound played when the elevator opens (moves down)")]
+        [SerializeField] AudioClip openClip;
+        [Tooltip("Sound played when the elevator closes (moves up)")]
+        [SerializeField] AudioClip closeClip;
 
 	private Vector3 _originalPosition;
 	private Vector3 _downPosition;
@@ -44,6 +49,7 @@ namespace Interact {
 	/// </summary>
 	public void Open() {
 		_isOpen = true;
+		if (openClip != null) AudioSource.PlayClipAtPoint(openClip, transform.position);
 	}
 
 	/// <summary>
@@ -51,6 +57,7 @@ namespace Interact {
 	/// </summary>
 	public void Close() {
 		_isOpen = false;
+		if (closeClip != null) AudioSource.PlayClipAtPoint(closeClip, transform.position);
 	}
 
 	void Update() {
@@ -82,5 +89,3 @@ namespace Interact {
 			}
 		}
 	}
-}
-

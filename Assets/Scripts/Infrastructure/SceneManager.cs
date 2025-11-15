@@ -1,9 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Simple scene management system for loading menu and level scenes
-/// </summary>
+
 public static class GameSceneManager {
 	// Scene names - update these to match your actual scene names
 	public const string MAIN_MENU_SCENE = "MainMenu";
@@ -11,9 +9,7 @@ public static class GameSceneManager {
 	public const string PORTAL_SCENE = "Portal"; // Existing scene
 	public const string SAMPLE_SCENE = "SampleScene"; // Existing scene
 
-	/// <summary>
-	/// Loads a scene by name with fade transition
-	/// </summary>
+	
 	public static void LoadScene(string sceneName) {
 		if (string.IsNullOrEmpty(sceneName)) {
 			Debug.LogError("SceneManager: Cannot load scene with null or empty name");
@@ -32,9 +28,6 @@ public static class GameSceneManager {
 		}
 	}
 
-	/// <summary>
-	/// Loads a scene by build index with fade transition
-	/// </summary>
 	public static void LoadScene(int buildIndex) {
 		if (buildIndex < 0 || buildIndex >= SceneManager.sceneCountInBuildSettings) {
 			Debug.LogError($"SceneManager: Invalid scene index {buildIndex}");
@@ -84,9 +77,7 @@ public static class GameSceneManager {
 		}
 	}
 
-	/// <summary>
-	/// Quits the game (works in build, shows message in editor)
-	/// </summary>
+
 	public static void QuitGame() {
 		Debug.Log("SceneManager: Quitting game");
 		
@@ -96,10 +87,7 @@ public static class GameSceneManager {
 		Application.Quit();
 		#endif
 	}
-
-	/// <summary>
-	/// Gets the name of the currently active scene
-	/// </summary>
+	
 	public static string GetCurrentSceneName() {
 		return SceneManager.GetActiveScene().name;
 	}

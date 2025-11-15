@@ -177,7 +177,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/WeaponSounds.bank
   Name: WeaponSounds
   StudioPath: bank:/SFX/WeaponSounds
-  lastModified: 638984843120411903
+  lastModified: 638984735778009432
   FileSizes:
   - Name: Desktop
     Value: 111712
@@ -224,7 +224,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638986294728107808
+  lastModified: 638986631711012622
   FileSizes:
   - Name: Desktop
     Value: 1838
@@ -325,7 +325,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
   Name: GeneralSFX
   StudioPath: bank:/SFX/GeneralSFX
-  lastModified: 638986270964970101
+  lastModified: 638986631710981344
   FileSizes:
   - Name: Desktop
     Value: 1281632
@@ -459,7 +459,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -5631817738560404720}
   cacheVersion: 131856
-  cacheTime: 638986319601394504
+  cacheTime: 638986631711012622
   SerializableEventsDict:
   - key: event:/SFX/Collision
     index: 0
@@ -547,7 +547,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GlaDOS.bank
   Name: GlaDOS
   StudioPath: bank:/SFX/GlaDOS
-  lastModified: 638986319601394504
+  lastModified: 638986631711012622
   FileSizes:
   - Name: Desktop
     Value: 418912
@@ -648,7 +648,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638986294728077785
+  lastModified: 638984735777964213
   FileSizes:
   - Name: Desktop
     Value: 1074
@@ -749,7 +749,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
   Name: PortalSounds
   StudioPath: bank:/SFX/PortalSounds
-  lastModified: 638985779743036847
+  lastModified: 638985799907471184
   FileSizes:
   - Name: Desktop
     Value: 63936

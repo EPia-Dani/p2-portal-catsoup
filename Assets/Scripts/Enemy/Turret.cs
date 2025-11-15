@@ -15,24 +15,50 @@ namespace Enemy
         public LayerMask obstacleMask = 0;   // layers that block line-of-sight (e.g. Default)
         public bool requireLineOfSight = true;
         public float loseTargetDelay = 0.2f; // small grace before losing a target
+        public float acquireDelay = 0.5f;    // delay between seeing a target and locking/firing (portal turret style)
 
         [Header("Aiming & Firing")]
         public float rotationSpeed = 5f;     // how fast the head rotates
-        public float fireRate = 1f;          // shots per second
+        public float fireRate = 1f;          // legacy continuous fire rate (kept for compatibility)
         public float projectileSpeed = 25f;
+
+        [Header("Burst Fire (Portal-style)")]
+        public int shotsPerBurst = 3;        // how many shots in a burst
+        public float burstShotInterval = 0.1f; // time between shots inside a burst
+        public float burstCooldown = 2f;    // cooldown between bursts
+
+        [Header("Audio/Visual (optional)")]
+        public AudioSource audioSource;
+        public AudioClip wakeClip;           // played when turret first notices target
+        public AudioClip acquireClip;        // played when target is acquired/locked
+        public AudioClip shootClip;          // optional per-shot sound
+        public AudioClip lostClip;           // played when turret loses target
+        public ParticleSystem muzzleFlash;   // optional muzzle flash on firing
+        public Animator animator;            // optional animator to trigger wake/sleep/shoot states
 
         [Header("Debug")]
         public bool logFiring = true;        // enable to see debug logs when firing
         public bool allowManualFire; // press ManualFireKey in Play to call FireOnce()
         public KeyCode manualFireKey = KeyCode.F;
         public bool verboseDiagnostics; // when true, prints detailed search/hit info
+        [Tooltip("If true, when nothing is found using the configured targetMask the turret will attempt to add detected collider layers to the mask at runtime (helpful for build-time layer mismatches).")]
+        public bool autoDetectTargetLayer = true;
 
         // Re-usable buffer for OverlapSphereNonAlloc to avoid GC allocations
         Collider[] overlapResults = new Collider[32];
 
         Transform currentTarget;
-        float fireTimer;
+        float fireTimer; // used for burst cooldown or legacy continuous mode
         float loseTimer;
+
+        // burst state
+        int shotsRemainingInBurst = 0;
+        float shotTimer = 0f; // timer between shots inside burst
+        float acquireTimer = 0f; // timer used while acquiring
+
+        // simple internal state machine
+        enum State { Idle, Acquiring, Tracking, Firing, Cooldown }
+        State state = State.Idle;
 
         // cache turret colliders to ignore collisions with spawned projectiles
         Collider[] turretColliders;
@@ -45,19 +71,65 @@ namespace Enemy
 
         void Start()
         {
-            if (head == null) head = transform;
+            // CRITICAL: Always ensure head is assigned - this fixes builds where it might be null
+            if (head == null)
+            {
+                head = transform;
+                if (logFiring) Debug.Log($"Turret '{name}': head was null, assigned to self (transform). This is normal.", this);
+            }
+            
+            // Validate head is not destroyed
+            if (head == null || head.Equals(null))
+            {
+                Debug.LogError($"Turret '{name}': head reference is invalid after assignment! Turret will not rotate.", this);
+                enabled = false;
+                return;
+            }
+            
             fireTimer = 0f; // allow immediate firing on acquire
 
             turretColliders = GetComponentsInChildren<Collider>(true);
 
             if (firePoint == null)
+            {
                 Debug.LogWarning($"Turret '{name}': firePoint is not assigned. Assign an empty child Transform as the muzzle.", this);
+                // Try to find a child named "FirePoint" or "Muzzle"
+                Transform fp = transform.Find("FirePoint");
+                if (fp == null) fp = transform.Find("Muzzle");
+                if (fp != null)
+                {
+                    firePoint = fp;
+                    Debug.Log($"Turret '{name}': Auto-found firePoint: {firePoint.name}", this);
+                }
+                else
+                {
+                    // Use head position as fallback
+                    firePoint = head;
+                    Debug.LogWarning($"Turret '{name}': Using head as firePoint fallback.", this);
+                }
+            }
 
             if (projectilePrefab == null)
                 Debug.LogWarning($"Turret '{name}': projectilePrefab is not assigned. Assign a prefab with a Mesh/Renderer, Collider and Rigidbody.", this);
 
-            if ((int)targetMask == 0)
-                Debug.LogWarning($"Turret '{name}': targetMask is zero (no layers selected). Make sure the intended targets are on a layer included by the mask.", this);
+            // If targetMask was serialized to zero by mistake, default to everything so turret still works in builds
+            if (targetMask.value == 0)
+            {
+                Debug.LogWarning($"Turret '{name}': targetMask is zero (no layers selected). Overriding to default (Everything) to avoid missing targets in builds.", this);
+                targetMask = ~0;
+            }
+
+            // set idle animator state if available
+            if (animator != null)
+            {
+                animator.Play("Idle");
+            }
+            
+            // Log full turret state for build debugging
+            if (logFiring)
+            {
+                Debug.Log($"Turret '{name}' initialized: head={head?.name}, firePoint={firePoint?.name}, projectilePrefab={(projectilePrefab!=null?"assigned":"NULL")}, targetMask=0x{targetMask.value:X}, enabled={enabled}", this);
+            }
         }
 
         void Update()
@@ -81,28 +153,103 @@ namespace Enemy
 
         void AcquireAndTrack()
         {
-            if (currentTarget == null)
+            switch (state)
             {
-                FindTarget();
-            }
-            else
-            {
-                // validate target still valid
-                if (!IsTargetValid(currentTarget))
-                {
-                    loseTimer += Time.deltaTime;
-                    if (loseTimer >= loseTargetDelay)
+                case State.Idle:
+                    // try to find a target
+                    if (currentTarget == null)
+                        FindTarget();
+                    // if a target was found by FindTarget it will have moved us to Acquiring
+                    break;
+
+                case State.Acquiring:
+                    if (currentTarget == null)
                     {
-                        if (logFiring) Debug.Log($"Turret '{name}': lost target {currentTarget.name}.", this);
-                        currentTarget = null;
-                        loseTimer = 0f;
+                        state = State.Idle;
+                        acquireTimer = 0f;
+                        break;
                     }
-                }
-                else
-                {
-                    loseTimer = 0f;
+
+                    // Aim while acquiring
                     AimAt(currentTarget.position);
-                }
+                    acquireTimer -= Time.deltaTime;
+                    if (acquireTimer <= 0f)
+                    {
+                        // lock on and enter tracking/firing
+                        state = State.Tracking;
+                        shotsRemainingInBurst = shotsPerBurst;
+                        if (audioSource != null && acquireClip != null) audioSource.PlayOneShot(acquireClip);
+                        if (animator != null) animator.SetTrigger("Locked");
+                        if (logFiring) Debug.Log($"Turret '{name}': locked on {currentTarget.name} and ready to fire.", this);
+                    }
+                    break;
+
+                case State.Tracking:
+                    if (currentTarget == null)
+                    {
+                        state = State.Idle;
+                        break;
+                    }
+
+                    if (!IsTargetValid(currentTarget))
+                    {
+                        loseTimer += Time.deltaTime;
+                        if (loseTimer >= loseTargetDelay)
+                        {
+                            if (logFiring) Debug.Log($"Turret '{name}': lost target {currentTarget.name}.", this);
+                            PlayClipSafe(lostClip);
+                            currentTarget = null;
+                            loseTimer = 0f;
+                            state = State.Idle;
+                        }
+                    }
+                    else
+                    {
+                        loseTimer = 0f;
+                        AimAt(currentTarget.position);
+                        // start firing immediately when tracking
+                        state = State.Firing;
+                        shotTimer = 0f; // allow immediate shot in burst
+                        if (animator != null) animator.SetTrigger("Wake");
+                    }
+                    break;
+
+                case State.Firing:
+                    if (currentTarget == null)
+                    {
+                        state = State.Idle;
+                        break;
+                    }
+
+                    if (!IsTargetValid(currentTarget))
+                    {
+                        loseTimer += Time.deltaTime;
+                        if (loseTimer >= loseTargetDelay)
+                        {
+                            if (logFiring) Debug.Log($"Turret '{name}': lost target {currentTarget.name}.", this);
+                            PlayClipSafe(lostClip);
+                            currentTarget = null;
+                            loseTimer = 0f;
+                            state = State.Idle;
+                        }
+                        break;
+                    }
+
+                    // keep aiming while firing
+                    AimAt(currentTarget.position);
+                    break;
+
+                case State.Cooldown:
+                    // wait for cooldown between bursts
+                    fireTimer -= Time.deltaTime;
+                    if (fireTimer <= 0f)
+                    {
+                        fireTimer = 0f;
+                        // after cooldown, go back to Tracking so Acquire/lock behaves consistently
+                        shotsRemainingInBurst = shotsPerBurst;
+                        state = State.Tracking;
+                    }
+                    break;
             }
         }
 
@@ -110,6 +257,36 @@ namespace Enemy
         {
             int count = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, overlapResults, targetMask);
             if (logFiring && verboseDiagnostics) Debug.Log($"Turret '{name}': OverlapSphere found {count} colliders.");
+
+            // Diagnostic fallback: if nothing found, retry without mask to detect possible layer/mask misconfiguration in build
+            if (count == 0)
+            {
+                int countAll = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, overlapResults, ~0);
+                if (countAll > 0)
+                {
+                    if (logFiring) Debug.LogWarning($"Turret '{name}': No targets found with configured targetMask. Found {countAll} colliders when ignoring layer mask — your targetMask may be misconfigured in the build.", this);
+                    if (autoDetectTargetLayer)
+                    {
+                        // Build a mask from the found colliders' layers and add them to the turret's targetMask
+                        int newMask = 0;
+                        for (int i = 0; i < countAll; i++)
+                        {
+                            var c = overlapResults[i];
+                            if (c == null) continue;
+                            newMask |= (1 << c.gameObject.layer);
+                        }
+                        if (newMask != 0)
+                        {
+                            targetMask |= newMask;
+                            if (logFiring) Debug.LogWarning($"Turret '{name}': auto-detected and expanded targetMask to include layers: 0x{newMask:X}. New targetMask=0x{targetMask.value:X}", this);
+                            // refresh count using the updated mask
+                            count = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, overlapResults, targetMask);
+                        }
+                    }
+                    count = countAll;
+                }
+            }
+
             float bestDist = Mathf.Infinity;
             Transform best = null;
 
@@ -145,9 +322,15 @@ namespace Enemy
             if (best != null)
             {
                 currentTarget = best;
-                // reset the fire timer so we shoot immediately when acquiring a new target
+                // start acquiring (small delay before firing, like the portal turret)
+                acquireTimer = acquireDelay;
+                state = State.Acquiring;
+                // reset firing timers
                 fireTimer = 0f;
-                if (logFiring) Debug.Log($"Turret '{name}': acquired target {currentTarget.name}.", this);
+                shotsRemainingInBurst = shotsPerBurst;
+                if (logFiring) Debug.Log($"Turret '{name}': acquired target {currentTarget.name} (entering acquiring state).", this);
+                PlayClipSafe(wakeClip);
+                if (animator != null) animator.SetTrigger("Wake");
             }
             else
             {
@@ -184,14 +367,33 @@ namespace Enemy
 
         void HandleFiring()
         {
+            // state-driven firing: handle burst logic
+            if (state != State.Firing) return;
             if (currentTarget == null) return;
             if (projectilePrefab == null || firePoint == null) return;
 
-            fireTimer -= Time.deltaTime;
-            if (fireTimer <= 0f)
+            // if there are shots remaining in the current burst, handle shot timing
+            if (shotsRemainingInBurst > 0)
             {
-                FireOnce();
-                fireTimer = 1f / Mathf.Max(0.0001f, fireRate);
+                shotTimer -= Time.deltaTime;
+                if (shotTimer <= 0f)
+                {
+                    // fire one shot
+                    FireOnce();
+                    shotsRemainingInBurst--;
+                    shotTimer = burstShotInterval;
+
+                    if (muzzleFlash != null) muzzleFlash.Play();
+                    PlayClipSafe(shootClip);
+                    if (animator != null) animator.SetTrigger("Shoot");
+                }
+            }
+            else
+            {
+                // burst finished - enter cooldown state
+                state = State.Cooldown;
+                fireTimer = burstCooldown;
+                if (logFiring) Debug.Log($"Turret '{name}': burst finished, entering cooldown for {burstCooldown} seconds.", this);
             }
         }
 
@@ -253,7 +455,16 @@ namespace Enemy
             Rigidbody rb = projectileInstance.GetComponentInChildren<Rigidbody>();
             if (rb == null)
             {
-                if (logFiring) Debug.LogWarning($"Turret '{name}' projectile has no Rigidbody - it won't move. Add a Rigidbody to the projectile prefab.", projectileInstance);
+                if (logFiring) Debug.LogWarning($"Turret '{name}' projectile has no Rigidbody - adding one at runtime so it moves in builds.", projectileInstance);
+                // add a Rigidbody so the projectile can move. This helps when prefabs were missing the component in some builds.
+                rb = projectileInstance.AddComponent<Rigidbody>();
+                rb.mass = 0.5f;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            }
+
+            if (rb == null)
+            {
+                if (logFiring) Debug.LogWarning($"Turret '{name}': no Rigidbody available on projectile; it won't move.", projectileInstance);
             }
             else
             {
@@ -263,16 +474,29 @@ namespace Enemy
                 }
                 else
                 {
-                    // use AddForce to avoid directly setting possibly-obsolete properties
-                    rb.AddForce(firePoint.forward * projectileSpeed, ForceMode.VelocityChange);
-                    if (logFiring) Debug.Log($"Turret '{name}': applied force {firePoint.forward * projectileSpeed} to projectile (rb name: '{rb.name}').", projectileInstance);
+                    // set velocity directly for deterministic behaviour in builds
+                    rb.linearVelocity = firePoint.forward * projectileSpeed;
+                    if (logFiring) Debug.Log($"Turret '{name}': set projectile linearVelocity to {rb.linearVelocity} (rb name: '{rb.name}').", projectileInstance);
                 }
             }
         }
 
-        /// <summary>
-        /// Public helper so you can trigger a single shot from other scripts or context menu.
-        /// </summary>
+        // Helper that plays a clip using the assigned AudioSource if available, otherwise falls back to PlayClipAtPoint
+        void PlayClipSafe(AudioClip clip)
+        {
+            if (clip == null) return;
+            if (audioSource != null)
+            {
+                audioSource.PlayOneShot(clip);
+            }
+            else
+            {
+                Vector3 pos = firePoint != null ? firePoint.position : transform.position;
+                AudioSource.PlayClipAtPoint(clip, pos);
+            }
+        }
+
+ 
         [ContextMenu("Test Fire")]
         public void TestFire()
         {
@@ -285,11 +509,33 @@ namespace Enemy
             Gizmos.DrawWireSphere(transform.position, detectionRadius);
             if (firePoint != null)
             {
-                Gizmos.color = Color.red;
+            Gizmos.color = Color.red;
                 Gizmos.DrawLine(firePoint.position, firePoint.position + (firePoint.forward * Mathf.Min(10f, detectionRadius)));
             }
         }
 
         public void SetEnabled(bool on) => enabled = on;
+
+        /// <summary>
+        /// Resets the turret to its initial idle state (called when player respawns at checkpoint).
+        /// </summary>
+        public void ResetToIdle()
+        {
+            currentTarget = null;
+            state = State.Idle;
+            fireTimer = 0f;
+            loseTimer = 0f;
+            shotsRemainingInBurst = 0;
+            shotTimer = 0f;
+            acquireTimer = 0f;
+            
+            // Stop any ongoing animations
+            if (animator != null)
+            {
+                animator.Play("Idle");
+            }
+            
+            if (logFiring) Debug.Log($"Turret '{name}': Reset to idle state.", this);
+        }
     }
 }
