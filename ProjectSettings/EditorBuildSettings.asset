@@ -12,14 +12,14 @@ EditorBuildSettings:
     path: Assets/Scenes/IntroScene.unity
     guid: 12147cfe33dc9be40a59d76924b633f3
   - enabled: 1
-    path: Assets/Scenes/Level2.unity
-    guid: 84271f41818b345499b3ca66c6d9fde0
+    path: Assets/Scenes/FinalLevel.unity
+    guid: 6a93e291a33e0d24da225f51a39be930
   - enabled: 1
     path: Assets/Scenes/Credits.unity
     guid: c13e3c5762064d94aac5ff5eca28310d
   - enabled: 0
-    path: Assets/Scenes/FinalLevel.unity
-    guid: 6a93e291a33e0d24da225f51a39be930
+    path: Assets/Scenes/Level2.unity
+    guid: 84271f41818b345499b3ca66c6d9fde0
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b,
       type: 3}

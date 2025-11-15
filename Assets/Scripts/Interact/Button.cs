@@ -15,6 +15,10 @@ namespace Interact
         [Header("Button Settings")]
         [Tooltip("How far down the button moves when pressed (in local Y units).")]
         public float pressDistance = 0.2f;
+
+        [Header("Audio")]
+        [Tooltip("Sound played when the button is pressed.")]
+        [SerializeField] AudioClip buttonPressedClip;
         
         [Tooltip("Speed at which the button moves down/up (units per second).")]
         public float pressSpeed = 2f;
@@ -57,6 +61,8 @@ namespace Interact
         public void SetPressed()
         {
             isPressed = true;
+            // Play press sound at the button's position
+            if (buttonPressedClip != null) AudioSource.PlayClipAtPoint(buttonPressedClip, transform.position);
         }
         
         /// <summary>

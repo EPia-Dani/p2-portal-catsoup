@@ -10,52 +10,79 @@ namespace RefractionCubes
         public LineRenderer line;
         public float maxDistance = 128f;
         public int maxReflections = 128;
-        public bool checkForIntruders = false;
+        public bool checkForIntruders = true;
         [Tooltip("If true, raycast will hit trigger colliders as well")]
-        public bool includeTriggerColliders = false;
+        public bool includeTriggerColliders = true;
 
-        [Header("State")] private readonly List<Vector3> _linePoints = new();
-        private PlayerManager _playerManager;
+        [Header("State")] 
+        private readonly List<Vector3> _linePoints = new();
+
+        private void Awake()
+        {
+            // Ensure the line renderer is assigned
+            if (line == null)
+                line = GetComponent<LineRenderer>();
+        }
 
         private void Update()
         {
+            if (line == null)
+                return; // safety guard
+
             _linePoints.Clear();
             _linePoints.Add(transform.position);
+
             ShootLaser(transform.position, transform.forward, maxReflections);
+
             line.positionCount = _linePoints.Count;
             line.SetPositions(_linePoints.ToArray());
         }
 
-        void ShootLaser(Vector3 position, Vector3 direction, int reflectionsRemaining)
+        private void ShootLaser(Vector3 position, Vector3 direction, int reflectionsRemaining)
         {
-            if (reflectionsRemaining <= 0) return;
+            if (reflectionsRemaining <= 0)
+                return;
 
             reflectionsRemaining--;
             direction = direction.normalized;
 
-            var qti = includeTriggerColliders ? QueryTriggerInteraction.Collide : QueryTriggerInteraction.Ignore;
-            if (!Physics.Raycast(position, direction, out RaycastHit hit, maxDistance, Physics.DefaultRaycastLayers, qti))
+            var qti = includeTriggerColliders ? 
+                QueryTriggerInteraction.Collide : 
+                QueryTriggerInteraction.Ignore;
+
+            // Perform the raycast
+            if (!Physics.Raycast(
+                    position, 
+                    direction, 
+                    out RaycastHit hit, 
+                    maxDistance, 
+                    Physics.DefaultRaycastLayers, 
+                    qti))
             {
                 _linePoints.Add(position + direction * maxDistance);
+                // Visual debug: draw the final segment in the Scene view for one frame
+                Debug.DrawLine(position, position + direction * maxDistance, Color.red, 0.1f);
                 return;
             }
 
             _linePoints.Add(hit.point);
-            var hitCollider = hit.collider;
+            // Visual debug: draw the hit segment in the Scene view for one frame
+            Debug.DrawLine(position, hit.point, Color.red, 0.1f);
 
-            // Prefer component-based detection (works if the tag is on a parent or the component is on a parent)
+            var hitCollider = hit.collider;
+            if (hitCollider == null)
+                return; 
+
             var refraction = hitCollider.GetComponentInParent<RefractionCube>();
             if (refraction != null)
             {
                 Debug.Log("Refraction cube detected: " + refraction.gameObject.name);
 
-                // Convert the cube's configured refraction direction from local to world space.
                 Vector3 localExit = refraction.refractionDirection;
                 Vector3 exitDirection;
 
                 if (localExit.sqrMagnitude <= Mathf.Epsilon)
                 {
-                    // Fallback: reflect off the hit normal if no exit direction configured
                     exitDirection = Vector3.Reflect(direction, hit.normal).normalized;
                 }
                 else
@@ -63,11 +90,9 @@ namespace RefractionCubes
                     exitDirection = refraction.transform.TransformDirection(localExit.normalized);
                 }
 
-                // Start the next ray slightly outside the cube to avoid immediately hitting the same collider
                 const float exitOffset = 0.06f;
                 Vector3 exitOrigin = refraction.transform.position + exitDirection * exitOffset;
 
-                // If the exit origin accidentally is inside the collider (rare), move it along the exit direction from the hit point instead
                 if (Vector3.Distance(exitOrigin, hit.point) < 0.01f)
                 {
                     exitOrigin = hit.point + exitDirection * exitOffset;
@@ -79,17 +104,81 @@ namespace RefractionCubes
 
             if (checkForIntruders)
             {
-                // Try to detect player by component on the hit object or its parents
-                var player = hitCollider.GetComponentInParent<PlayerManager>();
-                if (player != null)
+                if (hitCollider.CompareTag("Player"))
                 {
-                    player.OnPlayerDeath();
-                    Debug.Log("Player hit by laser: " + player.gameObject.name);
+                    // Prefer to find the FPSController on the hit object (or its parents)
+                    var fps = hitCollider.GetComponentInParent<FPSController>();
+                    if (fps != null)
+                    {
+                        fps.KillFromExternal();
+                        Debug.Log("Player hit by laser via FPSController: " + fps.gameObject.name);
+                        return;
+                    }
+
+                    // Fallback: try PlayerManager singleton
+                    var pm = PlayerManager.Instance;
+                    if (pm != null)
+                    {
+                        pm.OnPlayerDeath();
+                        Debug.Log("Player hit by laser via PlayerManager singleton.");
+                        return;
+                    }
+
+                    Debug.LogWarning("Laser hit object tagged Player but no FPSController or PlayerManager found.");
                     return;
                 }
-            }
 
-            // If we hit something else (non-refraction object), stop the laser at hit point.
+                if (hitCollider.CompareTag("Button"))
+                {
+                    // Detailed logging to help debug why buttons aren't triggered
+                    Debug.Log($"Laser hit collider '{hitCollider.gameObject.name}' with tag '{hitCollider.gameObject.tag}'");
+
+                    // First try parent chain, then try children as a fallback (some button setups put the ScriptableTrigger on a child)
+                    var button = hitCollider.GetComponentInParent<ScriptableTrigger>();
+                    if (button == null)
+                    {
+                        button = hitCollider.GetComponentInChildren<ScriptableTrigger>();
+                        if (button != null)
+                        {
+                            Debug.Log($"Found ScriptableTrigger on child of '{hitCollider.gameObject.name}' -> invoking onEnter on '{button.gameObject.name}'");
+                        }
+                    }
+
+                    if (button != null)
+                    {
+                        try
+                        {
+                            button.onEnter.Invoke();
+                            Debug.Log("Button hit by laser: " + button.gameObject.name);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogError($"Failed to invoke onEnter on ScriptableTrigger '{button.gameObject.name}': {ex}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Laser hit '{hitCollider.gameObject.name}' tagged Button but no ScriptableTrigger found in parents or children.");
+                    }
+                }
+                else
+                {
+                    // Fallback: if object isn't tagged Button but a ScriptableTrigger exists on parent/children, invoke it.
+                    var strayTrigger = hitCollider.GetComponentInParent<ScriptableTrigger>() ?? hitCollider.GetComponentInChildren<ScriptableTrigger>();
+                    if (strayTrigger != null)
+                    {
+                        Debug.LogWarning($"Laser hit '{hitCollider.gameObject.name}' which is NOT tagged 'Button', but a ScriptableTrigger was found on '{strayTrigger.gameObject.name}'. Invoking onEnter as fallback.");
+                        try
+                        {
+                            strayTrigger.onEnter.Invoke();
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogError($"Failed to invoke onEnter on fallback ScriptableTrigger '{strayTrigger.gameObject.name}': {ex}");
+                        }
+                    }
+                }
+            }
         }
     }
 }

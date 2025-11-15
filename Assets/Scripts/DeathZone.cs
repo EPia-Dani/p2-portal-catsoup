@@ -1,9 +1,6 @@
 using UnityEngine;
+using System.Collections;
 
-/// <summary>
-/// Death zone that triggers when the player enters it.
-/// Requires a Collider component set as a trigger.
-/// </summary>
 [RequireComponent(typeof(Collider))]
 public class DeathZone : MonoBehaviour
 {
@@ -12,7 +9,7 @@ public class DeathZone : MonoBehaviour
     public string targetTag = "Player";
     
     [Tooltip("Delay before triggering death (in seconds)")]
-    public float deathDelay = 0f;
+    public float deathDelay;
     
     private void Start()
     {
@@ -33,37 +30,57 @@ public class DeathZone : MonoBehaviour
             return;
         }
         
-        // Check if this is the player
-        FPSController player = other.GetComponent<FPSController>();
-        if (player != null)
+        // Try to kill the player via FPSController if present on the collider or its parents
+        FPSController fps = other.GetComponentInParent<FPSController>();
+        if (fps != null)
         {
             if (deathDelay > 0f)
             {
-                Invoke(nameof(TriggerDeath), deathDelay);
+                StartCoroutine(DelayedKillFPS(fps, deathDelay));
             }
             else
             {
-                TriggerDeath();
+                fps.KillFromExternal();
             }
+            return;
         }
+        
+        // Fallback: use PlayerManager if it exists
+        if (deathDelay > 0f)
+        {
+            Invoke(nameof(TriggerDeath), deathDelay);
+        }
+        else
+        {
+            TriggerDeath();
+        }
+    }
+
+    private IEnumerator DelayedKillFPS(FPSController fps, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (fps != null)
+            fps.KillFromExternal();
     }
     
     private void TriggerDeath()
     {
-        // Find PlayerManager and trigger death
-        PlayerManager playerManager = FindFirstObjectByType<PlayerManager>();
-        if (playerManager != null)
+        // First try PlayerManager singleton
+        PlayerManager pm = PlayerManager.Instance;
+        if (pm != null)
         {
-            playerManager.OnPlayerDeath();
+            pm.OnPlayerDeath();
+            return;
         }
-        else
+
+        // Next try to find an FPSController in the scene
+        FPSController fps = FindFirstObjectByType<FPSController>();
+        if (fps != null)
         {
-            Debug.LogError("DeathZone: PlayerManager not found in scene! Cannot trigger death.");
+            fps.KillFromExternal();
+            return;
         }
+
+        Debug.LogError("DeathZone: No PlayerManager or FPSController found in scene! Cannot trigger death.");
     }
 }
-
-
-
-
-

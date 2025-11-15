@@ -2,7 +2,7 @@ using Input;
 using UnityEngine;
 using UI;
 
-namespace Portal {
+namespace Portal.Interaction {
 	public class PortalGun : MonoBehaviour {
 		[SerializeField] LayerMask shootMask = ~0;
 		[SerializeField] float shootDistance = 1000f;
@@ -10,6 +10,10 @@ namespace Portal {
 		[SerializeField] PortalManager portalManager;
 		[SerializeField] Vector2 portalHalfSize = new Vector2(0.45f, 0.45f);
 		[SerializeField] float clampSkin = 0.01f;
+
+		[Header("Audio")]
+		[Tooltip("Sound played when firing the portal gun (shot sound)")]
+		[SerializeField] AudioClip portalGunClip;
 
 		[Header("Portal Resizing")]
 		[SerializeField] float minPortalSize = 0.2f;
@@ -139,6 +143,13 @@ namespace Portal {
 			}
 
 			Vector3 finalPosition = placement.GetWorldPosition(resolvedPos);
+			
+			// Play portal gun firing sound at the camera position (if assigned)
+			if (portalGunClip != null) {
+				Vector3 playPos = shootCamera != null ? shootCamera.transform.position : transform.position;
+				AudioSource.PlayClipAtPoint(portalGunClip, playPos);
+			}
+			
 			portalManager.PlacePortal(id, finalPosition, placement.Normal, placement.Right, placement.Up, placement.Surface, _sizeController.CurrentScale);
 		}
 

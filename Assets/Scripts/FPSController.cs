@@ -1,24 +1,23 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using System.Reflection;
+using System.Collections;
 
-public class FPSController : PortalTraveller {
+public class FPSController : PortalTraveller
+{
 
-    [Header("Movement")]
-    public float walkSpeed = 5f;
+    [Header("Movement")] public float walkSpeed = 5f;
     public float sprintMultiplier = 1.5f; // Speed multiplier when sprinting
     public float groundAcceleration = 50f; // How quickly you reach max speed on ground (higher = more responsive)
     public float groundFriction = 30f; // How quickly you stop on ground (higher = less sliding)
-    
-    [Header("Air Movement")]
-    public float jumpForce = 8f;
+
+    [Header("Air Movement")] public float jumpForce = 8f;
     public float gravity = 18f;
     public float airControl = 5f; // Simple air control acceleration (units/sec²)
     public float terminalVelocity = 50f; // Maximum velocity magnitude to prevent physics breaking
 
     public bool lockCursor;
-    public float mouseSensitivity = 10;
-    public Vector2 pitchMinMax = new Vector2 (-40, 85);
+    public float mouseSensitivity = 10f;
+    public Vector2 pitchMinMax = new Vector2(-40, 85);
 
     CharacterController controller;
     Camera cam;
@@ -27,7 +26,7 @@ public class FPSController : PortalTraveller {
 
     float verticalVelocity;
     Vector3 velocity;
-    
+
     // Public property to access current velocity (for objects to inherit momentum when dropped)
     public Vector3 CurrentVelocity => velocity;
 
@@ -35,19 +34,51 @@ public class FPSController : PortalTraveller {
     float lastGroundedTime;
     bool disabled;
     bool cameraRotationEnabled = true;
-    
-    // Surface physics tracking
-    SurfacePhysics currentSurface;
+
+    // Surface physics tracking removed
     float baseGroundFriction;
     float baseGroundAcceleration;
-    
+
+    // ======= NEW: Health / Damage =======
+    [Header("Health")]
+    [Tooltip("Maximum hit points for the player. When current HP reaches 0 the player dies.")]
+    public int maxHealth = 3;
+    [Tooltip("Time in seconds the player is invulnerable after taking a hit.")]
+    public float invulnerabilitySeconds = 0.6f;
+
+    // Camera shake settings for hit feedback
+    [Tooltip("Duration of the camera vibration when the player is hit.")]
+    public float hitVibrationDuration = 0.25f;
+    [Tooltip("Magnitude of the camera vibration (local position offset in meters).")]
+    public float hitVibrationMagnitude = 0.06f;
+
+    int _currentHealth;
+    bool _isInvulnerable = false;
+    Coroutine _shakeRoutine;
+    // ======= END NEW =======
+
+    // Store horizontal velocity when jumping to preserve momentum
+    Vector3 airHorizontalVelocity = Vector3.zero;
+
+    private Input.PlayerInput _controls;
+
+    // Static dummy transforms for respawn teleportation (reused to avoid allocations)
+    private static Transform _dummyFromPortal;
+    private static Transform _dummyToPortal;
+
+    void Awake()
+    {
+        // Initialize health early so other scripts can query it on Start
+        _currentHealth = maxHealth;
+    }
+
     /// <summary>
     /// Disables player control (e.g., when dead or in menu).
     /// </summary>
     public void SetDisabled(bool value)
     {
         disabled = value;
-        
+
         // Unlock cursor when disabled
         if (disabled)
         {
@@ -60,24 +91,88 @@ public class FPSController : PortalTraveller {
             Cursor.visible = false;
         }
     }
-    
+
     /// <summary>
     /// Checks if player control is currently disabled.
     /// </summary>
     public bool IsDisabled => disabled;
-    
+
     /// <summary>
     /// Enables or disables camera rotation (pitch/yaw).
     /// </summary>
-    public void SetCameraRotationEnabled(bool enabled)
+    public void SetCameraRotationEnabled(bool allow)
     {
-        cameraRotationEnabled = enabled;
+        cameraRotationEnabled = allow;
     }
-    
-    // Static dummy transforms for respawn teleportation (reused to avoid allocations)
-    private static Transform dummyFromPortal;
-    private static Transform dummyToPortal;
-    
+
+    /// <summary>
+    /// External API: called by damage sources (Projectile.SendMessage("TakeDamage", damage)).
+    /// Accepts float damage but treats as integer hit-count by rounding up.
+    /// Triggers a short camera vibration and handles death when HP reaches zero.
+    /// </summary>
+    public void TakeDamage(float damageAmount)
+    {
+        if (_isInvulnerable) return;
+
+        int dmg = Mathf.Max(1, Mathf.CeilToInt(damageAmount));
+        _currentHealth -= dmg;
+
+        // Start invulnerability and camera shake feedback
+        _isInvulnerable = true;
+        if (_shakeRoutine != null) StopCoroutine(_shakeRoutine);
+        _shakeRoutine = StartCoroutine(DoCameraShake(hitVibrationDuration, hitVibrationMagnitude));
+        StartCoroutine(EndInvulnerabilityAfter(invulnerabilitySeconds));
+
+        Debug.Log($"Player took {dmg} damage, {_currentHealth} HP left.");
+
+        // Handle death if health reaches zero
+        if (_currentHealth <= 0)
+        {
+            Debug.Log("Player died.");
+            // Disable further input and actions
+            SetDisabled(true);
+
+            // Trigger death handling in PlayerManager if present
+            var pm = PlayerManager.Instance;
+            if (pm != null)
+            {
+                pm.OnPlayerDeath();
+            }
+            else
+            {
+                // Fallback death handling
+                GameSceneManager.ReloadCurrentScene();
+            }
+        }
+    }
+
+    // Camera shake coroutine for hit feedback
+    private IEnumerator DoCameraShake(float duration, float magnitude)
+    {
+        if (cam == null) yield break;
+        float elapsed = 0f;
+        Vector3 originalPos = cam.transform.localPosition;
+
+        while (elapsed < duration)
+        {
+            float x = originalPos.x + Random.Range(-magnitude, magnitude);
+            float y = originalPos.y + Random.Range(-magnitude, magnitude);
+            cam.transform.localPosition = new Vector3(x, y, originalPos.z);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        cam.transform.localPosition = originalPos;
+    }
+
+    // Invulnerability timer coroutine
+    private IEnumerator EndInvulnerabilityAfter(float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        _isInvulnerable = false;
+    }
+
     /// <summary>
     /// Teleports the player to a specific position and rotation.
     /// Uses the exact same Teleport() method that portals use for identical behavior.
@@ -91,38 +186,38 @@ public class FPSController : PortalTraveller {
         {
             Time.timeScale = 1f;
         }
-        
+
         // Reset velocity to zero before teleport (for respawn, we want no momentum)
         velocity = Vector3.zero;
         verticalVelocity = 0f;
         airHorizontalVelocity = Vector3.zero;
         jumping = false;
         lastGroundedTime = Time.time;
-        
+
         // Create or reuse dummy portal transforms
         // Both use target rotation so relativeRotation will be identity (no rotation change)
-        if (dummyFromPortal == null)
+        if (_dummyFromPortal == null)
         {
             GameObject dummyFromObj = new GameObject("DummyFromPortal");
             dummyFromObj.hideFlags = HideFlags.HideAndDontSave;
-            dummyFromPortal = dummyFromObj.transform;
-            
+            _dummyFromPortal = dummyFromObj.transform;
+
             GameObject dummyToObj = new GameObject("DummyToPortal");
             dummyToObj.hideFlags = HideFlags.HideAndDontSave;
-            dummyToPortal = dummyToObj.transform;
+            _dummyToPortal = dummyToObj.transform;
         }
-        
+
         // Set both portals to target position/rotation
         // This makes relativeRotation = identity (no transformation)
-        dummyFromPortal.position = transform.position;
-        dummyFromPortal.rotation = rotation;
-        dummyToPortal.position = position;
-        dummyToPortal.rotation = rotation;
-        
+        _dummyFromPortal.position = transform.position;
+        _dummyFromPortal.rotation = rotation;
+        _dummyToPortal.position = position;
+        _dummyToPortal.rotation = rotation;
+
         // Use the exact same Teleport method that portals use
         // This ensures identical behavior and smoothness
-        Teleport(dummyFromPortal, dummyToPortal, position, rotation, 1f);
-        
+        Teleport(_dummyFromPortal, _dummyToPortal, position, rotation);
+
         // Ensure yaw and pitch match target rotation after teleport
         yaw = rotation.eulerAngles.y;
         pitch = 0f;
@@ -131,48 +226,48 @@ public class FPSController : PortalTraveller {
             cam.transform.localEulerAngles = Vector3.right * pitch;
         }
     }
-    
-    // Store horizontal velocity when jumping to preserve momentum
-    Vector3 airHorizontalVelocity = Vector3.zero;
-    
-    
-    private Input.PlayerInput _controls;
 
-    void Start () {
+    void Start()
+    {
         cam = Camera.main;
-        if (lockCursor) {
+        if (lockCursor)
+        {
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
 
-        controller = GetComponent<CharacterController> ();
+        controller = GetComponent<CharacterController>();
 
         yaw = transform.eulerAngles.y;
-        pitch = cam.transform.localEulerAngles.x;
-        
+        pitch = cam != null ? cam.transform.localEulerAngles.x : 0f;
+
         // Store base values for surface physics modifications
         baseGroundFriction = groundFriction;
         baseGroundAcceleration = groundAcceleration;
 
         // Initialize input controls if not already done
-        if (_controls == null) {
+        if (_controls == null)
+        {
             _controls = InputManager.PlayerInput;
         }
 
         // Ensure we have a Rigidbody (kinematic) for reliable trigger detection
         // CharacterController + Rigidbody (kinematic) = reliable OnTriggerEnter
         Rigidbody rb = GetComponent<Rigidbody>();
-        if (!rb) {
+        if (!rb)
+        {
             rb = gameObject.AddComponent<Rigidbody>();
             rb.isKinematic = true;
             rb.useGravity = false;
         }
     }
 
-    void Update () {
-        
+    void Update()
+    {
 
-        if (disabled) {
+
+        if (disabled)
+        {
             return;
         }
 
@@ -188,70 +283,67 @@ public class FPSController : PortalTraveller {
 
         // Check if player is grounded (with small buffer for edge cases)
         bool isGrounded = controller.isGrounded || (Time.time - lastGroundedTime < 0.1f);
-        
-        // Clear surface if not grounded
-        if (!isGrounded) {
-            currentSurface = null;
-        }
-        
+
         // Apply sprint multiplier when sprinting
         float speedMultiplier = isSprinting ? sprintMultiplier : 1f;
         float targetSpeed = walkSpeed * speedMultiplier;
-        
+
         // Get current horizontal velocity
         Vector3 currentHorizontal = isGrounded ? new Vector3(velocity.x, 0, velocity.z) : airHorizontalVelocity;
-        
+
         // Calculate desired velocity based on input
         Vector3 desiredVelocity = Vector3.zero;
-        if (moveInput.sqrMagnitude > 0.01f) {
+        if (moveInput.sqrMagnitude > 0.01f)
+        {
             desiredVelocity = worldInputDir * targetSpeed;
         }
 
         Vector3 horizontal;
-        
+
         // Apply surface physics modifications
-        float effectiveFriction = baseGroundFriction;
+        float effectiveFriction;
         float effectiveAcceleration = baseGroundAcceleration;
-        
-        if (currentSurface != null && isGrounded) {
-            if (currentSurface.surfaceType == SurfacePhysics.SurfaceType.Sliding) {
-                // Sliding surface: reduce friction significantly
-                effectiveFriction = baseGroundFriction * currentSurface.frictionCoefficient;
-            } else if (currentSurface.surfaceType == SurfacePhysics.SurfaceType.Bouncy) {
-                // Bouncy surface: normal friction
-                effectiveFriction = baseGroundFriction;
-            }
-        }
-        
-        if (isGrounded) {
+
+        // No surface-specific friction: use base ground friction always
+        effectiveFriction = baseGroundFriction;
+
+        if (isGrounded)
+        {
             // Grounded movement: simple acceleration and friction
-            if (moveInput.sqrMagnitude > 0.01f) {
+            if (moveInput.sqrMagnitude > 0.01f)
+            {
                 // Accelerate towards desired velocity
                 float acceleration = effectiveAcceleration * Time.deltaTime;
                 horizontal = Vector3.MoveTowards(currentHorizontal, desiredVelocity, acceleration);
-            } else {
+            }
+            else
+            {
                 // Apply friction when not moving
                 float friction = effectiveFriction * Time.deltaTime;
                 horizontal = Vector3.MoveTowards(currentHorizontal, Vector3.zero, friction);
-                
+
                 // Snap to zero if very small
-                if (horizontal.magnitude < 0.1f) {
+                if (horizontal.magnitude < 0.1f)
+                {
                     horizontal = Vector3.zero;
                 }
             }
-            
+
             // Update air velocity when grounded (for jump momentum)
             airHorizontalVelocity = horizontal;
-        } else {
+        }
+        else
+        {
             // Air movement: simple inertia with basic air control
             horizontal = airHorizontalVelocity;
-            
+
             // Apply air control if input is given
-            if (moveInput.sqrMagnitude > 0.01f) {
-                Vector3 accelVector = worldInputDir * airControl * Time.deltaTime;
+            if (moveInput.sqrMagnitude > 0.01f)
+            {
+                Vector3 accelVector = worldInputDir * (airControl * Time.deltaTime);
                 horizontal += accelVector;
             }
-            
+
             // Store for next frame (preserves inertia naturally)
             airHorizontalVelocity = horizontal;
         }
@@ -259,37 +351,33 @@ public class FPSController : PortalTraveller {
         velocity = new Vector3(horizontal.x, verticalVelocity, horizontal.z);
 
         verticalVelocity -= gravity * Time.deltaTime;
-        velocity = new Vector3 (velocity.x, verticalVelocity, velocity.z);
+        velocity = new Vector3(velocity.x, verticalVelocity, velocity.z);
 
         // Clamp velocity to terminal velocity to prevent physics breaking
-        if (velocity.magnitude > terminalVelocity) {
+        if (velocity.magnitude > terminalVelocity)
+        {
             velocity = velocity.normalized * terminalVelocity;
             verticalVelocity = velocity.y;
         }
 
-        var flags = controller.Move (velocity * Time.deltaTime);
-        if (flags == CollisionFlags.Below) {
+        var flags = controller.Move(velocity * Time.deltaTime);
+        if (flags == CollisionFlags.Below)
+        {
             jumping = false;
             lastGroundedTime = Time.time;
-            
-            // Handle bouncy surfaces
-            if (currentSurface != null && currentSurface.surfaceType == SurfacePhysics.SurfaceType.Bouncy) {
-                // Apply bounce based on bounce coefficient
-                float bounceMultiplier = currentSurface.bounceCoefficient;
-                if (verticalVelocity < 0) { // Only bounce if moving downward
-                    verticalVelocity = -verticalVelocity * bounceMultiplier;
-                }
-            } else {
-                verticalVelocity = 0;
-            }
-            
+
+            // No surface-specific bounce available; reset vertical velocity on landing
+            verticalVelocity = 0;
+
             // Reset air velocity when landing (will be set from ground movement next frame)
             airHorizontalVelocity = horizontal;
         }
 
-        if (jumpPressed) {
+        if (jumpPressed)
+        {
             float timeSinceLastTouchedGround = Time.time - lastGroundedTime;
-            if (controller.isGrounded || (!jumping && timeSinceLastTouchedGround < 0.15f)) {
+            if (controller.isGrounded || (!jumping && timeSinceLastTouchedGround < 0.15f))
+            {
                 jumping = true;
                 verticalVelocity = jumpForce;
                 // Capture horizontal velocity at moment of jump (use the calculated horizontal, not velocity)
@@ -306,40 +394,89 @@ public class FPSController : PortalTraveller {
 
             yaw += mX;
             pitch -= mY;
-            pitch = Mathf.Clamp (pitch, pitchMinMax.x, pitchMinMax.y);
+            pitch = Mathf.Clamp(pitch, pitchMinMax.x, pitchMinMax.y);
 
             transform.eulerAngles = Vector3.up * yaw;
             cam.transform.localEulerAngles = Vector3.right * pitch;
         }
     }
 
-    public override void Teleport (Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot, float scaleRatio = 1f) {
+    /// <summary>
+    /// Called by external systems (DeathZone, lasers, etc.) to kill the player.
+    /// Prefer PlayerManager if it exists; otherwise fallback to reloading the scene.
+    /// </summary>
+    public void KillFromExternal()
+    {
+        // 1) Prefer PlayerManager singleton if present
+        var pm = PlayerManager.Instance;
+        if (pm != null)
+        {
+            pm.OnPlayerDeath();
+            return;
+        }
+
+        // 2) Try to find a GameObject named "GameManager" (or similar) and invoke a known death method by reflection
+        string[] candidateNames = { "GameManager", "Game Manager", "GM" };
+        string[] methodNames = { "OnPlayerDeath", "HandlePlayerDeath", "KillPlayer", "PlayerDied" };
+
+        foreach (var name in candidateNames)
+        {
+            var go = GameObject.Find(name);
+            if (go == null) continue;
+
+            var comps = go.GetComponents<Component>();
+            foreach (var comp in comps)
+            {
+                var type = comp.GetType();
+                foreach (var mname in methodNames)
+                {
+                    var mi = type.GetMethod(mname, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                    if (mi != null)
+                    {
+                        mi.Invoke(comp, null);
+                        Debug.Log($"FPSController.KillFromExternal: Invoked {mname} on {go.name}.{type.Name}");
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 3) As a last resort, reload the current scene
+        Debug.LogWarning("FPSController.KillFromExternal: No manager found to handle death. Reloading scene as fallback.");
+        GameSceneManager.ReloadCurrentScene();
+    }
+
+    public override void Teleport(Transform fromPortal, Transform toPortal, Vector3 pos, Quaternion rot,
+        float scaleRatio = 1f)
+    {
         // Capture velocity BEFORE position change
         Vector3 currentVelocity = velocity;
-        
+
         // Scale velocity based on portal size difference
         currentVelocity *= scaleRatio;
-        
+
         // Teleport the player position
         transform.position = pos;
-        
+
         // ===== UNIVERSAL VELOCITY TRANSFORMATION =====
         // Rotate the entire velocity vector from the source portal's orientation to the destination's.
         // We include a 180° flip around the portal's local up so 'entering' becomes 'exiting'.
         Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
         Quaternion relativeRotation = toPortal.rotation * flipLocal * Quaternion.Inverse(fromPortal.rotation);
-        
+
         // Transform the player's forward direction through the portal (same transformation as velocity)
         // This preserves relative orientation: looking left relative to source portal = looking left relative to dest portal
         Vector3 currentForward = transform.forward;
         Vector3 transformedForward = relativeRotation * currentForward;
-        
+
         // Project onto horizontal plane and extract yaw
         Vector3 horizontalForward = new Vector3(transformedForward.x, 0, transformedForward.z);
-        if (horizontalForward.sqrMagnitude > 0.01f) {
+        if (horizontalForward.sqrMagnitude > 0.01f)
+        {
             horizontalForward.Normalize();
             yaw = Mathf.Atan2(horizontalForward.x, horizontalForward.z) * Mathf.Rad2Deg;
         }
+
         // If horizontal component is too small, keep current yaw (rare edge case)
         transform.eulerAngles = Vector3.up * yaw;
 
@@ -368,21 +505,5 @@ public class FPSController : PortalTraveller {
         // Sync physics to prevent collision detection issues
         Physics.SyncTransforms();
     }
-    
-    /// <summary>
-    /// Called by CharacterController when it hits a collider during movement.
-    /// Used to detect what surface the player is standing on.
-    /// </summary>
-    void OnControllerColliderHit(ControllerColliderHit hit)
-    {
-        // Check if we hit something below us (ground)
-        if (hit.moveDirection.y < -0.5f) {
-            // Check for SurfacePhysics component
-            currentSurface = hit.gameObject.GetComponent<SurfacePhysics>();
-        } else {
-            // Not hitting ground, clear surface
-            currentSurface = null;
-        }
-    }
-
 }
+

@@ -5,17 +5,12 @@ using System.Collections;
 
 namespace Interact
 {
-    /// <summary>
-    /// A simple trigger component that fires UnityEvents when objects enter/exit.
-    /// Attach to a GameObject with a Collider set as Trigger.
-    /// In the inspector, drag objects and select methods from the dropdown.
-    /// </summary>
     [RequireComponent(typeof(Collider))]
     public class ScriptableTrigger : MonoBehaviour
     {
         [Header("Trigger Settings")]
         [Tooltip("Which tags should trigger this? Leave empty to trigger on any object.")]
-        public string[] triggerTags = new string[] { "Interactable", "Player" };
+        public string[] triggerTags;
         
         [Tooltip("If true, only triggers when objects with specific tags enter. If false, triggers on any object.")]
         public bool useTagFilter = true;
@@ -27,7 +22,7 @@ namespace Interact
         public bool loadNextScene = false;
         
         [Tooltip("Delay in seconds before loading the next scene (only used if loadNextScene is enabled)")]
-        [SerializeField] float sceneLoadDelay = 0f;
+        [SerializeField] float sceneLoadDelay;
         
         [Header("On Trigger Enter")]
         [Tooltip("Events to invoke when an object enters the trigger")]
@@ -68,9 +63,9 @@ namespace Interact
             
             if (triggerTags != null && triggerTags.Length > 0)
             {
-                foreach (string tag in triggerTags)
+                foreach (string candidateTag in triggerTags)
                 {
-                    if (other.CompareTag(tag))
+                    if (other.CompareTag(candidateTag))
                     {
                         return true;
                     }
@@ -107,20 +102,11 @@ namespace Interact
                 onExit?.Invoke();
             }
         }
-        
-        /// <summary>
-        /// Coroutine that waits for the delay before loading the next scene
-        /// </summary>
         private IEnumerator LoadNextSceneDelayed()
         {
             yield return new WaitForSeconds(sceneLoadDelay);
             LoadNextScene();
         }
-        
-        /// <summary>
-        /// Loads the next scene in the build index.
-        /// Can be called from UnityEvents in the inspector.
-        /// </summary>
         public void LoadNextScene()
         {
             int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
@@ -155,10 +141,22 @@ namespace Interact
                 col.isTrigger = true;
             }
             
+            // Ensure sensible defaults for serialized fields
+            if (triggerTags == null || triggerTags.Length == 0)
+            {
+                triggerTags = new[] { "Interactable", "Player" };
+            }
+            
             if (sceneLoadDelay < 0f)
             {
                 sceneLoadDelay = 0f;
             }
+
+            // Ensure UnityEvent fields are non-null so invoking them is safe in editor/runtime
+            if (onEnter == null)
+                onEnter = new UnityEvent();
+            if (onExit == null)
+                onExit = new UnityEvent();
         }
     }
 }
