@@ -1635,6 +1635,56 @@ PrefabInstance:
       propertyPath: moveDistance
       value: 2
       objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveUpSound.Path
+      value: event:/SFX/Environment/Interactables/DoorClose
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveDownSound.Path
+      value: event:/SFX/Environment/Interactables/DoorOpen
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveUpSound.Guid.Data1
+      value: -673093648
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveUpSound.Guid.Data2
+      value: 1074206900
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveUpSound.Guid.Data3
+      value: 1872746121
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveUpSound.Guid.Data4
+      value: -451326720
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveDownSound.Guid.Data1
+      value: 1160853012
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveDownSound.Guid.Data2
+      value: 1197575725
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveDownSound.Guid.Data3
+      value: -314006144
+      objectReference: {fileID: 0}
+    - target: {fileID: 4042793743767951072, guid: b424a526b48fabd4da29e3a73337c92e,
+        type: 3}
+      propertyPath: moveDownSound.Guid.Data4
+      value: -1907647624
+      objectReference: {fileID: 0}
     - target: {fileID: 7166203522050140390, guid: b424a526b48fabd4da29e3a73337c92e,
         type: 3}
       propertyPath: m_Name
@@ -4559,6 +4609,56 @@ PrefabInstance:
       propertyPath: m_Name
       value: Door Final
       objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: openSound.Path
+      value: event:/SFX/Environment/Interactables/DoorOpen
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: closeSound.Path
+      value: event:/SFX/Environment/Interactables/DoorClose
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: openSound.Guid.Data1
+      value: 1160853012
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: openSound.Guid.Data2
+      value: 1197575725
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: openSound.Guid.Data3
+      value: -314006144
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: openSound.Guid.Data4
+      value: -1907647624
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: closeSound.Guid.Data1
+      value: -673093648
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: closeSound.Guid.Data2
+      value: 1074206900
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: closeSound.Guid.Data3
+      value: 1872746121
+      objectReference: {fileID: 0}
+    - target: {fileID: 6016361618693283153, guid: ad12517a208fac14bbb33107a02e0695,
+        type: 3}
+      propertyPath: closeSound.Guid.Data4
+      value: -451326720
+      objectReference: {fileID: 0}
     - target: {fileID: 7058996014588572158, guid: ad12517a208fac14bbb33107a02e0695,
         type: 3}
       propertyPath: m_ScaleInLightmap
@@ -5240,34 +5340,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 285782841}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1839904514 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5139502970343071463, guid: 13e11c9f5cdff2049a81d98ff2974caf,
-    type: 3}
-  m_PrefabInstance: {fileID: 2081507857}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1839904515 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6060593020538510829, guid: 13e11c9f5cdff2049a81d98ff2974caf,
     type: 3}
   m_PrefabInstance: {fileID: 2081507857}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1839904516
+--- !u!114 &1839904516 stripped
 MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
+  m_CorrespondingSourceObject: {fileID: 1691077458377885252, guid: 13e11c9f5cdff2049a81d98ff2974caf,
+    type: 3}
+  m_PrefabInstance: {fileID: 2081507857}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1839904514}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4d863a6dfe63f53458f429a4f41fcd64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  buttonChild: {fileID: 663856044}
-  pressDistance: 5
-  pressSpeed: 10
-  isPressed: 0
 --- !u!1 &1849283754
 GameObject:
   m_ObjectHideFlags: 0
@@ -5367,6 +5457,7 @@ GameObject:
   - component: {fileID: 1882277853}
   - component: {fileID: 1882277852}
   - component: {fileID: 1882277851}
+  - component: {fileID: 1882277856}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -5487,6 +5578,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1882277856
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1882277850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: 921114955
+      Data2: 1118105121
+      Data3: 76677015
+      Data4: -1110428621
+    Path: event:/SFX/PortalSFX/PortalBackground
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 0
+  OverrideMaxDistance: 7.2000003
 --- !u!1 &1894100925
 GameObject:
   m_ObjectHideFlags: 0
@@ -6021,21 +6143,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6060593020538510829, guid: 13e11c9f5cdff2049a81d98ff2974caf,
         type: 3}
-      propertyPath: m_LocalScale.x
-      value: 0.012
-      objectReference: {fileID: 0}
-    - target: {fileID: 6060593020538510829, guid: 13e11c9f5cdff2049a81d98ff2974caf,
-        type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.012
-      objectReference: {fileID: 0}
-    - target: {fileID: 6060593020538510829, guid: 13e11c9f5cdff2049a81d98ff2974caf,
-        type: 3}
-      propertyPath: m_LocalScale.z
-      value: 0.012
-      objectReference: {fileID: 0}
-    - target: {fileID: 6060593020538510829, guid: 13e11c9f5cdff2049a81d98ff2974caf,
-        type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.76007843
       objectReference: {fileID: 0}
@@ -6161,10 +6268,6 @@ PrefabInstance:
     - {fileID: 6163945440296259908, guid: 13e11c9f5cdff2049a81d98ff2974caf, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5139502970343071463, guid: 13e11c9f5cdff2049a81d98ff2974caf,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1839904516}
     - targetCorrespondingSourceObject: {fileID: 4255911642102469301, guid: 13e11c9f5cdff2049a81d98ff2974caf,
         type: 3}
       insertIndex: -1

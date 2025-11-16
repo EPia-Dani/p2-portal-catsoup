@@ -224,10 +224,10 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638989202298640537
+  lastModified: 638989217748995020
   FileSizes:
   - Name: Desktop
-    Value: 1886
+    Value: 2042
   Exists: 1
 --- !u!114 &-4678787244532575712
 MonoBehaviour:
@@ -283,6 +283,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
+--- !u!114 &-2913258138983687620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Environment/Interactables/ButtonPress
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Environment/Interactables/ButtonPress
+  Guid:
+    Data1: -1434768279
+    Data2: 1157745254
+    Data3: -1713262149
+    Data4: 1178287900
+  Banks:
+  - {fileID: -2174464091015023244}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 8.6
+  Length: 0
 --- !u!114 &-2621103683327116303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -325,10 +352,10 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
   Name: GeneralSFX
   StudioPath: bank:/SFX/GeneralSFX
-  lastModified: 638989206935455658
+  lastModified: 638989219354011369
   FileSizes:
   - Name: Desktop
-    Value: 1281632
+    Value: 1310656
   Exists: 1
 --- !u!114 &-1518166954590098963
 MonoBehaviour:
@@ -454,13 +481,16 @@ MonoBehaviour:
   - {fileID: 2020775504138623324}
   - {fileID: -2933680742219898644}
   - {fileID: 7370436587992490308}
+  - {fileID: -2913258138983687620}
+  - {fileID: 4286009109023819551}
+  - {fileID: 5353776164489091798}
   EditorParameters: []
   MasterBanks:
   - {fileID: 4081106290661449368}
   StringsBanks:
   - {fileID: -5631817738560404720}
   cacheVersion: 131856
-  cacheTime: 638989206935455658
+  cacheTime: 638989219354011369
   SerializableEventsDict:
   - key: event:/SFX/Collision
     index: 0
@@ -508,6 +538,12 @@ MonoBehaviour:
     index: 21
   - key: event:/SFX/Weapons/Turret
     index: 22
+  - key: event:/SFX/Environment/Interactables/ButtonPress
+    index: 23
+  - key: event:/SFX/Environment/Interactables/DoorOpen
+    index: 24
+  - key: event:/SFX/Environment/Interactables/DoorClose
+    index: 25
 --- !u!114 &741577673660717328
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -651,11 +687,38 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638989202298624858
+  lastModified: 638989217748985011
   FileSizes:
   - Name: Desktop
     Value: 1074
   Exists: 1
+--- !u!114 &4286009109023819551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Environment/Interactables/DoorOpen
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Environment/Interactables/DoorOpen
+  Guid:
+    Data1: 1160853012
+    Data2: 1197575725
+    Data3: -314006144
+    Data4: -1907647624
+  Banks:
+  - {fileID: -2174464091015023244}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 60
+  Length: 0
 --- !u!114 &4850165914484808645
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -683,6 +746,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 4840
+--- !u!114 &5353776164489091798
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Environment/Interactables/DoorClose
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Environment/Interactables/DoorClose
+  Guid:
+    Data1: -673093648
+    Data2: 1074206900
+    Data3: 1872746121
+    Data4: -451326720
+  Banks:
+  - {fileID: -2174464091015023244}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 60
+  Length: 0
 --- !u!114 &6556691407138402164
 MonoBehaviour:
   m_ObjectHideFlags: 0

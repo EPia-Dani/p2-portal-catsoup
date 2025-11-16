@@ -84,6 +84,20 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  openSound:
+    Guid:
+      Data1: 1160853012
+      Data2: 1197575725
+      Data3: -314006144
+      Data4: -1907647624
+    Path: event:/SFX/Environment/Interactables/DoorOpen
+  closeSound:
+    Guid:
+      Data1: -673093648
+      Data2: 1074206900
+      Data3: 1872746121
+      Data4: -451326720
+    Path: event:/SFX/Environment/Interactables/DoorClose
 --- !u!1 &4850271908571015418
 GameObject:
   m_ObjectHideFlags: 0

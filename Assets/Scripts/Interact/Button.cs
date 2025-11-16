@@ -1,4 +1,5 @@
 using UnityEngine;
+using FMODUnity;
 
 namespace Interact
 {
@@ -22,6 +23,13 @@ namespace Interact
         [Header("Debug")]
         [Tooltip("Current pressed state of the button.")]
         public bool isPressed = false;
+
+        [Header("Audio")]
+        [Tooltip("FMOD sound event to play when the button is pressed")]
+        [SerializeField] EventReference pressSound;
+
+        [Tooltip("FMOD sound event to play when the button is released")]
+        [SerializeField] EventReference releaseSound;
         
         // Button child movement
         private Vector3 _buttonChildOriginalPosition;
@@ -57,6 +65,12 @@ namespace Interact
         public void SetPressed()
         {
             isPressed = true;
+
+            // Play press sound
+            if (!pressSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(pressSound, transform.position);
+            }
         }
         
         /// <summary>
@@ -65,6 +79,12 @@ namespace Interact
         public void SetUnpressed()
         {
             isPressed = false;
+
+            // Play release sound
+            if (!releaseSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(releaseSound, transform.position);
+            }
         }
         
         /// <summary>

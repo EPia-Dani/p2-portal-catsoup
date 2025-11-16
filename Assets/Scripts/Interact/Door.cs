@@ -1,4 +1,5 @@
  using UnityEngine;
+using FMODUnity;
 
 namespace Interact {
 	/// <summary>
@@ -22,6 +23,13 @@ namespace Interact {
 		[Header("Animation Curve")]
 		[Tooltip("Curve that controls the door opening/closing animation. X axis (0-1) represents progress, Y axis (0-1) represents the interpolation value.")]
 		[SerializeField] AnimationCurve openCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+		[Header("Audio")]
+		[Tooltip("FMOD sound event to play when the door starts opening")]
+		[SerializeField] EventReference openSound;
+
+		[Tooltip("FMOD sound event to play when the door starts closing")]
+		[SerializeField] EventReference closeSound;
 
 		private Vector3 _leftOriginalPosition;
 		private Vector3 _rightOriginalPosition;
@@ -51,6 +59,11 @@ namespace Interact {
 		/// </summary>
 		public void Open() {
 			_isOpen = true;
+
+			// Play opening sound
+			if (!openSound.IsNull) {
+				RuntimeManager.PlayOneShot(openSound, transform.position);
+			}
 		}
 
 		/// <summary>
@@ -58,6 +71,11 @@ namespace Interact {
 		/// </summary>
 		public void Close() {
 			_isOpen = false;
+
+			// Play closing sound
+			if (!closeSound.IsNull) {
+				RuntimeManager.PlayOneShot(closeSound, transform.position);
+			}
 		}
 
 		void Update() {
