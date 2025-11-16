@@ -2,10 +2,6 @@
 using UnityEngine.UI;
 using System.Collections;
 
-/// <summary>
-/// Displays a red vignette/overlay on the screen when the player takes damage.
-/// Flashes briefly when hit and shows persistent danger overlay at low health.
-/// </summary>
 [RequireComponent(typeof(Image))]
 public class DamageOverlay : MonoBehaviour
 {

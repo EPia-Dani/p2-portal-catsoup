@@ -1,9 +1,6 @@
 using UnityEngine;
 
-/// <summary>
-/// Death zone that triggers when the player enters it.
-/// Requires a Collider component set as a trigger.
-/// </summary>
+
 [RequireComponent(typeof(Collider))]
 public class DeathZone : MonoBehaviour
 {
