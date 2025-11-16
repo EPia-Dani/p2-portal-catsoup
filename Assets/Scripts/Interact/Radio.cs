@@ -41,7 +41,7 @@ public class Radio : InteractableObject
     /// <summary>
     /// Called when radio is picked up - plays pickup sound
     /// </summary>
-    public new void OnPickedUp(PlayerPickup holder)
+    public override void OnPickedUp(PlayerPickup holder)
     {
         base.OnPickedUp(holder);
         
@@ -55,7 +55,7 @@ public class Radio : InteractableObject
     /// <summary>
     /// Called when radio is dropped - plays drop sound
     /// </summary>
-    public new void OnDropped()
+    public override void OnDropped()
     {
         base.OnDropped();
         

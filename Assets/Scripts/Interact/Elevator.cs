@@ -1,4 +1,5 @@
 using UnityEngine;
+using FMODUnity;
 
 namespace Interact {
 	/// <summary>
@@ -16,9 +17,16 @@ namespace Interact {
 	[Tooltip("Speed at which elevator moves up/down (units per second)")]
 	[SerializeField] float moveSpeed = 2f;
 	
-	[Header("Animation Curve")]
-	[Tooltip("Curve that controls the elevator movement animation. X axis (0-1) represents progress, Y axis (0-1) represents the interpolation value.")]
-	[SerializeField] AnimationCurve moveCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+		[Header("Animation Curve")]
+		[Tooltip("Curve that controls the elevator movement animation. X axis (0-1) represents progress, Y axis (0-1) represents the interpolation value.")]
+		[SerializeField] AnimationCurve moveCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
+		[Header("Audio")]
+		[Tooltip("FMOD sound event to play when the elevator starts moving down")]
+		[SerializeField] EventReference moveDownSound;
+
+		[Tooltip("FMOD sound event to play when the elevator starts moving up")]
+		[SerializeField] EventReference moveUpSound;
 
 	private Vector3 _originalPosition;
 	private Vector3 _downPosition;
@@ -40,18 +48,28 @@ namespace Interact {
 	}
 
 	/// <summary>
-	/// Moves the elevator down (opens)
-	/// </summary>
-	public void Open() {
-		_isOpen = true;
-	}
+		/// Moves the elevator down (opens)
+		/// </summary>
+		public void Open() {
+			_isOpen = true;
+
+			// Play moving down sound
+			if (!moveDownSound.IsNull) {
+				RuntimeManager.PlayOneShot(moveDownSound, transform.position);
+			}
+		}
 
 	/// <summary>
-	/// Moves the elevator up to original position (closes)
-	/// </summary>
-	public void Close() {
-		_isOpen = false;
-	}
+		/// Moves the elevator up to original position (closes)
+		/// </summary>
+		public void Close() {
+			_isOpen = false;
+
+			// Play moving up sound
+			if (!moveUpSound.IsNull) {
+				RuntimeManager.PlayOneShot(moveUpSound, transform.position);
+			}
+		}
 
 	void Update() {
 		if (elevatorDoor == null) return;

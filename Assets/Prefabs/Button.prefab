@@ -594,6 +594,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6060593020538510829}
+  - component: {fileID: 1691077458377885252}
   m_Layer: 15
   m_Name: Button
   m_TagString: Button
@@ -611,7 +612,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.0019103597, z: -0, w: 0.9999982}
   m_LocalPosition: {x: -86.759, y: 2.65, z: -89.968}
-  m_LocalScale: {x: 0.014500727, y: 0.014500727, z: 0.014500727}
+  m_LocalScale: {x: 0.012, y: 0.012, z: 0.012}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9083086670532290218}
@@ -622,6 +623,36 @@ Transform:
   - {fileID: 6761669934836920214}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: -0.219, z: 0}
+--- !u!114 &1691077458377885252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5139502970343071463}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d863a6dfe63f53458f429a4f41fcd64, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buttonChild: {fileID: 1888083476686196579}
+  pressDistance: 5
+  pressSpeed: 10
+  isPressed: 0
+  pressSound:
+    Guid:
+      Data1: -1434768279
+      Data2: 1157745254
+      Data3: -1713262149
+      Data4: 1178287900
+    Path: event:/SFX/Environment/Interactables/ButtonPress
+  releaseSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
 --- !u!1 &6163945440296259908
 GameObject:
   m_ObjectHideFlags: 0
