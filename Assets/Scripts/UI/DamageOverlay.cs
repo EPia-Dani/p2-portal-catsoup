@@ -47,6 +47,22 @@ public class DamageOverlay : MonoBehaviour
     /// </summary>
     public void ShowDamageFlash()
     {
+        if (overlayImage == null)
+        {
+            overlayImage = GetComponent<Image>();
+            if (overlayImage == null)
+            {
+                Debug.LogError("DamageOverlay: Missing Image component, cannot show flash.");
+                return;
+            }
+        }
+
+        // Ensure this overlay is active so it actually renders
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
         if (flashCoroutine != null)
         {
             StopCoroutine(flashCoroutine);
@@ -54,9 +70,6 @@ public class DamageOverlay : MonoBehaviour
         flashCoroutine = StartCoroutine(DamageFlashCoroutine());
     }
     
-    /// <summary>
-    /// Clear all overlays (used on death or heal)
-    /// </summary>
     public void ClearOverlay()
     {
         if (flashCoroutine != null)
@@ -64,9 +77,12 @@ public class DamageOverlay : MonoBehaviour
             StopCoroutine(flashCoroutine);
         }
         
-        Color color = damageColor;
-        color.a = 0f;
-        overlayImage.color = color;
+        if (overlayImage != null)
+        {
+            Color color = damageColor;
+            color.a = 0f;
+            overlayImage.color = color;
+        }
     }
     
     private IEnumerator DamageFlashCoroutine()
@@ -111,7 +127,7 @@ public class DamageOverlay : MonoBehaviour
     private void Update()
     {
         // Ensure overlay is fully transparent when not flashing
-        if (flashCoroutine == null && overlayImage.color.a > 0.001f)
+        if (flashCoroutine == null && overlayImage != null && overlayImage.color.a > 0.001f)
         {
             Color color = damageColor;
             color.a = 0f;
@@ -119,4 +135,3 @@ public class DamageOverlay : MonoBehaviour
         }
     }
 }
-

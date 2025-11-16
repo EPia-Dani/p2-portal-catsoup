@@ -2,10 +2,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using FMODUnity;
 
-/// <summary>
-/// Singleton that tracks destroyed radios and loads the next scene when 10 radios are destroyed.
-/// Should be placed in the scene as a singleton.
-/// </summary>
+
 public class RadioCounter : MonoBehaviour
 {
     [Header("Counter Settings")]

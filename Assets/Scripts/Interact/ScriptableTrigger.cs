@@ -5,11 +5,6 @@ using System.Collections;
 
 namespace Interact
 {
-    /// <summary>
-    /// A simple trigger component that fires UnityEvents when objects enter/exit.
-    /// Attach to a GameObject with a Collider set as Trigger.
-    /// In the inspector, drag objects and select methods from the dropdown.
-    /// </summary>
     [RequireComponent(typeof(Collider))]
     public class ScriptableTrigger : MonoBehaviour
     {
@@ -108,19 +103,12 @@ namespace Interact
             }
         }
         
-        /// <summary>
-        /// Coroutine that waits for the delay before loading the next scene
-        /// </summary>
         private IEnumerator LoadNextSceneDelayed()
         {
             yield return new WaitForSeconds(sceneLoadDelay);
             LoadNextScene();
         }
         
-        /// <summary>
-        /// Loads the next scene in the build index.
-        /// Can be called from UnityEvents in the inspector.
-        /// </summary>
         public void LoadNextScene()
         {
             int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;

@@ -110,6 +110,14 @@ MonoBehaviour:
       Data4: 1033269866
     Path: event:/SFX/Weapons/Turret
   player: {fileID: 0}
+  movementReference: {fileID: 928061314956550294}
+  disableDistanceThreshold: 0.05
+  disableRotationThreshold: 5
+  disableCheckInterval: 0.1
+  startupGraceSeconds: 0.5
+  debugMovement: 0
+  damageOverlay: {fileID: 6159907499644628569, guid: a7ac482154cf09d47aa5230440e57a5b,
+    type: 3}
 --- !u!54 &1863348359806828806
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -368,6 +376,12 @@ PrefabInstance:
 --- !u!4 &868583274840622456 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a421eff41e7324b4c8f6cee40a4c802c,
+    type: 3}
+  m_PrefabInstance: {fileID: 830749889754686099}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &928061314956550294 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 533193074659131909, guid: a421eff41e7324b4c8f6cee40a4c802c,
     type: 3}
   m_PrefabInstance: {fileID: 830749889754686099}
   m_PrefabAsset: {fileID: 0}

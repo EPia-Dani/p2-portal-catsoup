@@ -58,7 +58,7 @@ public class FPSController : PortalTraveller
     Coroutine _shakeRoutine;
     
     // Reference to damage overlay UI (set automatically or manually in inspector)
-    private DamageOverlay _damageOverlay;
+    [SerializeField] private DamageOverlay _damageOverlay;
 
     // Store horizontal velocity when jumping to preserve momentum
     Vector3 airHorizontalVelocity = Vector3.zero;
@@ -124,11 +124,37 @@ public class FPSController : PortalTraveller
         cameraRotationEnabled = allow;
     }
 
+    // Try to resolve overlay reference (handles inactive objects too)
+    private void ResolveDamageOverlayReference()
+    {
+        if (_damageOverlay != null) return;
+
+        // Prefer newer API if available
+        #if UNITY_2023_1_OR_NEWER
+        _damageOverlay = FindFirstObjectByType<DamageOverlay>(FindObjectsInactive.Include);
+        #else
+        // Fallback: find all (including inactive) and pick one in a valid scene
+        var overlays = Resources.FindObjectsOfTypeAll<DamageOverlay>();
+        foreach (var ov in overlays)
+        {
+            if (ov != null && ov.gameObject.scene.IsValid())
+            {
+                _damageOverlay = ov;
+                break;
+            }
+        }
+        #endif
+
+        if (_damageOverlay == null)
+        {
+            Debug.LogWarning("FPSController: No DamageOverlay found in scene. Damage visual feedback will not work.");
+        }
+    }
+
     /// <summary>
     /// External API: called by damage sources (Projectile.SendMessage("TakeDamage", damage)).
     /// Accepts float damage but treats as integer hit-count by rounding up.
     /// Triggers a short camera vibration and handles death when HP reaches zero.
-    /// After 0.3 seconds, health is automatically restored to full.
     /// </summary>
     public void TakeDamage(float damageAmount)
     {
@@ -143,7 +169,11 @@ public class FPSController : PortalTraveller
         _shakeRoutine = StartCoroutine(DoCameraShake(hitVibrationDuration, hitVibrationMagnitude));
         StartCoroutine(EndInvulnerabilityAfter(invulnerabilitySeconds));
 
-        // Show damage overlay flash
+        // Ensure we have a reference and show damage overlay flash
+        if (_damageOverlay == null)
+        {
+            ResolveDamageOverlayReference();
+        }
         if (_damageOverlay != null)
         {
             _damageOverlay.ShowDamageFlash();
@@ -169,11 +199,6 @@ public class FPSController : PortalTraveller
                 // Fallback death handling
                 GameSceneManager.ReloadCurrentScene();
             }
-        }
-        else
-        {
-            // Auto-heal after 0.3 seconds (duration of red flash)
-            StartCoroutine(AutoHealAfterDelay(10f));
         }
     }
 
@@ -202,19 +227,6 @@ public class FPSController : PortalTraveller
     {
         yield return new WaitForSeconds(seconds);
         _isInvulnerable = false;
-    }
-
-    // Auto-heal coroutine - restores health after delay
-    private IEnumerator AutoHealAfterDelay(float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        
-        // Only heal if player is still alive
-        if (_currentHealth > 0 && _currentHealth < maxHealth)
-        {
-            _currentHealth = maxHealth;
-            Debug.Log($"Player auto-healed to {maxHealth} HP");
-        }
     }
 
     /// <summary>
@@ -296,11 +308,7 @@ public class FPSController : PortalTraveller
         }
 
         // Find damage overlay UI component
-        _damageOverlay = FindFirstObjectByType<DamageOverlay>();
-        if (_damageOverlay == null)
-        {
-            Debug.LogWarning("FPSController: No DamageOverlay found in scene. Damage visual feedback will not work.");
-        }
+        ResolveDamageOverlayReference();
 
         // Ensure we have a Rigidbody (kinematic) for reliable trigger detection
         // CharacterController + Rigidbody (kinematic) = reliable OnTriggerEnter

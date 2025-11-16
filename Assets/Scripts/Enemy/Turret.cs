@@ -48,13 +48,14 @@ namespace Enemy
         [Tooltip("Enable verbose debug logging for movement detection")]
         public bool debugMovement = false;
 
+
         private Transform _moveRef;
         private Vector3 lastPosition;
         private Quaternion lastRotation;
         private float nextMovementCheck;
         private bool ignoreRotationForMovement;
         private float startTime;
-        private bool hasDealtDamageThisBurst = false; // Track if we've dealt damage this burst
+        private bool hasDealtDamageThisBurst = false;
 
         void Start()
         {
@@ -105,7 +106,7 @@ namespace Enemy
                           $"\n  - Rotation Threshold: {disableRotationThreshold}°" +
                           $"\n  - Grace Period: {startupGraceSeconds}s" +
                           $"\n  - Has Rigidbody: {rb != null}" +
-                          $"\n  - Is Kinematic: {(rb != null ? rb.isKinematic.ToString() : "N/A")}");
+                          $"\n  - Is Kinematic: {(rb != null ? rb.isKinematic.ToString() : "N/A")}" );
             }
         }
 
