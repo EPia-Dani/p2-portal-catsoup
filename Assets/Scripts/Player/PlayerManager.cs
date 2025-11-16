@@ -137,6 +137,10 @@ public class PlayerManager : MonoBehaviour
         
         // Re-enable control after respawn
         fpsController.SetDisabled(false);
+
+        // Ensure cursor is locked/hidden for gameplay after respawn
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         
         isDead = false;
     }
