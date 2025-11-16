@@ -56,7 +56,9 @@ public class FPSController : PortalTraveller
     int _currentHealth;
     bool _isInvulnerable = false;
     Coroutine _shakeRoutine;
-    // ======= END NEW =======
+    
+    // Reference to damage overlay UI (set automatically or manually in inspector)
+    private DamageOverlay _damageOverlay;
 
     // Store horizontal velocity when jumping to preserve momentum
     Vector3 airHorizontalVelocity = Vector3.zero;
@@ -99,6 +101,22 @@ public class FPSController : PortalTraveller
     public bool IsDisabled => disabled;
 
     /// <summary>
+    /// Resets player health to maximum (used on respawn/checkpoint).
+    /// </summary>
+    public void ResetHealth()
+    {
+        _currentHealth = maxHealth;
+        _isInvulnerable = false;
+        
+        if (_damageOverlay != null)
+        {
+            _damageOverlay.ClearOverlay();
+        }
+        
+        Debug.Log($"Player health reset to {maxHealth}");
+    }
+
+    /// <summary>
     /// Enables or disables camera rotation (pitch/yaw).
     /// </summary>
     public void SetCameraRotationEnabled(bool allow)
@@ -110,6 +128,7 @@ public class FPSController : PortalTraveller
     /// External API: called by damage sources (Projectile.SendMessage("TakeDamage", damage)).
     /// Accepts float damage but treats as integer hit-count by rounding up.
     /// Triggers a short camera vibration and handles death when HP reaches zero.
+    /// After 0.3 seconds, health is automatically restored to full.
     /// </summary>
     public void TakeDamage(float damageAmount)
     {
@@ -123,6 +142,12 @@ public class FPSController : PortalTraveller
         if (_shakeRoutine != null) StopCoroutine(_shakeRoutine);
         _shakeRoutine = StartCoroutine(DoCameraShake(hitVibrationDuration, hitVibrationMagnitude));
         StartCoroutine(EndInvulnerabilityAfter(invulnerabilitySeconds));
+
+        // Show damage overlay flash
+        if (_damageOverlay != null)
+        {
+            _damageOverlay.ShowDamageFlash();
+        }
 
         Debug.Log($"Player took {dmg} damage, {_currentHealth} HP left.");
 
@@ -144,6 +169,11 @@ public class FPSController : PortalTraveller
                 // Fallback death handling
                 GameSceneManager.ReloadCurrentScene();
             }
+        }
+        else
+        {
+            // Auto-heal after 0.3 seconds (duration of red flash)
+            StartCoroutine(AutoHealAfterDelay(0.3f));
         }
     }
 
@@ -172,6 +202,19 @@ public class FPSController : PortalTraveller
     {
         yield return new WaitForSeconds(seconds);
         _isInvulnerable = false;
+    }
+
+    // Auto-heal coroutine - restores health after delay
+    private IEnumerator AutoHealAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        
+        // Only heal if player is still alive
+        if (_currentHealth > 0 && _currentHealth < maxHealth)
+        {
+            _currentHealth = maxHealth;
+            Debug.Log($"Player auto-healed to {maxHealth} HP");
+        }
     }
 
     /// <summary>
@@ -250,6 +293,13 @@ public class FPSController : PortalTraveller
         if (_controls == null)
         {
             _controls = InputManager.PlayerInput;
+        }
+
+        // Find damage overlay UI component
+        _damageOverlay = FindFirstObjectByType<DamageOverlay>();
+        if (_damageOverlay == null)
+        {
+            Debug.LogWarning("FPSController: No DamageOverlay found in scene. Damage visual feedback will not work.");
         }
 
         // Ensure we have a Rigidbody (kinematic) for reliable trigger detection

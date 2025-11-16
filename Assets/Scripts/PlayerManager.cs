@@ -1,10 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-/// <summary>
-/// Manages player state, death, and respawn functionality.
-/// Should be placed in the scene as a singleton.
-/// </summary>
+
 public class PlayerManager : MonoBehaviour
 {
     [Header("Player Reference")]
@@ -66,6 +63,16 @@ public class PlayerManager : MonoBehaviour
             return;
         }
         
+        // Try to auto-find death screen if not set
+        if (deathScreen == null)
+        {
+            deathScreen = FindFirstObjectByType<DeathScreenManager>();
+            if (deathScreen == null)
+            {
+                Debug.LogWarning("PlayerManager: No DeathScreenManager found. Will fallback to instant respawn on death.");
+            }
+        }
+        
         // Store initial position and rotation
         initialPosition = player.transform.position;
         initialRotation = player.transform.rotation;
@@ -91,19 +98,30 @@ public class PlayerManager : MonoBehaviour
         }
         
         isDead = true;
+
+        // Disable player control while dead
+        if (fpsController != null)
+        {
+            fpsController.SetDisabled(true);
+        }
         
-        
-        deathScreen.ShowDeathScreen();
-        
+        // Show death screen if available; otherwise fallback to instant respawn
+        if (deathScreen != null)
+        {
+            deathScreen.ShowDeathScreen();
+        }
+        else
+        {
+            Debug.LogWarning("PlayerManager: DeathScreenManager not set. Respawning immediately.");
+            RespawnPlayer();
+        }
     }
     
-    /// <summary>
-    /// Respawns the player at the respawn anchor.
-    /// </summary>
     public void RespawnPlayer()
     {
         if (player == null || fpsController == null || respawnPoint == null)
         {
+            Debug.LogWarning("PlayerManager: Cannot respawn - missing references.");
             return;
         }
         
@@ -111,8 +129,14 @@ public class PlayerManager : MonoBehaviour
         Vector3 targetPos = respawnPoint.position;
         Quaternion targetRot = respawnPoint.rotation;
         
+        // Reset player health before respawn
+        fpsController.ResetHealth();
+        
         // Teleport player - that's it, nothing else
         fpsController.TeleportToPosition(targetPos, targetRot);
+        
+        // Re-enable control after respawn
+        fpsController.SetDisabled(false);
         
         isDead = false;
     }
@@ -126,7 +150,7 @@ public class PlayerManager : MonoBehaviour
         GameSceneManager.ReloadCurrentScene();
     }
   
-   
+    
     
     /// <summary>
     /// Sets a new respawn point.
@@ -141,4 +165,3 @@ public class PlayerManager : MonoBehaviour
     /// </summary>
     public bool IsDead => isDead;
 }
-
