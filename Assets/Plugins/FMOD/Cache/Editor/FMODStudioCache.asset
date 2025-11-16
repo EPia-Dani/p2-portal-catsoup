@@ -352,7 +352,11 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
   Name: GeneralSFX
   StudioPath: bank:/SFX/GeneralSFX
+<<<<<<< Updated upstream
   lastModified: 638989233928632029
+=======
+  lastModified: 638989319555025534
+>>>>>>> Stashed changes
   FileSizes:
   - Name: Desktop
     Value: 1310656
@@ -490,7 +494,11 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -5631817738560404720}
   cacheVersion: 131856
+<<<<<<< Updated upstream
   cacheTime: 638989233929059928
+=======
+  cacheTime: 638989319555088849
+>>>>>>> Stashed changes
   SerializableEventsDict:
   - key: event:/SFX/Collision
     index: 0
@@ -586,7 +594,11 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GlaDOS.bank
   Name: GlaDOS
   StudioPath: bank:/SFX/GlaDOS
+<<<<<<< Updated upstream
   lastModified: 638989233929044684
+=======
+  lastModified: 638989319555077173
+>>>>>>> Stashed changes
   FileSizes:
   - Name: Desktop
     Value: 418912
@@ -842,7 +854,11 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
   Name: PortalSounds
   StudioPath: bank:/SFX/PortalSounds
+<<<<<<< Updated upstream
   lastModified: 638989156679040367
+=======
+  lastModified: 638989319555088849
+>>>>>>> Stashed changes
   FileSizes:
   - Name: Desktop
     Value: 63936

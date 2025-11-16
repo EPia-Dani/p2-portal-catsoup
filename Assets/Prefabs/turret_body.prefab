@@ -85,7 +85,7 @@ MonoBehaviour:
   terminalVelocity: 50
   maxAngularVelocity: 50
   moveSpeed: 60
-  rotationSpeed: 60
+  rotationSpeed: 1
   heldDamping: 5
   droppedDamping: 0.05
   dropForce: 2
@@ -93,7 +93,7 @@ MonoBehaviour:
   head: {fileID: 3930472468011638285}
   firePoint: {fileID: 8864167999143487555}
   beamRenderer: {fileID: 1361685011499656261}
-  detectionRadius: 10
+  detectionRadius: 5
   fireRate: 1
   burstFlashCount: 4
   flashDuration: 0.025
@@ -116,8 +116,11 @@ MonoBehaviour:
   disableCheckInterval: 0.1
   startupGraceSeconds: 0.5
   debugMovement: 0
+<<<<<<< Updated upstream
   damageOverlay: {fileID: 6159907499644628569, guid: a7ac482154cf09d47aa5230440e57a5b,
     type: 3}
+=======
+>>>>>>> Stashed changes
 --- !u!54 &1863348359806828806
 Rigidbody:
   m_ObjectHideFlags: 0
