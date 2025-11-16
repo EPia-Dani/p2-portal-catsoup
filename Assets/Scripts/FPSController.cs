@@ -173,7 +173,7 @@ public class FPSController : PortalTraveller
         else
         {
             // Auto-heal after 0.3 seconds (duration of red flash)
-            StartCoroutine(AutoHealAfterDelay(0.3f));
+            StartCoroutine(AutoHealAfterDelay(10f));
         }
     }
 
