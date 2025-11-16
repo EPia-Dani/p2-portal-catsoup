@@ -50,12 +50,101 @@ namespace Player
 		private bool _isExiting;
 		private Vector2 startPos;
 		private float _elapsed;
+		private RenderTexture _videoRenderTexture;
+
+		void Awake()
+		{
+			SetupVideoPlayback();
+		}
 
 		void Start()
 		{
 			startPos = creditsContainer.anchoredPosition;
 			_elapsed = 0f;
 			ApplyVideoForTime(0f, force:true);
+		}
+
+		private void SetupVideoPlayback()
+	{
+			// Create or get VideoPlayer component
+			if (videoPlayer == null)
+			{
+				GameObject vpObj = GameObject.Find("Video Player");
+				if (vpObj != null)
+				{
+					videoPlayer = vpObj.GetComponent<VideoPlayer>();
+				}
+				if (videoPlayer == null)
+				{
+					vpObj = new GameObject("Video Player");
+					videoPlayer = vpObj.AddComponent<VideoPlayer>();
+				}
+			}
+
+			// Create or get RawImage component
+			if (videoTarget == null)
+			{
+				GameObject riObj = GameObject.Find("RawImage");
+				if (riObj != null)
+				{
+					videoTarget = riObj.GetComponent<RawImage>();
+				}
+			}
+
+			// Create RenderTexture if needed
+			if (_videoRenderTexture == null)
+			{
+				// Use 1920x1080 as default, or detect from first video clip if available
+				int width = 1920;
+				int height = 1080;
+				
+				if (videoTimeline != null && videoTimeline.Length > 0)
+				{
+					for (int i = 0; i < videoTimeline.Length; i++)
+					{
+						if (videoTimeline[i] != null && videoTimeline[i].clip != null)
+						{
+							width = (int)videoTimeline[i].clip.width;
+							height = (int)videoTimeline[i].clip.height;
+							break;
+						}
+					}
+				}
+
+				_videoRenderTexture = new RenderTexture(width, height, 0, RenderTextureFormat.ARGB32);
+				_videoRenderTexture.name = "CreditsVideoRenderTexture";
+				_videoRenderTexture.Create();
+			}
+
+			// Configure VideoPlayer
+			if (videoPlayer != null)
+			{
+				videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+				videoPlayer.targetTexture = _videoRenderTexture;
+				videoPlayer.playOnAwake = false;
+				videoPlayer.skipOnDrop = true;
+				videoPlayer.waitForFirstFrame = true;
+			}
+
+			// Configure RawImage
+			if (videoTarget != null)
+			{
+				videoTarget.texture = _videoRenderTexture;
+				videoTarget.enabled = false; // Will be enabled when video plays
+			}
+		}
+
+		void OnDestroy()
+		{
+			// Clean up RenderTexture
+			if (_videoRenderTexture != null)
+			{
+				if (_videoRenderTexture.IsCreated())
+				{
+					_videoRenderTexture.Release();
+				}
+				Destroy(_videoRenderTexture);
+			}
 		}
 
 		void Update()

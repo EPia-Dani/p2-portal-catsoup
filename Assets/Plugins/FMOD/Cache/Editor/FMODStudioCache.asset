@@ -15,10 +15,10 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
   Name: GeneralSFX
   StudioPath: bank:/SFX/GeneralSFX
-  lastModified: 638989319555025534
+  lastModified: 638989347215637091
   FileSizes:
   - Name: Desktop
-    Value: 1310656
+    Value: 3339840
   Exists: 1
 --- !u!114 &-8118254675852452197
 MonoBehaviour:
@@ -116,7 +116,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GlaDOS.bank
   Name: GlaDOS
   StudioPath: bank:/SFX/GlaDOS
-  lastModified: 638989319555077173
+  lastModified: 638989343433670460
   FileSizes:
   - Name: Desktop
     Value: 418912
@@ -136,7 +136,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638989217748985011
+  lastModified: 638989343432460165
   FileSizes:
   - Name: Desktop
     Value: 1074
@@ -183,7 +183,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
   Name: PortalSounds
   StudioPath: bank:/SFX/PortalSounds
-  lastModified: 638989319555088849
+  lastModified: 638989343434069669
   FileSizes:
   - Name: Desktop
     Value: 63936
@@ -423,13 +423,14 @@ MonoBehaviour:
   - {fileID: 2514894997436145452}
   - {fileID: 6128934825055396657}
   - {fileID: 3362204454858926072}
+  - {fileID: 6929219836393692260}
   EditorParameters: []
   MasterBanks:
   - {fileID: -5813377986613283983}
   StringsBanks:
   - {fileID: 6406496583281546549}
   cacheVersion: 131856
-  cacheTime: 638989319555088849
+  cacheTime: 638989347215637091
   SerializableEventsDict:
   - key: event:/SFX/Environment/Interactables/DoorOpen
     index: 0
@@ -483,6 +484,8 @@ MonoBehaviour:
     index: 24
   - key: event:/SFX/Weapons/PortalGunShot4
     index: 25
+  - key: event:/SFX/Environment/CreditsScene
+    index: 26
 --- !u!114 &98475578777202145
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -508,7 +511,7 @@ MonoBehaviour:
   IsOneShot: 0
   Parameters: []
   MinDistance: 0
-  MaxDistance: 7.2000003
+  MaxDistance: 5.6
   Length: 4664
 --- !u!114 &212729886521973894
 MonoBehaviour:
@@ -896,11 +899,38 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638989217748995020
+  lastModified: 638989343432480229
   FileSizes:
   - Name: Desktop
-    Value: 2042
+    Value: 2084
   Exists: 1
+--- !u!114 &6929219836393692260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Environment/CreditsScene
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Environment/CreditsScene
+  Guid:
+    Data1: -1279135443
+    Data2: 1191364540
+    Data3: 636918946
+    Data4: -1142055116
+  Banks:
+  - {fileID: -9025133273724695211}
+  IsStream: 1
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 10000
+  Length: 0
 --- !u!114 &9114040691533598174
 MonoBehaviour:
   m_ObjectHideFlags: 0
