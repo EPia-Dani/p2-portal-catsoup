@@ -1,3 +1,4 @@
+using FMODUnity;
 using UnityEngine;
 
 namespace Portal {
@@ -9,6 +10,9 @@ namespace Portal {
 		[SerializeField] Transform orangePortalMesh;
 		[SerializeField] Transform blueCollidersTransform;
 		[SerializeField] Transform orangeCollidersTransform;
+
+		[Header("Audio")]
+		[SerializeField] EventReference warpSound;
 
 		[Header("Settings")]
 		[SerializeField] int textureSize = 1024;
@@ -237,6 +241,28 @@ namespace Portal {
 			}
 			if (orangePortal != null) {
 				orangePortal.gameObject.SetActive(false);
+			}
+		}
+
+		public void NotifyTravellerTeleported(PortalRenderer source, PortalRenderer destination, Vector3 teleportPosition) {
+			if (warpSound.IsNull) {
+				return;
+			}
+
+			bool played = false;
+
+			if (source != null) {
+				RuntimeManager.PlayOneShot(warpSound, source.transform.position);
+				played = true;
+			}
+
+			if (destination != null) {
+				RuntimeManager.PlayOneShot(warpSound, destination.transform.position);
+				played = true;
+			}
+
+			if (!played) {
+				RuntimeManager.PlayOneShot(warpSound, teleportPosition);
 			}
 		}
 
