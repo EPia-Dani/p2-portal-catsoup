@@ -15,7 +15,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
   Name: GeneralSFX
   StudioPath: bank:/SFX/GeneralSFX
-  lastModified: 638989319555025534
+  lastModified: 638989233928632029
   FileSizes:
   - Name: Desktop
     Value: 1310656
@@ -116,7 +116,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/GlaDOS.bank
   Name: GlaDOS
   StudioPath: bank:/SFX/GlaDOS
-  lastModified: 638989319555077173
+  lastModified: 638989233929044684
   FileSizes:
   - Name: Desktop
     Value: 418912
@@ -136,7 +136,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638989217748985011
+  lastModified: 638989156679025322
   FileSizes:
   - Name: Desktop
     Value: 1074
@@ -183,7 +183,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
   Name: PortalSounds
   StudioPath: bank:/SFX/PortalSounds
-  lastModified: 638989319555088849
+  lastModified: 638989156679040367
   FileSizes:
   - Name: Desktop
     Value: 63936
@@ -429,7 +429,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: 6406496583281546549}
   cacheVersion: 131856
-  cacheTime: 638989319555088849
+  cacheTime: 638989233929059928
   SerializableEventsDict:
   - key: event:/SFX/Environment/Interactables/DoorOpen
     index: 0
@@ -606,7 +606,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/WeaponSounds.bank
   Name: WeaponSounds
   StudioPath: bank:/SFX/WeaponSounds
-  lastModified: 638989206069754686
+  lastModified: 638989233929059928
   FileSizes:
   - Name: Desktop
     Value: 118848
@@ -896,7 +896,7 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 638989217748995020
+  lastModified: 638989233929044684
   FileSizes:
   - Name: Desktop
     Value: 2042
