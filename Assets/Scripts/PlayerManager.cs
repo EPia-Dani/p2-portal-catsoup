@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections;
 
 /// <summary>
 /// Manages player state, death, and respawn functionality.
@@ -18,6 +17,10 @@ public class PlayerManager : MonoBehaviour
     
     [Tooltip("Should the player respawn at the respawn point or restart the scene?")]
     public bool respawnAtPoint = true;
+
+    [Header("Player Reference")]
+    [Tooltip("Reference to the player GameObject. If null, will search for FPSController.")]
+    public DeathScreenManager deathScreen;
     
     private FPSController fpsController;
     private Vector3 initialPosition;
@@ -37,64 +40,6 @@ public class PlayerManager : MonoBehaviour
             return;
         }
         instance = this;
-        
-        // Subscribe to scene loaded events
-        SceneManager.sceneLoaded += OnSceneLoaded;
-    }
-    
-    private void OnDestroy()
-    {
-        // Unsubscribe from scene loaded events
-        SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-    
-    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        // Reset player reference when loading a new scene (new player instance will be created)
-        player = null;
-        fpsController = null;
-        
-        // Handle FinalLevel scene setup
-        if (scene.name == "FinalLevel")
-        {
-            // Use coroutine to ensure scene is fully initialized
-            StartCoroutine(SetupFinalLevelDelayed());
-        }
-    }
-    
-    private IEnumerator SetupFinalLevelDelayed()
-    {
-        // Wait one frame to ensure all GameObjects are initialized
-        yield return null;
-        
-        SetupFinalLevel();
-    }
-    
-    private void SetupFinalLevel()
-    {
-        Debug.Log("PlayerManager: Setting up FinalLevel scene - linking checkpoint anchor");
-        
-        // Find and link checkpoint anchor
-        GameObject checkpointAnchor = GameObject.Find("CheckpointAnchor");
-        if (checkpointAnchor == null)
-        {
-            // Try alternative names
-            checkpointAnchor = GameObject.Find("Checkpoint");
-            if (checkpointAnchor == null)
-            {
-                checkpointAnchor = GameObject.Find("RespawnAnchor");
-            }
-        }
-        
-        if (checkpointAnchor != null)
-        {
-            SetRespawnPoint(checkpointAnchor.transform);
-            Debug.Log($"PlayerManager: Checkpoint anchor '{checkpointAnchor.name}' linked to respawn point");
-        }
-        else
-        {
-            Debug.LogWarning("PlayerManager: No checkpoint anchor found in FinalLevel scene! Expected GameObject named 'CheckpointAnchor', 'Checkpoint', or 'RespawnAnchor'");
-        }
     }
     
     private void Start()
@@ -136,7 +81,7 @@ public class PlayerManager : MonoBehaviour
     }
     
     /// <summary>
-    /// Called when the player dies. Triggers respawn with black fade transition.
+    /// Called when the player dies. Triggers death screen and disables player control.
     /// </summary>
     public void OnPlayerDeath()
     {
@@ -147,20 +92,9 @@ public class PlayerManager : MonoBehaviour
         
         isDead = true;
         
-        // Use black fade system to respawn directly
-        if (ScreenFadeManager.Instance != null)
-        {
-            ScreenFadeManager.Instance.FadeOutAndRespawn(() =>
-            {
-                // Respawn player during black screen
-                RespawnPlayer();
-            });
-        }
-        else
-        {
-            // Fallback: respawn immediately if fade manager doesn't exist
-            RespawnPlayer();
-        }
+        
+        deathScreen.ShowDeathScreen();
+        
     }
     
     /// <summary>
