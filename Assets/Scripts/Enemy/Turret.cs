@@ -16,7 +16,7 @@ namespace Enemy
         public float maxRange = 50f;
         public LayerMask obstacleMask = -1;
 
-        private FPSController player;
+        public FPSController player;
         private float nextFireTime;
         private float beamEndTime;
         private bool beamActive;
@@ -109,22 +109,15 @@ namespace Enemy
         {
             if (player == null) return Vector3.zero;
             
-            // Try to get camera position (head level)
-            Camera playerCam = Camera.main;
-            if (playerCam != null && playerCam.transform != null)
-            {
-                return playerCam.transform.position;
-            }
-            
-            // Fallback: use player position with offset for head height
+            // Aim at player's torso/chest area (below camera level)
             CharacterController controller = player.GetComponent<CharacterController>();
             if (controller != null)
             {
-                // Add half the controller height to get approximate head position
-                return player.transform.position + Vector3.up * (controller.height * 0.5f);
+                // Aim lower - around chest/torso level, well below the camera
+                return player.transform.position + Vector3.up * (controller.height * 0.1f);
             }
             
-            // Last resort: just use player position
+            // Fallback: use player position
             return player.transform.position;
         }
 
@@ -154,13 +147,19 @@ namespace Enemy
                 else
                 {
                     // Hit point is at or beyond player, so target player directly
-                    endPos = targetPos;
+                    // Offset slightly back from camera to make beam visible
+                    endPos = targetPos - direction * 0.5f;
                 }
             }
             else if (distanceToPlayer > maxRange)
             {
                 // Player beyond max range, show beam up to max range
                 endPos = startPos + direction * maxRange;
+            }
+            else
+            {
+                // Offset beam end slightly back from player to make it visible when viewed head-on
+                endPos = targetPos - direction * 0.5f;
             }
 
             beamRenderer.SetPosition(0, startPos);
