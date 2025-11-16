@@ -1,6 +1,26 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-9202794896008358728
+--- !u!114 &-9025133273724695211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/GeneralSFX.bank
+  m_EditorClassIdentifier: 
+  Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
+  Name: GeneralSFX
+  StudioPath: bank:/SFX/GeneralSFX
+  lastModified: 638989319555025534
+  FileSizes:
+  - Name: Desktop
+    Value: 1310656
+  Exists: 1
+--- !u!114 &-8118254675852452197
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -19,7 +39,7 @@ MonoBehaviour:
     Data3: -405567331
     Data4: -866257584
   Banks:
-  - {fileID: -2174464091015023244}
+  - {fileID: -9025133273724695211}
   IsStream: 1
   Is3D: 1
   IsOneShot: 1
@@ -27,637 +47,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
---- !u!114 &-8984286007053299314
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Weapons/PortalGunShot2
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/Weapons/PortalGunShot2
-  Guid:
-    Data1: -1724841757
-    Data2: 1159062514
-    Data3: -1638786378
-    Data4: -2031809302
-  Banks:
-  - {fileID: -6063671304224853933}
-  IsStream: 1
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 4835
---- !u!114 &-8418915247394171396
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/PortalSFX/PortalBackground
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/PortalSFX/PortalBackground
-  Guid:
-    Data1: 921114955
-    Data2: 1118105121
-    Data3: 76677015
-    Data4: -1110428621
-  Banks:
-  - {fileID: 7327229040431735482}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 0
-  Parameters: []
-  MinDistance: 0
-  MaxDistance: 7.2000003
-  Length: 4664
---- !u!114 &-7244729939795585029
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Collision
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/Collision
-  Guid:
-    Data1: 513630297
-    Data2: 1232952905
-    Data3: 370659471
-    Data4: 244395463
-  Banks:
-  - {fileID: -2174464091015023244}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &-7066833972006092316
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/LEVELCOMPLETE
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/LEVELCOMPLETE
-  Guid:
-    Data1: 1575880725
-    Data2: 1279790205
-    Data3: 938077877
-    Data4: 649235227
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &-6089138680388968108
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Weapons/PortalGunShot1
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/Weapons/PortalGunShot1
-  Guid:
-    Data1: 1345471811
-    Data2: 1264210248
-    Data3: 1409822082
-    Data4: 1325030771
-  Banks:
-  - {fileID: -6063671304224853933}
-  IsStream: 1
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 4816
---- !u!114 &-6063671304224853933
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
-  m_Name: bank:/WeaponSounds.bank
-  m_EditorClassIdentifier: 
-  Path: FMOD/Portal/Build/Desktop/WeaponSounds.bank
-  Name: WeaponSounds
-  StudioPath: bank:/SFX/WeaponSounds
-  lastModified: 638989233929059928
-  FileSizes:
-  - Name: Desktop
-    Value: 118848
-  Exists: 1
---- !u!114 &-6040118280764833724
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/3
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/3
-  Guid:
-    Data1: -1543476661
-    Data2: 1158556511
-    Data3: -906912070
-    Data4: -1622555444
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &-5631817738560404720
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
-  m_Name: bank:/Master.strings.bank
-  m_EditorClassIdentifier: 
-  Path: FMOD/Portal/Build/Desktop/Master.strings.bank
-  Name: Master.strings
-  StudioPath: bank:/Master.strings
-  lastModified: 638989233929044684
-  FileSizes:
-  - Name: Desktop
-    Value: 2042
-  Exists: 1
---- !u!114 &-4678787244532575712
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/FinalLevelIntro
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/FinalLevelIntro
-  Guid:
-    Data1: -1768367331
-    Data2: 1271958136
-    Data3: -1586132041
-    Data4: -17310402
-  Banks:
-  - {fileID: -2174464091015023244}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 400
-  Length: 0
---- !u!114 &-2933680742219898644
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/5
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/5
-  Guid:
-    Data1: -1529730571
-    Data2: 1200469674
-    Data3: -1007397491
-    Data4: 487146448
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &-2913258138983687620
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Environment/Interactables/ButtonPress
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/Environment/Interactables/ButtonPress
-  Guid:
-    Data1: -1434768279
-    Data2: 1157745254
-    Data3: -1713262149
-    Data4: 1178287900
-  Banks:
-  - {fileID: -2174464091015023244}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 8.6
-  Length: 0
---- !u!114 &-2621103683327116303
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/7
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/7
-  Guid:
-    Data1: 2130019805
-    Data2: 1207247863
-    Data3: -914604353
-    Data4: 27898888
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &-2174464091015023244
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
-  m_Name: bank:/GeneralSFX.bank
-  m_EditorClassIdentifier: 
-  Path: FMOD/Portal/Build/Desktop/GeneralSFX.bank
-  Name: GeneralSFX
-  StudioPath: bank:/SFX/GeneralSFX
-<<<<<<< Updated upstream
-  lastModified: 638989233928632029
-=======
-  lastModified: 638989319555025534
->>>>>>> Stashed changes
-  FileSizes:
-  - Name: Desktop
-    Value: 1310656
-  Exists: 1
---- !u!114 &-1518166954590098963
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Weapons/PortalGunShot3
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/Weapons/PortalGunShot3
-  Guid:
-    Data1: -659776097
-    Data2: 1085191327
-    Data3: -912655209
-    Data4: -1270570585
-  Banks:
-  - {fileID: -6063671304224853933}
-  IsStream: 1
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 4800
---- !u!114 &-915658016412301201
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/8
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/8
-  Guid:
-    Data1: 1779523283
-    Data2: 1160393177
-    Data3: 732997269
-    Data4: -1048818252
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &-820629685071187517
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Environment/Music
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/Environment/Music
-  Guid:
-    Data1: 1128322765
-    Data2: 1103450310
-    Data3: 1223552446
-    Data4: -2086563132
-  Banks:
-  - {fileID: -2174464091015023244}
-  IsStream: 1
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 30
-  Length: 0
---- !u!114 &11400000
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d32cf7c32a3ed8347bac48ef5ed56d82, type: 3}
-  m_Name: FMODStudioCache
-  m_EditorClassIdentifier: 
-  EditorBanks:
-  - {fileID: -5631817738560404720}
-  - {fileID: -2174464091015023244}
-  - {fileID: 4081106290661449368}
-  - {fileID: 7327229040431735482}
-  - {fileID: -6063671304224853933}
-  - {fileID: 842182114131825624}
-  EditorEvents:
-  - {fileID: -7244729939795585029}
-  - {fileID: 8115163133539580668}
-  - {fileID: -8418915247394171396}
-  - {fileID: 6863992414714831538}
-  - {fileID: -6089138680388968108}
-  - {fileID: 3399927208369914955}
-  - {fileID: -1518166954590098963}
-  - {fileID: -8984286007053299314}
-  - {fileID: 4850165914484808645}
-  - {fileID: -9202794896008358728}
-  - {fileID: -820629685071187517}
-  - {fileID: -4678787244532575712}
-  - {fileID: -7066833972006092316}
-  - {fileID: 1629884818111865685}
-  - {fileID: 6556691407138402164}
-  - {fileID: -6040118280764833724}
-  - {fileID: 7616950719319471234}
-  - {fileID: 741577673660717328}
-  - {fileID: -915658016412301201}
-  - {fileID: -2621103683327116303}
-  - {fileID: 2020775504138623324}
-  - {fileID: -2933680742219898644}
-  - {fileID: 7370436587992490308}
-  - {fileID: -2913258138983687620}
-  - {fileID: 4286009109023819551}
-  - {fileID: 5353776164489091798}
-  EditorParameters: []
-  MasterBanks:
-  - {fileID: 4081106290661449368}
-  StringsBanks:
-  - {fileID: -5631817738560404720}
-  cacheVersion: 131856
-<<<<<<< Updated upstream
-  cacheTime: 638989233929059928
-=======
-  cacheTime: 638989319555088849
->>>>>>> Stashed changes
-  SerializableEventsDict:
-  - key: event:/SFX/Collision
-    index: 0
-  - key: event:/SFX/PortalSFX/Placement
-    index: 1
-  - key: event:/SFX/PortalSFX/PortalBackground
-    index: 2
-  - key: event:/SFX/PortalSFX/Warp
-    index: 3
-  - key: event:/SFX/Weapons/PortalGunShot1
-    index: 4
-  - key: event:/SFX/Weapons/PortalGunShot5
-    index: 5
-  - key: event:/SFX/Weapons/PortalGunShot3
-    index: 6
-  - key: event:/SFX/Weapons/PortalGunShot2
-    index: 7
-  - key: event:/SFX/Weapons/PortalGunShot4
-    index: 8
-  - key: event:/SFX/Environment/GlaDOS_Intro
-    index: 9
-  - key: event:/SFX/Environment/Music
-    index: 10
-  - key: event:/SFX/GladOS/FinalLevelIntro
-    index: 11
-  - key: event:/SFX/GladOS/LEVELCOMPLETE
-    index: 12
-  - key: event:/SFX/GladOS/4
-    index: 13
-  - key: event:/SFX/GladOS/6
-    index: 14
-  - key: event:/SFX/GladOS/3
-    index: 15
-  - key: event:/SFX/GladOS/9
-    index: 16
-  - key: event:/SFX/GladOS/1
-    index: 17
-  - key: event:/SFX/GladOS/8
-    index: 18
-  - key: event:/SFX/GladOS/7
-    index: 19
-  - key: event:/SFX/GladOS/2
-    index: 20
-  - key: event:/SFX/GladOS/5
-    index: 21
-  - key: event:/SFX/Weapons/Turret
-    index: 22
-  - key: event:/SFX/Environment/Interactables/ButtonPress
-    index: 23
-  - key: event:/SFX/Environment/Interactables/DoorOpen
-    index: 24
-  - key: event:/SFX/Environment/Interactables/DoorClose
-    index: 25
---- !u!114 &741577673660717328
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/1
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/1
-  Guid:
-    Data1: -1739054393
-    Data2: 1099432047
-    Data3: -1761129343
-    Data4: 1073638702
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &842182114131825624
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
-  m_Name: bank:/GlaDOS.bank
-  m_EditorClassIdentifier: 
-  Path: FMOD/Portal/Build/Desktop/GlaDOS.bank
-  Name: GlaDOS
-  StudioPath: bank:/SFX/GlaDOS
-<<<<<<< Updated upstream
-  lastModified: 638989233929044684
-=======
-  lastModified: 638989319555077173
->>>>>>> Stashed changes
-  FileSizes:
-  - Name: Desktop
-    Value: 418912
-  Exists: 1
---- !u!114 &1629884818111865685
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/4
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/4
-  Guid:
-    Data1: -1179439332
-    Data2: 1291883615
-    Data3: 1530924693
-    Data4: -464177123
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &2020775504138623324
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/2
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/2
-  Guid:
-    Data1: -352239138
-    Data2: 1338483815
-    Data3: -1576875639
-    Data4: 775237980
-  Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &3399927208369914955
+--- !u!114 &-6673681853076001166
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -676,7 +66,7 @@ MonoBehaviour:
     Data3: -1036334174
     Data4: -1356394572
   Banks:
-  - {fileID: -6063671304224853933}
+  - {fileID: 1190005952470432996}
   IsStream: 1
   Is3D: 1
   IsOneShot: 1
@@ -684,7 +74,54 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 2632
---- !u!114 &4081106290661449368
+--- !u!114 &-5994580189787589889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Weapons/PortalGunShot1
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Weapons/PortalGunShot1
+  Guid:
+    Data1: 1345471811
+    Data2: 1264210248
+    Data3: 1409822082
+    Data4: 1325030771
+  Banks:
+  - {fileID: 1190005952470432996}
+  IsStream: 1
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4816
+--- !u!114 &-5875069121102670311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/GlaDOS.bank
+  m_EditorClassIdentifier: 
+  Path: FMOD/Portal/Build/Desktop/GlaDOS.bank
+  Name: GlaDOS
+  StudioPath: bank:/SFX/GlaDOS
+  lastModified: 638989319555077173
+  FileSizes:
+  - Name: Desktop
+    Value: 418912
+  Exists: 1
+--- !u!114 &-5813377986613283983
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -699,12 +136,86 @@ MonoBehaviour:
   Path: FMOD/Portal/Build/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 638989156679025322
+  lastModified: 638989217748985011
   FileSizes:
   - Name: Desktop
     Value: 1074
   Exists: 1
---- !u!114 &4286009109023819551
+--- !u!114 &-5713895474681180876
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/8
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/8
+  Guid:
+    Data1: 1779523283
+    Data2: 1160393177
+    Data3: 732997269
+    Data4: -1048818252
+  Banks:
+  - {fileID: -5875069121102670311}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &-4820012877884467461
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/PortalSounds.bank
+  m_EditorClassIdentifier: 
+  Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
+  Name: PortalSounds
+  StudioPath: bank:/SFX/PortalSounds
+  lastModified: 638989319555088849
+  FileSizes:
+  - Name: Desktop
+    Value: 63936
+  Exists: 1
+--- !u!114 &-4082362052360012287
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/7
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/7
+  Guid:
+    Data1: 2130019805
+    Data2: 1207247863
+    Data3: -914604353
+    Data4: 27898888
+  Banks:
+  - {fileID: -5875069121102670311}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &-3695026913091744554
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -723,7 +234,7 @@ MonoBehaviour:
     Data3: -314006144
     Data4: -1907647624
   Banks:
-  - {fileID: -2174464091015023244}
+  - {fileID: -9025133273724695211}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
@@ -731,7 +242,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 60
   Length: 0
---- !u!114 &4850165914484808645
+--- !u!114 &-1361378417328857716
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -741,24 +252,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Weapons/PortalGunShot4
+  m_Name: event:/SFX/GladOS/LEVELCOMPLETE
   m_EditorClassIdentifier: 
-  Path: event:/SFX/Weapons/PortalGunShot4
+  Path: event:/SFX/GladOS/LEVELCOMPLETE
   Guid:
-    Data1: -399496721
-    Data2: 1255047460
-    Data3: 684202429
-    Data4: -1143791309
+    Data1: 1575880725
+    Data2: 1279790205
+    Data3: 938077877
+    Data4: 649235227
   Banks:
-  - {fileID: -6063671304224853933}
-  IsStream: 1
+  - {fileID: -5875069121102670311}
+  IsStream: 0
   Is3D: 1
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 4840
---- !u!114 &5353776164489091798
+  Length: 0
+--- !u!114 &-1142682724482174629
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -777,7 +288,7 @@ MonoBehaviour:
     Data3: 1872746121
     Data4: -451326720
   Banks:
-  - {fileID: -2174464091015023244}
+  - {fileID: -9025133273724695211}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
@@ -785,7 +296,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 60
   Length: 0
---- !u!114 &6556691407138402164
+--- !u!114 &-1043794427602656684
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -795,24 +306,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/GladOS/6
+  m_Name: event:/SFX/Environment/Music
   m_EditorClassIdentifier: 
-  Path: event:/SFX/GladOS/6
+  Path: event:/SFX/Environment/Music
   Guid:
-    Data1: 1775982369
-    Data2: 1179334869
-    Data3: 1247883430
-    Data4: -1430452176
+    Data1: 1128322765
+    Data2: 1103450310
+    Data3: 1223552446
+    Data4: -2086563132
   Banks:
-  - {fileID: 842182114131825624}
-  IsStream: 0
+  - {fileID: -9025133273724695211}
+  IsStream: 1
   Is3D: 1
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 30
   Length: 0
---- !u!114 &6863992414714831538
+--- !u!114 &-650335582595001171
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -822,16 +333,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/PortalSFX/Warp
+  m_Name: event:/SFX/GladOS/3
   m_EditorClassIdentifier: 
-  Path: event:/SFX/PortalSFX/Warp
+  Path: event:/SFX/GladOS/3
   Guid:
-    Data1: -1008884845
-    Data2: 1192969984
-    Data3: 992622496
-    Data4: 415743497
+    Data1: -1543476661
+    Data2: 1158556511
+    Data3: -906912070
+    Data4: -1622555444
   Banks:
-  - {fileID: 7327229040431735482}
+  - {fileID: -5875069121102670311}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
@@ -839,58 +350,7 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
---- !u!114 &7327229040431735482
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
-  m_Name: bank:/PortalSounds.bank
-  m_EditorClassIdentifier: 
-  Path: FMOD/Portal/Build/Desktop/PortalSounds.bank
-  Name: PortalSounds
-  StudioPath: bank:/SFX/PortalSounds
-<<<<<<< Updated upstream
-  lastModified: 638989156679040367
-=======
-  lastModified: 638989319555088849
->>>>>>> Stashed changes
-  FileSizes:
-  - Name: Desktop
-    Value: 63936
-  Exists: 1
---- !u!114 &7370436587992490308
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/SFX/Weapons/Turret
-  m_EditorClassIdentifier: 
-  Path: event:/SFX/Weapons/Turret
-  Guid:
-    Data1: 1201049041
-    Data2: 1160399896
-    Data3: -1569719420
-    Data4: 1033269866
-  Banks:
-  - {fileID: -6063671304224853933}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
-  Parameters: []
-  MinDistance: 1
-  MaxDistance: 20
-  Length: 0
---- !u!114 &7616950719319471234
+--- !u!114 &-236602242074582770
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -909,7 +369,7 @@ MonoBehaviour:
     Data3: -725199989
     Data4: 352448268
   Banks:
-  - {fileID: 842182114131825624}
+  - {fileID: -5875069121102670311}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
@@ -917,7 +377,430 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 0
---- !u!114 &8115163133539580668
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d32cf7c32a3ed8347bac48ef5ed56d82, type: 3}
+  m_Name: FMODStudioCache
+  m_EditorClassIdentifier: 
+  EditorBanks:
+  - {fileID: 6406496583281546549}
+  - {fileID: -9025133273724695211}
+  - {fileID: -5875069121102670311}
+  - {fileID: -5813377986613283983}
+  - {fileID: -4820012877884467461}
+  - {fileID: 1190005952470432996}
+  EditorEvents:
+  - {fileID: -3695026913091744554}
+  - {fileID: 331791399959059905}
+  - {fileID: 1042637613383085913}
+  - {fileID: 5126795182177936809}
+  - {fileID: -8118254675852452197}
+  - {fileID: -1043794427602656684}
+  - {fileID: -1142682724482174629}
+  - {fileID: -1361378417328857716}
+  - {fileID: 6211081642114300686}
+  - {fileID: 3183977665943169127}
+  - {fileID: -650335582595001171}
+  - {fileID: -236602242074582770}
+  - {fileID: 3956404719314772737}
+  - {fileID: -5713895474681180876}
+  - {fileID: -4082362052360012287}
+  - {fileID: 9114040691533598174}
+  - {fileID: 212729886521973894}
+  - {fileID: 5808514682704567977}
+  - {fileID: 98475578777202145}
+  - {fileID: 2275089121470845277}
+  - {fileID: -5994580189787589889}
+  - {fileID: -6673681853076001166}
+  - {fileID: 2660126767990663656}
+  - {fileID: 2514894997436145452}
+  - {fileID: 6128934825055396657}
+  - {fileID: 3362204454858926072}
+  EditorParameters: []
+  MasterBanks:
+  - {fileID: -5813377986613283983}
+  StringsBanks:
+  - {fileID: 6406496583281546549}
+  cacheVersion: 131856
+  cacheTime: 638989319555088849
+  SerializableEventsDict:
+  - key: event:/SFX/Environment/Interactables/DoorOpen
+    index: 0
+  - key: event:/SFX/GladOS/FinalLevelIntro
+    index: 1
+  - key: event:/SFX/Collision
+    index: 2
+  - key: event:/SFX/Environment/Interactables/ButtonPress
+    index: 3
+  - key: event:/SFX/Environment/GlaDOS_Intro
+    index: 4
+  - key: event:/SFX/Environment/Music
+    index: 5
+  - key: event:/SFX/Environment/Interactables/DoorClose
+    index: 6
+  - key: event:/SFX/GladOS/LEVELCOMPLETE
+    index: 7
+  - key: event:/SFX/GladOS/4
+    index: 8
+  - key: event:/SFX/GladOS/6
+    index: 9
+  - key: event:/SFX/GladOS/3
+    index: 10
+  - key: event:/SFX/GladOS/9
+    index: 11
+  - key: event:/SFX/GladOS/1
+    index: 12
+  - key: event:/SFX/GladOS/8
+    index: 13
+  - key: event:/SFX/GladOS/7
+    index: 14
+  - key: event:/SFX/GladOS/2
+    index: 15
+  - key: event:/SFX/GladOS/5
+    index: 16
+  - key: event:/SFX/PortalSFX/Placement
+    index: 17
+  - key: event:/SFX/PortalSFX/PortalBackground
+    index: 18
+  - key: event:/SFX/PortalSFX/Warp
+    index: 19
+  - key: event:/SFX/Weapons/PortalGunShot1
+    index: 20
+  - key: event:/SFX/Weapons/PortalGunShot5
+    index: 21
+  - key: event:/SFX/Weapons/PortalGunShot3
+    index: 22
+  - key: event:/SFX/Weapons/Turret
+    index: 23
+  - key: event:/SFX/Weapons/PortalGunShot2
+    index: 24
+  - key: event:/SFX/Weapons/PortalGunShot4
+    index: 25
+--- !u!114 &98475578777202145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/PortalSFX/PortalBackground
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/PortalSFX/PortalBackground
+  Guid:
+    Data1: 921114955
+    Data2: 1118105121
+    Data3: 76677015
+    Data4: -1110428621
+  Banks:
+  - {fileID: -4820012877884467461}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 0
+  MaxDistance: 7.2000003
+  Length: 4664
+--- !u!114 &212729886521973894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/5
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/5
+  Guid:
+    Data1: -1529730571
+    Data2: 1200469674
+    Data3: -1007397491
+    Data4: 487146448
+  Banks:
+  - {fileID: -5875069121102670311}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &331791399959059905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/FinalLevelIntro
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/FinalLevelIntro
+  Guid:
+    Data1: -1768367331
+    Data2: 1271958136
+    Data3: -1586132041
+    Data4: -17310402
+  Banks:
+  - {fileID: -9025133273724695211}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 400
+  Length: 0
+--- !u!114 &1042637613383085913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Collision
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Collision
+  Guid:
+    Data1: 513630297
+    Data2: 1232952905
+    Data3: 370659471
+    Data4: 244395463
+  Banks:
+  - {fileID: -9025133273724695211}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &1190005952470432996
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/WeaponSounds.bank
+  m_EditorClassIdentifier: 
+  Path: FMOD/Portal/Build/Desktop/WeaponSounds.bank
+  Name: WeaponSounds
+  StudioPath: bank:/SFX/WeaponSounds
+  lastModified: 638989206069754686
+  FileSizes:
+  - Name: Desktop
+    Value: 118848
+  Exists: 1
+--- !u!114 &2275089121470845277
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/PortalSFX/Warp
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/PortalSFX/Warp
+  Guid:
+    Data1: -1008884845
+    Data2: 1192969984
+    Data3: 992622496
+    Data4: 415743497
+  Banks:
+  - {fileID: -4820012877884467461}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &2514894997436145452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Weapons/Turret
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Weapons/Turret
+  Guid:
+    Data1: 1201049041
+    Data2: 1160399896
+    Data3: -1569719420
+    Data4: 1033269866
+  Banks:
+  - {fileID: 1190005952470432996}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &2660126767990663656
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Weapons/PortalGunShot3
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Weapons/PortalGunShot3
+  Guid:
+    Data1: -659776097
+    Data2: 1085191327
+    Data3: -912655209
+    Data4: -1270570585
+  Banks:
+  - {fileID: 1190005952470432996}
+  IsStream: 1
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4800
+--- !u!114 &3183977665943169127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/6
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/6
+  Guid:
+    Data1: 1775982369
+    Data2: 1179334869
+    Data3: 1247883430
+    Data4: -1430452176
+  Banks:
+  - {fileID: -5875069121102670311}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &3362204454858926072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Weapons/PortalGunShot4
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Weapons/PortalGunShot4
+  Guid:
+    Data1: -399496721
+    Data2: 1255047460
+    Data3: 684202429
+    Data4: -1143791309
+  Banks:
+  - {fileID: 1190005952470432996}
+  IsStream: 1
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4840
+--- !u!114 &3956404719314772737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/1
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/1
+  Guid:
+    Data1: -1739054393
+    Data2: 1099432047
+    Data3: -1761129343
+    Data4: 1073638702
+  Banks:
+  - {fileID: -5875069121102670311}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &5126795182177936809
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Environment/Interactables/ButtonPress
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Environment/Interactables/ButtonPress
+  Guid:
+    Data1: -1434768279
+    Data2: 1157745254
+    Data3: -1713262149
+    Data4: 1178287900
+  Banks:
+  - {fileID: -9025133273724695211}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 8.6
+  Length: 0
+--- !u!114 &5808514682704567977
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -936,7 +819,108 @@ MonoBehaviour:
     Data3: 524204682
     Data4: -76376857
   Banks:
-  - {fileID: 7327229040431735482}
+  - {fileID: -4820012877884467461}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &6128934825055396657
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/Weapons/PortalGunShot2
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/Weapons/PortalGunShot2
+  Guid:
+    Data1: -1724841757
+    Data2: 1159062514
+    Data3: -1638786378
+    Data4: -2031809302
+  Banks:
+  - {fileID: 1190005952470432996}
+  IsStream: 1
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 4835
+--- !u!114 &6211081642114300686
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/4
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/4
+  Guid:
+    Data1: -1179439332
+    Data2: 1291883615
+    Data3: 1530924693
+    Data4: -464177123
+  Banks:
+  - {fileID: -5875069121102670311}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 0
+--- !u!114 &6406496583281546549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c18180ecb35941f4682ae60107b85b7c, type: 3}
+  m_Name: bank:/Master.strings.bank
+  m_EditorClassIdentifier: 
+  Path: FMOD/Portal/Build/Desktop/Master.strings.bank
+  Name: Master.strings
+  StudioPath: bank:/Master.strings
+  lastModified: 638989217748995020
+  FileSizes:
+  - Name: Desktop
+    Value: 2042
+  Exists: 1
+--- !u!114 &9114040691533598174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/SFX/GladOS/2
+  m_EditorClassIdentifier: 
+  Path: event:/SFX/GladOS/2
+  Guid:
+    Data1: -352239138
+    Data2: 1338483815
+    Data3: -1576875639
+    Data4: 775237980
+  Banks:
+  - {fileID: -5875069121102670311}
   IsStream: 0
   Is3D: 1
   IsOneShot: 1
