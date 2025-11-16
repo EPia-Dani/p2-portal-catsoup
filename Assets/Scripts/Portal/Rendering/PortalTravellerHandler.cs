@@ -51,7 +51,7 @@ namespace Portal {
 			}
 		}
 
-		void TeleportTraveller(PortalTraveller traveller, PortalRenderer destination, float scaleRatio) {
+		public void TeleportTraveller(PortalTraveller traveller, PortalRenderer destination, float scaleRatio) {
 			if (!traveller || !destination) return;
 			
 			// Safety check: ensure both portals are placed before teleporting

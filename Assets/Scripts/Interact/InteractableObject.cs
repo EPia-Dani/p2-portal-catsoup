@@ -141,12 +141,6 @@ public class InteractableObject : PortalTraveller
         // Ensure portal components exist
         EnsurePortalCloneSystem();
         
-        // Activate clone system
-        if (_portalCloneSystem != null)
-        {
-            _portalCloneSystem.SetHeld(true);
-        }
-        
         // Initialize target velocity tracking
         _previousTargetPosition = _rigidbody.position;
         _targetVelocity = Vector3.zero;
@@ -218,11 +212,10 @@ public class InteractableObject : PortalTraveller
         _rigidbody.linearVelocity = finalVelocity;
         _rigidbody.angularVelocity = currentAngularVelocity; // Preserve angular velocity
         
-        // Notify clone system that we're dropping (will swap if clone exists)
-        // This happens AFTER we've set velocity so SwapWithClone can preserve it
+        // Check if we should swap with clone (if dropped through portal)
         if (_portalCloneSystem != null)
         {
-            _portalCloneSystem.SetHeld(false);
+            _portalCloneSystem.OnDropped();
         }
         
         _holder = null;
@@ -237,17 +230,6 @@ public class InteractableObject : PortalTraveller
     {
         _targetPosition = position;
         _targetRotation = rotation;
-    }
-
-    /// <summary>
-    /// Called when player teleports - swap with clone if it exists
-    /// </summary>
-    public void OnPlayerTeleport()
-    {
-        if (_portalCloneSystem != null)
-        {
-            _portalCloneSystem.OnPlayerTeleport();
-        }
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using UnityEngine.InputSystem;
+using Portal;
 
 public class PlayerPickup : MonoBehaviour
 {
@@ -105,12 +106,18 @@ public class PlayerPickup : MonoBehaviour
         _heldObject = null;
     }
     
-    // Called when player teleports - swap held object with clone if it exists
+    /// <summary>
+    /// Called when player teleports - swap held object with clone if it exists
+    /// </summary>
     public void OnPlayerTeleport()
     {
         if (_heldObject != null)
         {
-            _heldObject.OnPlayerTeleport();
+            var cloneSystem = _heldObject.GetComponent<PortalCloneSystem>();
+            if (cloneSystem != null)
+            {
+                cloneSystem.OnPlayerTeleport();
+            }
         }
     }
 
