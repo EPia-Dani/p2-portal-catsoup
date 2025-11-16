@@ -1,174 +1,110 @@
-# Portal Game - Unity Project
+# 🌀 **Portal Game**
 
-A Portal-inspired puzzle game built in Unity using the Universal Render Pipeline (URP). This project features a fully functional portal system with recursive rendering, physics-based teleportation, interactive objects, and optimized performance.
+*A Portal-inspired puzzle game built in Unity*
 
-## 🎮 Overview
+## 👥 **Development Team**
 
-This is a first-person puzzle game where players use a portal gun to create blue and orange portals on designated surfaces. Players can walk through portals, throw objects through them, and solve puzzles using portal mechanics.
+- **Your Name Here**
 
-## 🏗️ Project Structure
+## 🌲 **Game Description**
 
+You are a test subject equipped with a portal gun. Create blue and orange portals on designated surfaces to navigate through test chambers, solve puzzles, and survive hostile turrets.
+
+Use portals to traverse impossible distances, redirect objects, and manipulate the environment to reach your goal.
+
+> *"Now you're thinking with portals."*
+
+## ✅ **Requirements Checklist**
+
+### Core Features
+
+| # | Feature | Points | Description | Status |
+|---|---------|--------|-------------|--------|
+| 1 | **Escenari** | 0.5p | Playable scenario using provided assets, Portal-style puzzle level | ✅ |
+| 2 | **Portal Gun** | 1p | Gun that generates portals on valid surfaces only. First mouse button creates blue portal, second creates orange. Preview shows if portal can be placed before releasing button. Portals must be fully placed without being cut or blocked. | ✅ |
+| 3 | **Portals** | 1p | Portals display view from complementary portal (window effect). Player perspective changes when moving in front of portal. | ✅ |
+| 4 | **Teleport** | 0.5p | Player can enter and teleport through portals. Exit direction depends on entry direction (diagonal entry = diagonal exit in same relative direction). | ✅ |
+| 5 | **Companion Cubes** | 1p | Cube dispenser activated by button. Cubes activate buttons when placed on them. | ✅ |
+| 6 | **Gravity Gun** | 1p | Can pick up cubes by clicking from distance. Picked-up cubes float in front of weapon. Click again to shoot cube. Second mouse button drops cube to ground. | ✅ |
+| 7 | **Teleport Cubes** | 0.5p | Cubes thrown into portal teleport and exit from other side with same position, direction, and velocity as expected. | ✅ |
+| 8 | **Resizing** | 0.5p | Blue portal preview can be resized with mouse wheel (50% to 200% of normal size). Cubes teleporting between portals adapt their size proportionally (50% portal = 50% cube size, 200% portal = 200% cube size). | ✅ |
+| 9 | **Turrets** | 1p | Enemy turrets shoot red laser that kills player instantly on contact. Turrets deactivate if hit by cube or another turret. Turrets can be picked up with gravity gun (laser shoots forward when held). Turrets die if hit by another turret's laser. | ✅ |
+
+**Total Core Points: 6.5p**
+
+### 💀 **BONUS POINTS** (Maximum 3 points)
+
+*Only evaluated if all core features are fully implemented.*
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🚪 **Doors / Keys** | Doors between rooms that only open when cube is placed on button | ✅ |
+| 🌋 **Dead Zones** | Lava zones in scenario that kill player automatically on contact | ✅ |
+| 🏀 **Physic Surfaces** | Surfaces with different physics behaviors: | ✅ |
+| &nbsp;&nbsp;&nbsp;• **Bouncing** | Cubes/turrets bounce when touching surface | ✅ |
+| &nbsp;&nbsp;&nbsp;• **Sliding** | Cubes/turrets slide like ice when touching surface | ✅ |
+| &nbsp;&nbsp;&nbsp;• **Destroying** | Cubes/turrets are destroyed when touching surface | ✅ |
+| ☠️ **Game Over / Retry** | Game Over screen appears when player dies, option to retry | ✅ |
+| 🧭 **Checkpoint** | Checkpoints allow player to continue from checkpoint if they die | ✅ |
+| 🔊 **Sound** | Game sound design: gravity gun, doors, portal creation, checkpoints, buttons, death, turrets, etc. | ✅ |
+| 🔷 **Refraction Cube** | Lasers in scene can be redirected by refraction cube. Reflected laser reaches switch to open door. | ✅ |
+| 🛡️ **Blocking Cube** | Companion cubes block lasers | ✅ |
+| 🎯 **Crosshair** | Mouse cursor shows portal color if portal is created, empty if not yet placed | ✅ |
+
+## ⭐ **EXTRA FEATURES** (Beyond Requirements)
+
+Features implemented that weren't required but enhance the game experience:
+
+| Feature | Description |
+|---------|-------------|
+| 🔊 **FMOD Audio Integration** | Full FMOD Studio integration for professional spatial audio. Portal warp sounds, interactive sound effects (buttons, doors, objects), ambient audio, and dynamic audio events. Radio minigame countdown system with timed audio cues. |
+| 💥 **Mesh Destruction System** | Objects break into fragments when destroyed. Supports both prefab-based fractures and runtime-generated primitive fragments with explosion forces and velocity inheritance. |
+| 🎬 **Credits Scene** | Full credits scene with scrolling text, video timeline system with timed clips and subtitles, audio fade, and smooth transitions. |
+| 🏛️ **Chamber 00 Recreation** | 1:1 recreation of Portal's Test Chamber 00 using IntroAnimation system. Preset portal placement, automatic door opening, and authentic intro sequence. |
+| 📻 **Radio Minigame** | Radio counter system in FinalLevel tracks destroyed radios (target: 10). Plays countdown audio ("9 to go", "8 to go", etc.) and final completion message. Automatically loads next scene when target reached. |
+| 📏 **Player/Object Resizing** | Both player and objects resize proportionally when passing through portals of different sizes. Player scale affects hold distance, movement, and all interactions. |
+| ⚡ **Momentum Preservation** | Full velocity transformation system preserves momentum, angular velocity, and relative orientation through portals. Objects maintain their trajectory and speed. |
+| 🏢 **Elevator System** | Functional elevator component that moves between floors, activated by buttons or triggers. |
+| 🩸 **Damage Overlay** | Visual red flash overlay when player takes damage with configurable duration and alpha. Provides immediate feedback. |
+| 🎭 **Screen Fade System** | Smooth fade in/out transitions between scenes. Singleton system with configurable fade duration and color. Works with scene loading and respawn. |
+| ✨ **Portal Animations** | Portal appear/disappear animations with scaling effects. Portals animate from 0 to target size when placed, with configurable animation curves. |
+| 👥 **Clone System** | Visual clones of held objects appear on the other side of portals. Clones swap with real objects when player teleports or drops objects. |
+| ❤️ **Health System** | Player health system (3 HP) with invulnerability frames after taking damage, auto-heal after delay, and death handling with respawn. |
+| 📳 **Camera Shake** | Camera vibration feedback when player takes damage. Configurable duration and magnitude for impact feedback. |
+| 🧊 **Surface Physics Integration** | Player controller responds to different surface types: sliding (ice), bouncy (enhanced jump), and destructive surfaces. |
+| 🎨 **Portal Gun Bobbing** | Subtle vertical and rotational bobbing animation for portal gun when held, adds life to the weapon. |
+| 🔄 **Portal Overlap Prevention** | Smart system prevents portals from being placed too close to each other on the same surface, with visual feedback. |
+| 🎯 **Dynamic Portal Bounds** | Portal placement bounds visualization shows preview ellipse before shooting. Small portals skip bounds validation for flexible placement. |
+
+## 🔥 **Technical Tricks & Optimizations**
+
+### Portal Rendering Optimizations
+
+**Frustum Culling:**
+- Per-level frustum culling checks if next portal in recursion chain is visible
+- Uses expanded bounds (1.2x) and multiple fallback checks:
+  - Standard AABB test
+  - Portal center check
+  - Corner visibility check for close portals
+- Early exit when deeper recursion levels aren't visible
+
+**Recursion Logic:**
+```csharp
+// Hardcoded recursion limits based on portal angle
+float dot = Vector3.Dot(portal1.forward, portal2.forward);
+if (dot > 0.95f) return 1;        // Same direction: no recursion
+if (Mathf.Abs(dot) < 0.3f) return 2;  // 90°: max 2 levels
+return fullLimit;                // Opposite: full recursion
 ```
-Assets/
-├── Scripts/
-│   ├── Portal/          # Core portal system
-│   ├── Player/          # Player controller and management
-│   ├── Interact/        # Interactive objects (buttons, doors, elevators)
-│   ├── Enemy/           # Enemy AI (turrets)
-│   ├── UI/              # User interface systems
-│   ├── Infrastructure/  # Game management and utilities
-│   └── RefractionCubes/ # Special puzzle objects
-├── Scenes/              # Game scenes (MainMenu, IntroScene, FinalLevel)
-├── PortalAssets/        # Portal-specific 3D models and materials
-└── Resources/           # Shaders, materials, sounds
-```
 
-## 🔑 Core Systems
-
-### 1. Portal System
-
-The portal system is the heart of this project, consisting of several interconnected components:
-
-#### Portal Rendering (`PortalRenderer.cs`)
-- **Recursive Rendering**: Portals can render portals within portals up to a configurable recursion limit (default: 2 levels)
-- **Render Texture System**: Each portal uses a dedicated camera and render texture to display the view through its paired portal
-- **Oblique Projection**: Uses oblique projection matrices to clip geometry at the portal plane, preventing objects from appearing behind portals
-- **Frustum Culling**: Intelligent culling reduces unnecessary recursion when portals aren't visible
-- **Performance Optimizations**:
-  - Matrix caching to avoid redundant calculations
-  - Adaptive recursion based on portal alignment (portals facing same direction = no recursion)
-  - Visibility culling before rendering
-
-**Key Components:**
-- `PortalRenderer`: Main rendering component
-- `PortalRenderTextureController`: Manages render textures
-- `PortalViewChain`: Builds recursive view matrices
-- `PortalVisibilityCuller`: Determines if portal should render
-
-#### Portal Placement (`PortalGun.cs`, `PortalPlacement.cs`)
-- **Surface Detection**: Raycasts to find valid portal surfaces (tagged as "Portal Wall")
-- **Placement Validation**: Ensures portals don't overlap and are placed on valid surfaces
-- **Dynamic Sizing**: Portals can be resized using mouse scroll (min: 0.2x, max: 1.0x)
-- **Visual Feedback**: Shows placement bounds preview before shooting
-- **Overlap Prevention**: Prevents placing portals too close to each other
-
-**Key Components:**
-- `PortalGun`: Handles shooting mechanics and placement logic
-- `PortalPlacementCalculator`: Calculates valid placement positions
-- `PortalOverlapGuard`: Prevents portal overlap
-- `PortalSizeController`: Manages portal scaling
-
-#### Portal Teleportation (`PortalTravellerHandler.cs`, `PortalTraveller.cs`)
-- **Universal Velocity Transformation**: Transforms velocity vectors through portals using quaternion rotation
-  - Includes 180° flip to convert "entering" to "exiting"
-  - Preserves momentum and angular velocity
-  - Handles scale differences between portals
-- **Collision Management**: Temporarily disables collision with destination wall during teleport
-- **Minimum Exit Velocity**: Prevents objects from getting stuck when teleporting from floor/ceiling portals to wall portals
-- **Clone System**: Creates visual clones of held objects on the other side of portals
-
-**Key Components:**
-- `PortalTraveller`: Base class for objects that can travel through portals
-- `PortalTravellerHandler`: Detects when objects cross portal boundaries
-- `PortalTransformUtility`: Mathematical utilities for portal transformations
-- `PortalCloneSystem`: Creates and manages clones for held objects
-
-### 2. Player System
-
-#### FPS Controller (`FPSController.cs`)
-- **Movement**: Custom physics-based movement with acceleration and friction
-  - Ground movement with configurable acceleration/friction
-  - Air control for mid-air movement
-  - Sprint multiplier for faster movement
-  - Terminal velocity to prevent physics breaking
-- **Portal Integration**: Extends `PortalTraveller` for seamless portal travel
-  - Velocity transformation through portals
-  - Camera rotation preservation
-  - Smooth teleportation with momentum conservation
-- **Health System**: 
-  - 3 hit points (configurable)
-  - Invulnerability frames after taking damage
-  - Auto-heal after 10 seconds
-  - Camera shake feedback on hit
-  - Death handling with respawn
-- **Surface Physics**: Responds to different surface types
-  - Sliding surfaces (ice)
-  - Bouncy surfaces
-  - Destructive surfaces
-  - Normal surfaces
-
-#### Player Management (`PlayerManager.cs`)
-- Singleton pattern for global player state
-- Handles respawn and checkpoint systems
-- Manages player death and respawn logic
-
-### 3. Interaction System
-
-#### Interactable Objects (`InteractableObject.cs`)
-- **Pickup System**: Players can pick up and carry objects
-  - Physics-based movement when held
-  - Momentum preservation when dropped
-  - Portal clone system integration
-- **Portal Travel**: Objects can travel through portals
-  - Velocity transformation
-  - Scale preservation
-  - Clone swapping for held objects
-- **Surface Physics**: Objects respond to different surface types
-
-#### Interactive Elements
-- **Buttons** (`Button.cs`): Activates when pressed by player or objects
-- **Doors** (`Door.cs`): Opens/closes based on button state
-- **Elevators** (`Elevator.cs`): Moves between floors
-- **Radios** (`Radio.cs`): Special interactable objects for puzzles
-- **Cube Droppers** (`CubeDropper.cs`): Spawns cubes for puzzles
-
-### 4. Enemy System
-
-#### Turrets (`Turret.cs`)
-- **AI Behavior**: Detects and shoots at player
-- **Projectile System**: Fires projectiles that damage player
-- **Portal Awareness**: Can be disabled by placing portals in front of them
-- **Health System**: Can be destroyed by player actions
-
-### 5. UI System
-
-- **Crosshair** (`Crosshair.cs`): Shows portal placement feedback
-- **Damage Overlay** (`DamageOverlay.cs`): Visual feedback when player takes damage
-- **Death Screen** (`DeathScreenManager.cs`): Handles death UI
-- **Screen Fade** (`ScreenFade.cs`): Smooth scene transitions
-- **Menu System**: Main menu, settings, credits
-
-### 6. Infrastructure
-
-#### Game Bootstrap (`GameBootstrap.cs`)
-- Initializes input system
-- Sets up cursor state
-- Ensures proper initialization order
-
-#### Input System (`InputManager.cs`)
-- Uses Unity's new Input System
-- Singleton pattern for global access
-- Handles player input (movement, shooting, interaction)
-
-#### Scene Management (`SceneManager.cs`)
-- Scene loading with fade transitions
-- Scene reloading for respawn
-- Main menu navigation
-
-## 🎯 Key Technical Features
-
-### Portal Rendering Pipeline
-
-1. **Render Setup**: Each portal has a dedicated camera and render texture
-2. **View Chain Building**: Calculates camera positions/orientations for each recursion level
-3. **Recursive Rendering**: Renders from deepest level to surface (back-to-front)
-4. **Oblique Clipping**: Uses oblique projection to clip geometry at portal plane
-5. **Texture Binding**: Render texture is applied to portal surface material
+**Oblique Projection:**
+- Calculates clip plane at portal exit
+- Uses `CalculateObliqueMatrix()` to clip geometry behind portal
+- Prevents rendering artifacts and objects appearing through portals
 
 ### Velocity Transformation
 
-The system uses a universal velocity transformation algorithm:
-
+**Universal Algorithm:**
 ```csharp
 // 1. Capture velocity before teleport
 Vector3 velocity = currentVelocity;
@@ -176,157 +112,87 @@ Vector3 velocity = currentVelocity;
 // 2. Scale based on portal size difference
 velocity *= scaleRatio;
 
-// 3. Transform through portal rotation (with 180° flip)
+// 3. Transform with 180° flip (entering → exiting)
 Quaternion flipLocal = Quaternion.AngleAxis(180f, Vector3.up);
 Quaternion relativeRotation = toPortal.rotation * flipLocal * Quaternion.Inverse(fromPortal.rotation);
 velocity = relativeRotation * velocity;
 
-// 4. Apply minimum exit velocity if needed
+// 4. Apply minimum exit velocity if needed (non-vertical → vertical)
 velocity = ApplyMinimumExitVelocity(fromPortal, toPortal, velocity);
 ```
 
-This ensures:
-- Momentum is preserved through portals
-- Objects maintain correct trajectory
-- No velocity loss during teleportation
-- Smooth transitions between portals
+**Key Trick:** The 180° flip around portal's local up axis converts "entering" velocity to "exiting" velocity, preserving relative orientation.
 
 ### Clone System
 
-When a player holds an object near a portal:
-1. A visual clone appears on the other side
-2. Clone follows player movement
-3. When player teleports or drops object, clone swaps with real object
+**How it works:**
+1. When object is held near portal, create visual clone on other side
+2. Clone follows player movement using portal transformation math
+3. When player teleports or drops object, swap real object with clone
 4. Prevents objects from disappearing during portal travel
+
+**Trick:** Uses `PortalTransformUtility.TransformThroughPortal()` to calculate clone position/rotation, ensuring perfect synchronization.
+
+### Surface Physics
+
+**Physics Material System:**
+- Automatically creates/updates `PhysicsMaterial` based on surface type
+- **Bouncy:** High bounce coefficient with configurable combine mode
+- **Sliding:** Low friction coefficient (0-1 range)
+- **Destructive:** Destroys cubes on contact with velocity threshold
+- Filters by interactable type (radios, cubes, etc.)
+
+**Player Integration:**
+- Player controller reads surface physics on collision
+- Adjusts friction and acceleration based on surface type
+- Enhanced jump on bouncy surfaces
 
 ### Performance Optimizations
 
-Based on profiling, the system includes several optimizations:
+**GPU Optimizations (URP Settings):**
+- Disabled realtime shadows (major GPU bottleneck)
+- Reduced light count to 1
+- Disabled reflection probes
+- Reduced LUT size
+- **Result:** 90 FPS → 180-200+ FPS (2-2.5x improvement)
 
-1. **GPU Optimizations** (URP Settings):
-   - Disabled shadows (major GPU bottleneck)
-   - Reduced light count to 1
-   - Disabled reflection probes
-   - Reduced LUT size
-   - Result: 90 FPS → 180-200+ FPS (2-2.5x improvement)
+**CPU Optimizations:**
+- Matrix caching in `PortalRenderer`
+- Frustum culling before rendering
+- Adaptive recursion based on portal alignment
+- Visibility culling for off-screen portals
+- Configurable texture size (256-4096) and recursion limit
 
-2. **CPU Optimizations**:
-   - Matrix caching in `PortalRenderer`
-   - Frustum culling before rendering
-   - Adaptive recursion based on portal alignment
-   - Visibility culling for off-screen portals
+### Portal Placement Math
 
-3. **Rendering Optimizations**:
-   - Configurable texture size (default: 1024x1024)
-   - Configurable recursion limit (default: 2)
-   - Early exit when portals aren't visible
+**Surface Math:**
+- Projects hit point to surface center using bounds
+- Calculates up vector from camera orientation (prevents portals from being upside-down)
+- Clamps portal position to surface bounds (with skin offset)
+- Small portals (< 0.5x) skip bounds validation for flexible placement
 
-## 🎨 Assets and Resources
+**Overlap Detection:**
+- Checks distance between portal centers
+- Uses portal half-sizes to calculate minimum separation
+- Prevents portals from overlapping on same surface
 
-- **Portal Models**: Portal gun, portal surfaces, test chamber assets
-- **Materials**: Portal shaders, surface materials
-- **Audio**: FMOD integration for sound effects
-- **UI**: SlimUI package for modern UI elements
+## 🔊 **Sound & Atmosphere**
 
-## 🚀 Getting Started
+- FMOD integration for spatial audio
+- Portal warp sounds on teleportation
+- Interactive sound effects for buttons, doors, and objects
+- Ambient audio for atmosphere
 
-### Prerequisites
-- Unity 2021.3 or later
-- Universal Render Pipeline (URP)
-- FMOD (for audio)
+## 🧩 **Technical Overview**
 
-### Setup
-1. Open project in Unity
-2. Ensure URP is configured in Project Settings
-3. Check that Input System is enabled
-4. Load `MainMenu` scene to start
+- **Engine:** Unity 3D (URP)
+- **Language:** C#
+- **Architecture:** Component-based with namespace organization
+- **Performance:** Optimized for portal rendering (180-200+ FPS)
+- **Key Systems:**
+  - Portal rendering with recursive view chains
+  - Physics-based movement and interaction
+  - Surface physics system
+  - Clone system for portal preview
 
-### Controls
-- **WASD**: Move
-- **Mouse**: Look around
-- **Left Click**: Shoot blue portal
-- **Right Click**: Shoot orange portal
-- **Scroll Wheel**: Resize portal
-- **E**: Interact/Pick up objects
-- **Shift**: Sprint
-- **Space**: Jump
-
-## 📝 Code Architecture
-
-### Namespaces
-- `Portal`: Portal system components
-- `Input`: Input system wrapper
-- `UI`: UI components
-
-### Design Patterns
-- **Singleton**: `InputManager`, `PlayerManager`, `ScreenFadeManager`
-- **Component Pattern**: Modular components for portal system
-- **Observer Pattern**: Portal events and notifications
-- **Strategy Pattern**: Different surface physics behaviors
-
-### Key Classes
-
-**Portal System:**
-- `PortalManager`: Central portal management
-- `PortalRenderer`: Rendering logic
-- `PortalGun`: Placement and shooting
-- `PortalTraveller`: Base class for portal travel
-
-**Player System:**
-- `FPSController`: Player movement and control
-- `PlayerPickup`: Object interaction
-- `PlayerManager`: Global player state
-
-**Interaction:**
-- `InteractableObject`: Base class for interactive objects
-- `Button`, `Door`, `Elevator`: Specific interactables
-
-## 🔧 Configuration
-
-### Portal Settings (`PortalManager`)
-- `textureSize`: Render texture resolution (256-4096)
-- `recursionLimit`: Maximum recursion depth (1+)
-- Portal colors and materials
-
-### Player Settings (`FPSController`)
-- Movement speed and acceleration
-- Jump force and gravity
-- Health and invulnerability
-- Mouse sensitivity
-
-### Performance Settings
-- Adjust texture size for performance vs quality
-- Reduce recursion limit for lower-end hardware
-- Enable/disable various optimizations
-
-## 🐛 Known Issues / Limitations
-
-1. **Portal Recursion**: Limited to 2 levels by default (can be increased but impacts performance)
-2. **Portal Size**: Portals can be resized but must maintain aspect ratio
-3. **Surface Requirements**: Portals can only be placed on surfaces tagged "Portal Wall"
-4. **Clone System**: Only works for held objects, not all portal travelers
-
-## 📚 Further Reading
-
-For more details on specific systems, see:
-- `Assets/Scripts/Portal/` - Portal system implementation
-- `Assets/Scripts/Player/` - Player controller
-- `Assets/Scripts/Interact/` - Interaction system
-
-## 🎓 Learning Resources
-
-This project demonstrates:
-- Advanced rendering techniques (recursive portals, oblique projection)
-- Physics-based movement systems
-- Complex spatial transformations
-- Performance optimization strategies
-- Unity URP integration
-- Modern C# patterns and practices
-
-## 📄 License
-
-This project is for educational purposes.
-
----
-
-**Note**: This is a complex system with many interconnected components. When modifying code, be aware of dependencies between systems, especially the portal rendering and teleportation systems.
+### 🔥 *"The cake is a lie... but the portals are real."*
