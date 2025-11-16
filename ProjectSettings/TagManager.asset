@@ -9,6 +9,8 @@ TagManager:
   - Cube
   - Button
   - Portal Wall
+  - RefractionCube
+  - Laser
   layers:
   - Default
   - TransparentFX
