@@ -90,6 +90,8 @@ namespace Portal {
 			// Force physics to update immediately so collision changes take effect
 			Physics.SyncTransforms();
 
+			_portalManager?.NotifyTravellerTeleported(portalRenderer, destination, newPos);
+
 			// Apply velocity transformation ONLY if the traveler doesn't handle it itself
 			// InteractableObject and FPSController override Teleport and handle velocity transformation internally
 			bool handlesVelocityInternally = traveller is InteractableObject || traveller is FPSController;
