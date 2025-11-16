@@ -43,7 +43,7 @@ namespace Enemy
             beamActive = false;
         }
 
-        void Update()
+        void LateUpdate()
         {
             if (player == null)
             {
@@ -57,7 +57,7 @@ namespace Enemy
             // Check if player is in range
             if (distanceToPlayer <= detectionRadius)
             {
-                // Get player's target position (camera/head if available, otherwise center)
+                // Get player's target position (body center/torso)
                 Vector3 playerTargetPos = GetPlayerTargetPosition();
                 
                 // Aim at player
@@ -147,8 +147,7 @@ namespace Enemy
                 else
                 {
                     // Hit point is at or beyond player, so target player directly
-                    // Offset slightly back from camera to make beam visible
-                    endPos = targetPos - direction * 0.5f;
+                    endPos = targetPos;
                 }
             }
             else if (distanceToPlayer > maxRange)
@@ -158,8 +157,8 @@ namespace Enemy
             }
             else
             {
-                // Offset beam end slightly back from player to make it visible when viewed head-on
-                endPos = targetPos - direction * 0.5f;
+                // Target player center directly
+                endPos = targetPos;
             }
 
             beamRenderer.SetPosition(0, startPos);
