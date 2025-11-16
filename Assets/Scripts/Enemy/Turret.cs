@@ -1,8 +1,11 @@
 ﻿using UnityEngine;
+using FMODUnity;
 
 namespace Enemy
 {
-    public class Turret : MonoBehaviour
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(Collider))]
+    public class Turret : InteractableObject
     {
         [Header("References")]
         public Transform head;
@@ -12,14 +15,23 @@ namespace Enemy
         [Header("Settings")]
         public float detectionRadius = 10f;
         public float fireRate = 1f;
-        public float beamDuration = 0.1f;
+        public int burstFlashCount = 4;
+        public float flashDuration = 0.025f;
+        public float flashGap = 0.010f;
         public float maxRange = 50f;
         public LayerMask obstacleMask = -1;
 
+        [Header("Audio")]
+        [Tooltip("FMOD event to play when turret shoots")]
+        public EventReference shootSound;
+
         public FPSController player;
         private float nextFireTime;
-        private float beamEndTime;
-        private bool beamActive;
+        private float nextFlashTime;
+        private int currentFlash;
+        private bool isFiringBurst;
+        private bool isBeamOn;
+        private bool isDisabled;
 
         void Start()
         {
@@ -40,11 +52,45 @@ namespace Enemy
                 beamRenderer.enabled = false;
 
             nextFireTime = Time.time;
-            beamActive = false;
+            nextFlashTime = 0f;
+            currentFlash = 0;
+            isFiringBurst = false;
+            isBeamOn = false;
+            isDisabled = false;
+        }
+
+        /// <summary>
+        /// Called when turret is picked up - permanently disable all turret functionality
+        /// </summary>
+        public override void OnPickedUp(PlayerPickup holder)
+        {
+            Debug.Log($"[Turret] OnPickedUp called on {gameObject.name}! Setting isDisabled = true");
+
+            // Disable all turret functionality
+            isDisabled = true;
+
+            // Disable beam renderer since turret won't shoot anymore
+            if (beamRenderer != null)
+            {
+                beamRenderer.enabled = false;
+                Debug.Log($"[Turret] Disabled beam renderer");
+            }
+
+            // Call base implementation for interactable object functionality
+            base.OnPickedUp(holder);
+
+            Debug.Log($"[Turret] {gameObject.name} picked up - turret functionality permanently disabled. isDisabled = {isDisabled}");
         }
 
         void LateUpdate()
         {
+            // Skip all turret logic if disabled (picked up)
+            if (isDisabled)
+            {
+                //Debug.Log($"[Turret] {gameObject.name} is disabled, skipping turret logic");
+                return;
+            }
+
             if (player == null)
             {
                 player = FindFirstObjectByType<FPSController>();
@@ -76,22 +122,50 @@ namespace Enemy
                 {
                     Fire();
                     nextFireTime = Time.time + (1f / fireRate);
-                    beamEndTime = Time.time + beamDuration;
-                    beamActive = true;
                 }
             }
 
-            // Handle beam visibility
-            if (beamActive)
+            // Handle flash burst
+            if (isFiringBurst)
             {
-                if (Time.time >= beamEndTime)
+                if (Time.time >= nextFlashTime)
                 {
-                    beamActive = false;
-                    if (beamRenderer != null)
-                        beamRenderer.enabled = false;
+                    if (!isBeamOn && currentFlash < burstFlashCount)
+                    {
+                        // Turn beam ON for next flash
+                        isBeamOn = true;
+                        if (beamRenderer != null)
+                        {
+                            beamRenderer.enabled = true;
+                            UpdateBeam();
+                        }
+                        nextFlashTime = Time.time + flashDuration;
+                    }
+                    else if (isBeamOn)
+                    {
+                        // Turn beam OFF
+                        isBeamOn = false;
+                        if (beamRenderer != null)
+                            beamRenderer.enabled = false;
+
+                        currentFlash++;
+
+                        // Set gap time, or end burst if last flash
+                        if (currentFlash < burstFlashCount)
+                        {
+                            nextFlashTime = Time.time + flashGap;
+                        }
+                        else
+                        {
+                            // Burst complete
+                            isFiringBurst = false;
+                            currentFlash = 0;
+                        }
+                    }
                 }
-                else if (beamRenderer != null && firePoint != null)
+                else if (beamRenderer != null && beamRenderer.enabled && isBeamOn)
                 {
+                    // Keep beam updated during flash
                     UpdateBeam();
                 }
             }
@@ -102,7 +176,19 @@ namespace Enemy
             if (beamRenderer == null || firePoint == null || player == null)
                 return;
 
-            beamRenderer.enabled = true;
+            Debug.LogWarning($"[Turret] {gameObject.name} is FIRING even though isDisabled = {isDisabled}! This should not happen.");
+
+            // Play shoot sound
+            if (!shootSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(shootSound, firePoint.position);
+            }
+
+            // Start flash burst
+            isFiringBurst = true;
+            currentFlash = 0;
+            isBeamOn = false;
+            nextFlashTime = Time.time; // Start immediately
         }
 
         Vector3 GetPlayerTargetPosition()

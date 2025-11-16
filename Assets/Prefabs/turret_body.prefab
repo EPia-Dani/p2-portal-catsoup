@@ -43,7 +43,6 @@ GameObject:
   - component: {fileID: 1597817955648200374}
   - component: {fileID: 1863348359806828806}
   - component: {fileID: 2518369761769950448}
-  - component: {fileID: 8235962352723393522}
   m_Layer: 0
   m_Name: turret_body
   m_TagString: Interactable
@@ -81,17 +80,36 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 481b0287b5624ef288deff39c36485f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  minPortalExitVelocity: 3
+  interactableType: 1
+  terminalVelocity: 50
+  maxAngularVelocity: 50
+  moveSpeed: 60
+  rotationSpeed: 60
+  heldDamping: 5
+  droppedDamping: 0.05
+  dropForce: 2
+  isRefractionCube: 0
   head: {fileID: 3930472468011638285}
   firePoint: {fileID: 8864167999143487555}
   beamRenderer: {fileID: 1361685011499656261}
   detectionRadius: 10
+  fireRate: 1
+  burstFlashCount: 4
+  flashDuration: 0.025
+  flashGap: 0.01
+  maxRange: 50
   obstacleMask:
     serializedVersion: 2
     m_Bits: 0
-  requireLineOfSight: 1
-  maxRange: 50
-  fireRate: 1
-  beamDuration: 0.1
+  shootSound:
+    Guid:
+      Data1: 1201049041
+      Data2: 1160399896
+      Data3: -1569719420
+      Data4: 1033269866
+    Path: event:/SFX/Weapons/Turret
+  player: {fileID: 0}
 --- !u!54 &1863348359806828806
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -140,28 +158,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 37.66, y: 60.2, z: 43.96}
   m_Center: {x: 0, y: 18.4, z: 0}
---- !u!114 &8235962352723393522
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1052562021019887796}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 082df5768b0bab7419e52fab8ae4479c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  minPortalExitVelocity: 3
-  interactableType: 1
-  terminalVelocity: 50
-  maxAngularVelocity: 50
-  moveSpeed: 10
-  rotationSpeed: 10
-  heldDamping: 5
-  droppedDamping: 0.05
-  dropForce: 2
-  isRefractionCube: 0
 --- !u!1 &6919942846182185055
 GameObject:
   m_ObjectHideFlags: 0

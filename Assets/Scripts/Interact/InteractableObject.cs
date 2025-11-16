@@ -131,7 +131,7 @@ public class InteractableObject : PortalTraveller
     /// <summary>
     /// Called by PlayerPickup when this object is picked up
     /// </summary>
-    public void OnPickedUp(PlayerPickup holder)
+    public virtual void OnPickedUp(PlayerPickup holder)
     {
         if (_isHeld) return;
         
@@ -165,7 +165,7 @@ public class InteractableObject : PortalTraveller
     /// <summary>
     /// Called by PlayerPickup when this object is dropped
     /// </summary>
-    public void OnDropped()
+    public virtual void OnDropped()
     {
         if (!_isHeld) return;
         
