@@ -4,7 +4,11 @@
 
 ## 👥 **Development Team**
 
-- **Your Name Here**
+- **Pau Castellà, Naiara Garcia**
+
+## 🎬 **Video Demonstration**
+
+-(link video)
 
 ## 🌲 **Game Description**
 
