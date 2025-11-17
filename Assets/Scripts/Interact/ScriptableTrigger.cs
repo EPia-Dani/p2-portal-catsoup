@@ -140,6 +140,16 @@ namespace Interact
             Collider col = GetComponent<Collider>();
             if (col != null && !col.isTrigger)
             {
+                // Check if it's a concave MeshCollider - Unity doesn't support triggers on concave meshes
+                MeshCollider meshCollider = col as MeshCollider;
+                if (meshCollider != null && meshCollider.convex == false)
+                {
+                    Debug.LogError($"[ScriptableTrigger] GameObject '{gameObject.name}' has a concave MeshCollider which cannot be used as a trigger. " +
+                        $"Either make the mesh convex or use a different collider type (BoxCollider, SphereCollider, CapsuleCollider, or convex MeshCollider).", 
+                        gameObject);
+                    return;
+                }
+                
                 col.isTrigger = true;
             }
             
