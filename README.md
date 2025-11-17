@@ -8,7 +8,7 @@
 
 ## 🎬 **Video Demonstration**
 
-- ([link video](https://youtu.be/idf2JHXiwqw))
+- ([Portal video](https://youtu.be/idf2JHXiwqw))
 
 ## 🌲 **Game Description**
 
